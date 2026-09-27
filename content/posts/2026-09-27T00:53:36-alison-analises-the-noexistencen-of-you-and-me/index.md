@@ -1,11 +1,11 @@
 ---
 title: Molinalises - The NOexistenceN of you AND me
 description: Você existe
-pubDate: '2026-09-27T01:27:30'
+pubDate: '2026-09-27T01:29:02'
 tags:
   - analise
 draft: false
-updatedDate: '2026-09-27T01:27:30'
+updatedDate: '2026-09-27T01:29:02'
 ---
 
 ![20260927005942_1](20260927005942_1.jpg)
@@ -70,3 +70,5 @@ Com certeza vou continuar ouvindo as músicas do jogo e vez ou outra lembrar del
 Algumas polêmicas quanto a equipe do produção do jogo também me deixaram bem triste com o caminho que a continuação do jogo levou, sendo um JRPG sem a maioria da equipe original do primeiro game. Perdi bastante o hype pra continuar acompanhando a franquia.
 
 E sim, eu acho que ela existe.
+
+![Captura_de_tela_20260927_012829](Captura_de_tela_20260927_012829.png)
