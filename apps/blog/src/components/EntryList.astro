@@ -1,8 +1,4 @@
 ---
-// Componente reutilizável para listar posts do arquivo.
-//
-// O link de cada item aponta para a página do post
-// (`/posts/<slug>`) e mostra a data de publicação.
 import type { CollectionEntry } from 'astro:content';
 import { shortDate } from '../lib/format';
 import { withBase } from '../lib/paths';
@@ -15,29 +11,65 @@ interface Props {
 }
 
 const { entries, showTags = false } = Astro.props;
+
+// Os banners vivem junto do index.md de cada post.
+// O glob gera as URLs processadas pelo Vite/Astro e permite que
+// a lista saiba quais posts realmente possuem banner.
+const bannerFiles = import.meta.glob(
+  '../../../../content/posts/**/banner.{webp,png,jpg,jpeg}',
+  {
+    eager: true,
+    import: 'default',
+    query: '?url',
+  },
+) as Record<string, string>;
+
+function getBanner(entry: PostEntry) {
+  const suffix = `/content/posts/${entry.id}/banner.`;
+  const match = Object.entries(bannerFiles).find(([file]) =>
+    file.replaceAll('\\\\', '/').includes(suffix),
+  );
+
+  return match?.[1] ?? null;
+}
 ---
 
 <ul class="entry-list">
   {
-    entries.map((entry) => (
-      <li class="entry">
-        <div class="entry-content">
-          <a href={withBase(`/posts/${entry.id}`)}>{entry.data.title}</a>
-          {entry.data.description ? (
-            <p class="entry-description">{entry.data.description}</p>
+    entries.map((entry) => {
+      const banner = getBanner(entry);
+
+      return (
+        <li class:list={['entry', { 'entry--banner': Boolean(banner) }]}>
+          {banner ? (
+            <img
+              class="entry-banner"
+              src={banner}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+            />
           ) : null}
-        </div>
-        {
-          showTags ? (
-            <span class="entry-meta">{entry.data.tags.join(', ')}</span>
-          ) : (
-            <time datetime={entry.data.pubDate.toISOString()}>
-              {shortDate.format(entry.data.pubDate)}
-            </time>
-          )
-        }
-      </li>
-    ))
+
+          <div class="entry-content">
+            <a href={withBase(`/posts/${entry.id}`)}>{entry.data.title}</a>
+            {entry.data.description ? (
+              <p class="entry-description">{entry.data.description}</p>
+            ) : null}
+          </div>
+
+          {
+            showTags ? (
+              <span class="entry-meta">{entry.data.tags.join(', ')}</span>
+            ) : (
+              <time datetime={entry.data.pubDate.toISOString()}>
+                {shortDate.format(entry.data.pubDate)}
+              </time>
+            )
+          }
+        </li>
+      );
+    })
   }
 </ul>
 
@@ -48,9 +80,54 @@ const { entries, showTags = false } = Astro.props;
     margin: 0;
   }
 
-  .entry-content {
-    min-width: 0;
-    flex: 1;
+  .entry {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .entry-content,
+  .entry time,
+  .entry .entry-meta {
+    position: relative;
+    z-index: 1;
+  }
+
+  .entry-banner {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    right: 0;
+    width: min(46%, 24rem);
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    opacity: 0.52;
+
+    /* A imagem começa visível no extremo direito e desaparece
+       suavemente antes de chegar ao texto do post. */
+    -webkit-mask-image: linear-gradient(
+      to left,
+      black 0%,
+      black 42%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to left,
+      black 0%,
+      black 42%,
+      transparent 100%
+    );
+  }
+
+  .entry--banner .entry-content {
+    padding-right: min(34%, 15rem);
+  }
+
+  .entry--banner time,
+  .entry--banner .entry-meta {
+    margin-left: auto;
+    padding-left: var(--space-3);
+    white-space: nowrap;
   }
 
   .entry-description {
@@ -61,5 +138,21 @@ const { entries, showTags = false } = Astro.props;
     font-size: 0.76rem;
     line-height: 1.45;
     font-weight: 400;
+  }
+
+  @media (max-width: 700px) {
+    .entry--banner .entry-content {
+      padding-right: 0;
+    }
+
+    .entry-banner {
+      width: 62%;
+      opacity: 0.3;
+    }
+
+    .entry--banner time,
+    .entry--banner .entry-meta {
+      padding-left: var(--space-2);
+    }
   }
 </style>
