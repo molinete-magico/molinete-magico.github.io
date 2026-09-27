@@ -25,7 +25,7 @@ import {
 } from './content.ts';
 import { gitStatus, commit, push, canPush, pull } from './git.ts';
 import type { PostMeta } from '../shared/types.ts';
-import { PORT, repoRoot, contentRoot, clientDir, setRepoRoot } from './fs.ts';
+import { PORT, repoRoot, contentRoot, postsRoot, clientDir, setRepoRoot } from './fs.ts';
 
 function clientAsset(filename: string, contentType: string) {
   const file = path.join(clientDir(), filename);
@@ -163,8 +163,8 @@ app.get('/api/post/:id', async (c) => {
 
 app.get('/api/post/:id/banner', async (c) => {
   try {
-    const post = await readPost(c.req.param('id'));
-    const folder = path.join(contentRoot(), path.dirname(post.path));
+    const id = c.req.param('id');
+    const folder = path.join(postsRoot(), id);
     const names = ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg'];
     const name = names.find((candidate) => existsSync(path.join(folder, candidate)));
     if (!name) return c.json({ error: 'Este post não possui banner.' }, 404);
