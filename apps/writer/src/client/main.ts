@@ -27,6 +27,7 @@ const state: {
   dirty: { title: boolean; body: boolean; meta: boolean };
   savedAt: Date | null;
   tagsDirty: boolean;
+  bannerAvailable: boolean;
 } = {
   posts: [],
   current: null,
@@ -35,6 +36,7 @@ const state: {
   dirty: { title: false, body: false, meta: false },
   savedAt: null,
   tagsDirty: false,
+  bannerAvailable: false,
 };
 
 // ------------------------------------------------------------------
@@ -332,17 +334,32 @@ function setBannerPosition(value: string) {
 }
 
 async function loadBannerPreview(id: string) {
+  bannerAvailable = false;
+  state.bannerAvailable = false;
   bannerEditor.hidden = true;
+  bannerCropImage.style.backgroundImage = '';
+  bannerStatus.textContent = 'procurando banner...';
+
   try {
-    const res = await fetch('/api/post/' + encodeURIComponent(id) + '/banner');
+    const res = await fetch('/api/post-banner?post=' + encodeURIComponent(id), {
+      cache: 'no-store',
+    });
+
     if (!res.ok) {
-      bannerStatus.textContent = 'adicione uma imagem chamada banner.jpg, banner.png ou banner.webp';
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      bannerStatus.textContent =
+        data.error ?? 'adicione uma imagem chamada banner.jpg, banner.png ou banner.webp';
       return;
     }
+
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
+
     bannerCropImage.style.backgroundImage = 'url("' + url + '")';
+    bannerAvailable = true;
+    state.bannerAvailable = true;
     bannerEditor.hidden = false;
+    bannerStatus.textContent = 'arraste a imagem ou use a barra para escolher o enquadramento';
     setBannerPosition(state.current?.file.bannerPosition ?? '50%');
   } catch {
     bannerStatus.textContent = 'não foi possível carregar o banner';
@@ -431,7 +448,9 @@ function currentMeta(): PostMeta {
     pubDate: fieldDate.value || todayClient(),
     tags: tags,
     draft: fieldDraft.checked,
-    ...(bannerEditor.hidden ? {} : { bannerPosition: `${Math.round(Number(bannerPosition.value))}%` }),
+    ...(bannerAvailable
+      ? { bannerPosition: `${Math.round(Number(bannerPosition.value))}%` }
+      : {}),
   };
 }
 
@@ -721,7 +740,7 @@ $('#file-image')!.addEventListener('change', async (e) => {
   if (!file) return;
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch(`/api/post/${state.current.id}/image`, {
+  const res = await fetch(`/api/post/${encodeURIComponent(state.current.id)}/image`, {
     method: 'POST',
     body: form,
   });
@@ -835,6 +854,7 @@ function writeAutosave() {
         description: fieldDescription.value,
         tags,
         body: currentBody(),
+        bannerPosition: bannerAvailable ? `${Math.round(Number(bannerPosition.value))}%` : undefined,
         updatedAt: Date.now(),
       }),
     );
@@ -891,6 +911,9 @@ function restoreAutosave() {
           changes: { from: 0, to: cmView.state.doc.length, insert: s.body },
         });
         renderPreview();
+        if (typeof s.bannerPosition === 'string' && bannerAvailable) {
+          setBannerPosition(s.bannerPosition);
+        }
         state.dirty = { title: true, body: true, meta: true };
         state.tagsDirty = true;
         setSaved(false, 'Recuperado automaticamente — ainda não salvo');
