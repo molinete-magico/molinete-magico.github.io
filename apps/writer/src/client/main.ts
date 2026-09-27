@@ -334,7 +334,6 @@ function setBannerPosition(value: string) {
 }
 
 async function loadBannerPreview(id: string) {
-  bannerAvailable = false;
   state.bannerAvailable = false;
   bannerEditor.hidden = true;
   bannerCropImage.style.backgroundImage = '';
@@ -356,7 +355,6 @@ async function loadBannerPreview(id: string) {
     const url = URL.createObjectURL(blob);
 
     bannerCropImage.style.backgroundImage = 'url("' + url + '")';
-    bannerAvailable = true;
     state.bannerAvailable = true;
     bannerEditor.hidden = false;
     bannerStatus.textContent = 'arraste a imagem ou use a barra para escolher o enquadramento';
@@ -448,7 +446,7 @@ function currentMeta(): PostMeta {
     pubDate: fieldDate.value || todayClient(),
     tags: tags,
     draft: fieldDraft.checked,
-    ...(bannerAvailable
+    ...(state.bannerAvailable
       ? { bannerPosition: `${Math.round(Number(bannerPosition.value))}%` }
       : {}),
   };
@@ -854,7 +852,7 @@ function writeAutosave() {
         description: fieldDescription.value,
         tags,
         body: currentBody(),
-        bannerPosition: bannerAvailable ? `${Math.round(Number(bannerPosition.value))}%` : undefined,
+        bannerPosition: state.bannerAvailable ? `${Math.round(Number(bannerPosition.value))}%` : undefined,
         updatedAt: Date.now(),
       }),
     );
@@ -911,7 +909,7 @@ function restoreAutosave() {
           changes: { from: 0, to: cmView.state.doc.length, insert: s.body },
         });
         renderPreview();
-        if (typeof s.bannerPosition === 'string' && bannerAvailable) {
+        if (typeof s.bannerPosition === 'string' && state.bannerAvailable) {
           setBannerPosition(s.bannerPosition);
         }
         state.dirty = { title: true, body: true, meta: true };
