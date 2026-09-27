@@ -1,12 +1,12 @@
 ---
 title: Molinalises - The NOexistenceN of you AND me
 description: Você existe
-pubDate: '2026-09-27T02:51:13'
+pubDate: '2026-09-27T02:53:57'
 tags:
   - analise
 draft: false
-updatedDate: '2026-09-27T02:51:13'
-bannerPosition: 100%
+updatedDate: '2026-09-27T02:53:57'
+bannerPosition: 13%
 ---
 
 ![banner](banner.jpg)
