@@ -78,6 +78,7 @@ function serializeMeta(meta: PostMeta): string {
     tags: meta.tags.length > 0 ? meta.tags : undefined,
     draft: meta.draft,
     ...(meta.updatedDate ? { updatedDate: meta.updatedDate } : {}),
+    ...(meta.bannerPosition ? { bannerPosition: meta.bannerPosition } : {}),
   };
   return yaml.dump(clean, { lineWidth: 90 }).trimEnd();
 }
@@ -139,6 +140,9 @@ async function readPostFile(id: string): Promise<{ body: string; meta: PostMeta 
     draft: typeof data.draft === 'boolean' ? data.draft : true,
     ...(data.updatedDate
       ? { updatedDate: String(data.updatedDate).slice(0, 10) }
+      : {}),
+    ...(data.bannerPosition
+      ? { bannerPosition: String(data.bannerPosition) }
       : {}),
   };
 
