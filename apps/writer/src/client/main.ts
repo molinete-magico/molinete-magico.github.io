@@ -331,27 +331,33 @@ function setBannerPosition(value: string) {
   bannerPosition.value = String(Math.round(numeric));
   bannerPositionValue.textContent = String(Math.round(numeric)) + '%';
 
-  // O preview usa um <img> real e calcula o deslocamento disponível.
-  // Isso torna 0%, 50% e 100% determinísticos, independentemente da
-  // proporção da imagem.
+  // O preview representa o mesmo enquadramento de uma imagem com
+  // object-fit: cover + object-position horizontal.
   const image = bannerCropImage as HTMLImageElement;
   const cropWidth = bannerCrop.clientWidth;
   const cropHeight = bannerCrop.clientHeight;
 
   if (!image.naturalWidth || !image.naturalHeight || !cropWidth || !cropHeight) {
-    image.style.transform = 'translateX(0)';
+    image.style.width = '';
+    image.style.height = '';
+    image.style.transform = 'translate3d(0, 0, 0)';
     return;
   }
 
-  const renderedWidth = cropHeight * (image.naturalWidth / image.naturalHeight);
-  const overflow = Math.max(0, renderedWidth - cropWidth);
-  const offset = overflow * (numeric / 100);
+  // cover: a imagem sempre preenche todo o recorte.
+  const scale = Math.max(
+    cropWidth / image.naturalWidth,
+    cropHeight / image.naturalHeight,
+  );
+  const renderedWidth = image.naturalWidth * scale;
+  const renderedHeight = image.naturalHeight * scale;
+  const overflowX = Math.max(0, renderedWidth - cropWidth);
+  const offsetX = overflowX * (numeric / 100);
 
   image.style.width = renderedWidth + 'px';
-  image.style.height = cropHeight + 'px';
-  image.style.transform = 'translate3d(' + (-offset) + 'px, 0, 0)';
+  image.style.height = renderedHeight + 'px';
+  image.style.transform = 'translate3d(' + (-offsetX) + 'px, 0, 0)';
 }
-
 async function loadBannerPreview(id: string) {
   state.bannerAvailable = false;
   bannerEditor.hidden = true;
