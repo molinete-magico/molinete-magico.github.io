@@ -394,7 +394,7 @@ async function loadBannerPreview(id: string) {
 }
 
 let bannerDragging = false;
-let bannerDragStartX = 0;
+let bannerDragStartY = 0;
 let bannerDragStartPosition = 50;
 let bannerDragMoved = false;
 
@@ -415,7 +415,7 @@ bannerCrop.addEventListener('pointerdown', (event) => {
   event.preventDefault();
   bannerDragging = true;
   bannerDragMoved = false;
-  bannerDragStartX = event.clientX;
+  bannerDragStartY = event.clientY;
   bannerDragStartPosition = Number(bannerPosition.value);
   bannerCrop.setPointerCapture(event.pointerId);
   bannerCrop.classList.add('dragging');
@@ -424,10 +424,10 @@ bannerCrop.addEventListener('pointerdown', (event) => {
 bannerCrop.addEventListener('pointermove', (event) => {
   if (!bannerDragging) return;
   const rect = bannerCrop.getBoundingClientRect();
-  if (!rect.width) return;
+  if (!rect.height) return;
 
-  const deltaX = event.clientX - bannerDragStartX;
-  if (Math.abs(deltaX) > 2) bannerDragMoved = true;
+  const deltaY = event.clientY - bannerDragStartY;
+  if (Math.abs(deltaY) > 2) bannerDragMoved = true;
 
   // O valor salvo é exatamente o mesmo conceito usado pelo site:
   // 0% = extremo esquerdo, 50% = centro, 100% = extremo direito.
@@ -437,7 +437,7 @@ bannerCrop.addEventListener('pointermove', (event) => {
   // Como a imagem se move no sentido oposto ao cursor, o sinal é invertido.
   // O enquadramento é vertical. O arraste horizontal continua sendo
   // usado como controle prático, mas agora altera a posição vertical.
-  const delta = (deltaX / rect.width) * 100;
+  const delta = (deltaY / rect.height) * 100;
   setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
 });
 
@@ -457,8 +457,8 @@ bannerCrop.addEventListener('lostpointercapture', () => {
 bannerCrop.addEventListener('click', (event) => {
   if (bannerDragging || bannerDragMoved) return;
   const rect = bannerCrop.getBoundingClientRect();
-  if (!rect.width) return;
-  const position = ((event.clientX - rect.left) / rect.width) * 100;
+  if (!rect.height) return;
+  const position = ((event.clientY - rect.left) / rect.height) * 100;
   setBannerPosition(String(Math.max(0, Math.min(100, position))));
   state.dirty.meta = true;
   scheduleAutosave();
