@@ -1,12 +1,12 @@
 ---
 title: 'Devlog <blog> #3 - Banners e nova interface do writer'
 description: deu trabalho essa daqui (eu e gpt quebramos a cabeça)
-pubDate: '2026-09-27T13:07:22'
+pubDate: '2026-09-27T13:08:18'
 tags:
   - devlog
   - blog
 draft: false
-updatedDate: '2026-09-27T13:07:22'
+updatedDate: '2026-09-27T13:08:18'
 bannerPosition: 47%
 ---
 
@@ -18,4 +18,4 @@ esse daqui é só o teste pro banner também, pra mostrar qual que é a deles. (
 
 ![lilith](lilith.jpg)
 
-aliás, pedi pro gpt fazer uma nova interfaçce pro software que eu utilizo pra escrever, ele realmente ficou MUITO melhor
+aliás, pedi pro gpt fazer uma nova interface pro software que eu utilizo pra escrever, realmente ficou MUITO melhor (quem diria que uma ferramenta feita pra me substituir seria realmente melhor que eu)
