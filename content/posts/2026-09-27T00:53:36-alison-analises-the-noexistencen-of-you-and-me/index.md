@@ -8,8 +8,6 @@ draft: false
 updatedDate: '2026-09-27T01:29:41'
 ---
 
-![20260927005942_1](20260927005942_1.jpg)
-
 É difícil descrever esse jogo em poucas palavras, principalmente os sentimentos mistos que ele me traz.
 
 É um jogo curto, pra ser zerado em uma tarde só, principalmente se você tiver tempo livre (ou estiver procrastinando como eu).
