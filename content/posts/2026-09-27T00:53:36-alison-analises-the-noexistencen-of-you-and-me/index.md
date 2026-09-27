@@ -1,11 +1,11 @@
 ---
 title: Molinalises - The NOexistenceN of you AND me
 description: Você existe
-pubDate: '2026-09-27T01:23:43'
+pubDate: '2026-09-27T01:27:25'
 tags:
   - analise
 draft: false
-updatedDate: '2026-09-27T01:23:43'
+updatedDate: '2026-09-27T01:27:25'
 ---
 
 ![20260927005942_1](20260927005942_1.jpg)
@@ -49,7 +49,7 @@ São poucas músicas, mas elas ficam muito bem marcadas na mente, como o jogo é
 
 Agora é uma parte meio complicada, o jogo é muito bom, isso é inquestionável, mas minha experiência pessoal com ele teve altos e baixos.
 
-Não sou muito de jogar jogos com escolhas e finais diferentes, principalmente que você precisa rejogar o jogo INTEIRO pra ter o final (atrasei bastante OMORI por isso), então, esse foi o primeiro jogo que rejoguei inteiro (e inclusive platinei). Não acho que seja um problema, mas rejogar um capitulo inteiro e fechar pra prosseguir a história com uma conquista é meio chato (fiz isso depois de fazer o primeiro final).
+Não sou muito de jogar jogos com escolhas e finais diferentes, principalmente que você precisa rejogar o jogo INTEIRO pra ter o final (atrasei bastante OMORI por isso), então, esse foi o primeiro jogo desse tipo que rejoguei inteiro (e inclusive platinei). Não acho que seja um problema, mas rejogar um capitulo inteiro e fechar pra prosseguir a história com uma conquista é meio chato (fiz isso depois de fazer o primeiro final).
 
 Ainda falando sobre o final, esperava algo bastante impactante, (especialmente depois do capítulo 3), mas simplesmente minhas expectativas não foram muito bem atendidas, os finais são algo bem mais simples do que parecem. Não é algo ruim, mas acredito que tive expectativas maiores do que deveria ter dos finais.
 
@@ -61,10 +61,12 @@ Pra proposta de tratar tanto de existencialismo esse jogo é *muito* raso, vári
 
 O jogo com certeza vale muito muito muito a pena, principalmente se for pra ter uma gameplay cega.
 
-Não me deu um hype absurdo nem uma mudança drástica de visão de mundo, mas me fez sentir apego a lilith e sentir emoções boas jogando o jogo.
+Não me deu um hype absurdo nem uma mudança drástica de visão de mundo, mas me fez sentir apego a lilith e emoções boas e ruins jogando.
 
 O jogo é um 7/10 (beirando o 6/10) de experiência própria, mas dou total razão pra quem acha que o jogo é um 8 ou superior.
 
 Com certeza vou continuar ouvindo as músicas do jogo e vez ou outra lembrar dele.
+
+Algumas polêmicas quanto a equipe do produção do jogo também me deixaram bem triste com o caminho que a continuação do jogo levou, sendo um JRPG sem a maioria da equipe original do primeiro game. Perdi bastante o hype pra continuar acompanhando a franquia.
 
 E sim, eu acho que ela existe.
