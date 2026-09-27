@@ -125,6 +125,21 @@ app.innerHTML = `
 
       <textarea id="field-description" placeholder="Descrição curta (usada nos cards e SEO)" rows="2" aria-label="Descrição"></textarea>
 
+      <section id="banner-editor" class="banner-editor" hidden>
+        <div class="banner-editor-head">
+          <div>
+            <strong>Banner</strong>
+            <span id="banner-status" class="pane-hint">arraste a imagem para escolher o enquadramento</span>
+          </div>
+          <output id="banner-position-value">50%</output>
+        </div>
+        <div id="banner-crop" class="banner-crop" tabindex="0" aria-label="Enquadramento do banner">
+          <div id="banner-crop-image" class="banner-crop-image"></div>
+          <div class="banner-crop-fade" aria-hidden="true"></div>
+        </div>
+        <input id="field-banner-position" type="range" min="0" max="100" value="50" step="1" aria-label="Posição horizontal do banner" />
+      </section>
+
       <div class="split">
         <div class="pane">
           <div class="pane-label">
@@ -233,6 +248,12 @@ const fieldTitle = $('#field-title') as HTMLInputElement;
 const fieldDate = $('#field-date') as HTMLInputElement;
 const fieldDraft = $('#field-draft') as HTMLInputElement;
 const fieldDescription = $('#field-description') as HTMLTextAreaElement;
+const bannerEditor = $('#banner-editor')!;
+const bannerCrop = $('#banner-crop')!;
+const bannerCropImage = $('#banner-crop-image')!;
+const bannerPosition = $('#field-banner-position') as HTMLInputElement;
+const bannerPositionValue = $('#banner-position-value')!;
+const bannerStatus = $('#banner-status')!;
 const fieldTags = $('#field-tags') as HTMLInputElement;
 const emptyState = $('#empty-state')!;
 const editorView = $('#editor-view')!;
@@ -281,6 +302,8 @@ async function openPost(id: string) {
   fieldDate.value = p.file.pubDate;
   fieldDraft.checked = p.file.draft;
   fieldDescription.value = p.file.description;
+  setBannerPosition(p.file.bannerPosition ?? '50%');
+  await loadBannerPreview(p.id);
   tags = p.file.tags ?? [];
   state.tagsDirty = false;
   renderTags();
@@ -301,6 +324,68 @@ async function openPost(id: string) {
   fieldTitle.focus();
 }
 
+function setBannerPosition(value: string) {
+  const numeric = Math.max(0, Math.min(100, Number.parseFloat(value) || 50));
+  bannerPosition.value = String(Math.round(numeric));
+  bannerPositionValue.textContent = String(Math.round(numeric)) + '%';
+  bannerCropImage.style.backgroundPosition = String(numeric) + '% center';
+}
+
+async function loadBannerPreview(id: string) {
+  bannerEditor.hidden = true;
+  try {
+    const res = await fetch('/api/post/' + encodeURIComponent(id) + '/banner');
+    if (!res.ok) {
+      bannerStatus.textContent = 'adicione uma imagem chamada banner.jpg, banner.png ou banner.webp';
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    bannerCropImage.style.backgroundImage = 'url("' + url + '")';
+    bannerEditor.hidden = false;
+    setBannerPosition(state.current?.file.bannerPosition ?? '50%');
+  } catch {
+    bannerStatus.textContent = 'não foi possível carregar o banner';
+  }
+}
+
+let bannerDragging = false;
+let bannerDragStartX = 0;
+let bannerDragStartPosition = 50;
+
+bannerCrop.addEventListener('pointerdown', (event) => {
+  if (bannerEditor.hidden) return;
+  bannerDragging = true;
+  bannerDragStartX = event.clientX;
+  bannerDragStartPosition = Number(bannerPosition.value);
+  bannerCrop.setPointerCapture(event.pointerId);
+  bannerCrop.classList.add('dragging');
+});
+
+bannerCrop.addEventListener('pointermove', (event) => {
+  if (!bannerDragging) return;
+  const rect = bannerCrop.getBoundingClientRect();
+  if (!rect.width) return;
+  const delta = ((event.clientX - bannerDragStartX) / rect.width) * -100;
+  setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
+});
+
+bannerCrop.addEventListener('pointerup', (event) => {
+  bannerDragging = false;
+  bannerCrop.releasePointerCapture(event.pointerId);
+  bannerCrop.classList.remove('dragging');
+  state.dirty.meta = true;
+  scheduleAutosave();
+  setSaved(false, 'Alterações não salvas');
+});
+
+bannerPosition.addEventListener('input', () => {
+  setBannerPosition(bannerPosition.value);
+  state.dirty.meta = true;
+  scheduleAutosave();
+  setSaved(false, 'Alterações não salvas');
+});
+
 function currentMeta(): PostMeta {
   return {
     title: fieldTitle.value.trim() || 'Sem título',
@@ -308,6 +393,7 @@ function currentMeta(): PostMeta {
     pubDate: fieldDate.value || todayClient(),
     tags: tags,
     draft: fieldDraft.checked,
+    ...(bannerEditor.hidden ? {} : { bannerPosition: `${Math.round(Number(bannerPosition.value))}%` }),
   };
 }
 
