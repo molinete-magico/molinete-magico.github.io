@@ -669,6 +669,10 @@ th {
   border-bottom: none;
 }
 
+.entry-list > .entry {
+  margin-top: 0;
+}
+
 .entry {
   display: flex;
   justify-content: space-between;
