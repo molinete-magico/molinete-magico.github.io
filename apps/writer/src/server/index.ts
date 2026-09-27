@@ -16,6 +16,7 @@ import { readFileSync, existsSync, readFile } from 'node:fs';
 import {
   listPosts,
   readPost,
+  readPostBanner,
   createPost,
   savePost,
   deletePost,
@@ -25,7 +26,7 @@ import {
 } from './content.ts';
 import { gitStatus, commit, push, canPush, pull } from './git.ts';
 import type { PostMeta } from '../shared/types.ts';
-import { PORT, repoRoot, contentRoot, postsRoot, clientDir, setRepoRoot } from './fs.ts';
+import { PORT, repoRoot, contentRoot, clientDir, setRepoRoot } from './fs.ts';
 
 function clientAsset(filename: string, contentType: string) {
   const file = path.join(clientDir(), filename);
@@ -161,26 +162,21 @@ app.get('/api/post/:id', async (c) => {
 });
 
 
-app.get('/api/post/:id/banner', async (c) => {
+// O id vai por query string para não depender do encoding de ':' ou
+// outros caracteres presentes no slug gerado pelo Writer.
+app.get('/api/post-banner', async (c) => {
   try {
-    const id = c.req.param('id');
-    const folder = path.join(postsRoot(), id);
-    const names = ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg'];
-    const name = names.find((candidate) => existsSync(path.join(folder, candidate)));
-    if (!name) return c.json({ error: 'Este post não possui banner.' }, 404);
+    const id = c.req.query('post');
+    if (!id) return c.json({ error: 'Post não informado.' }, 400);
 
-    const file = await readFile(path.join(folder, name));
-    const type = name.endsWith('.webp')
-      ? 'image/webp'
-      : name.endsWith('.png')
-        ? 'image/png'
-        : 'image/jpeg';
+    const banner = await readPostBanner(id);
 
-    return new Response(file, {
+    return new Response(banner.buffer, {
       status: 200,
       headers: {
-        'Content-Type': type,
+        'Content-Type': banner.contentType,
         'Cache-Control': 'no-store',
+        'X-Writer-Banner': banner.name,
       },
     });
   } catch (err) {
