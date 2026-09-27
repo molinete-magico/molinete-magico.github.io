@@ -594,10 +594,17 @@ button:disabled {
 
 .banner-crop-image {
   position: absolute;
-  inset: 0;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-position: 50% center;
+  top: 0;
+  left: 0;
+  display: block;
+  width: auto;
+  max-width: none;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+  object-fit: fill;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
 }
 
 .banner-crop-fade {
