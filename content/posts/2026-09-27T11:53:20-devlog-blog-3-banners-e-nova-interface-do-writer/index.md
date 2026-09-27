@@ -1,9 +1,11 @@
 ---
 title: 'Devlog <blog> #3 - Banners e nova interface do writer'
 description: deu trabalho essa daqui (eu e gpt quebramos a cabeça)
-pubDate: '2026-09-27T13:05:02'
+pubDate: '2026-09-27T13:05:55'
+tags:
+  - devlog
 draft: false
-updatedDate: '2026-09-27T13:05:02'
+updatedDate: '2026-09-27T13:05:55'
 bannerPosition: 47%
 ---
 
@@ -14,3 +16,5 @@ basicamente foi só isso que tivemos por hora. Penso em faer um tipo de postagem
 esse daqui é só o teste pro banner também, pra mostrar qual que é a deles. (queria botar mais uma imagem da lilith, mas pensei que seria estranho dms ter 2 banners dela um em seguida do outro, então, olá hatsune miku)
 
 ![lilith](lilith.jpg)
+
+aliás, pedi pro gpt fazer uma nova interfaçce pro software que eu utilizo pra escrever, ele realmente ficou MUITO melhor
