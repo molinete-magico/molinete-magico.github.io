@@ -10,6 +10,8 @@ export interface PostMeta {
   tags: string[];
   draft: boolean;
   updatedDate?: string;
+  /** Posição horizontal do enquadramento do banner, em %. */
+  bannerPosition?: string;
 }
 
 // Representação completa de um post como visto pelo editor.
