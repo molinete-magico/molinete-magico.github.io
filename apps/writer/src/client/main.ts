@@ -352,10 +352,25 @@ async function loadBannerPreview(id: string) {
 let bannerDragging = false;
 let bannerDragStartX = 0;
 let bannerDragStartPosition = 50;
+let bannerDragMoved = false;
+
+function finishBannerDrag(event?: PointerEvent) {
+  if (!bannerDragging) return;
+  bannerDragging = false;
+  if (event && bannerCrop.hasPointerCapture(event.pointerId)) {
+    bannerCrop.releasePointerCapture(event.pointerId);
+  }
+  bannerCrop.classList.remove('dragging');
+  state.dirty.meta = true;
+  scheduleAutosave();
+  setSaved(false, 'Alterações não salvas');
+}
 
 bannerCrop.addEventListener('pointerdown', (event) => {
-  if (bannerEditor.hidden) return;
+  if (bannerEditor.hidden || event.button !== 0) return;
+  event.preventDefault();
   bannerDragging = true;
+  bannerDragMoved = false;
   bannerDragStartX = event.clientX;
   bannerDragStartPosition = Number(bannerPosition.value);
   bannerCrop.setPointerCapture(event.pointerId);
@@ -366,14 +381,37 @@ bannerCrop.addEventListener('pointermove', (event) => {
   if (!bannerDragging) return;
   const rect = bannerCrop.getBoundingClientRect();
   if (!rect.width) return;
-  const delta = ((event.clientX - bannerDragStartX) / rect.width) * -100;
+
+  const deltaX = event.clientX - bannerDragStartX;
+  if (Math.abs(deltaX) > 2) bannerDragMoved = true;
+
+  // O valor salvo é exatamente o mesmo conceito usado pelo site:
+  // 0% = extremo esquerdo, 50% = centro, 100% = extremo direito.
+  // O sinal é invertido porque arrastar a imagem para a direita
+  // revela uma região mais à esquerda da imagem.
+  const delta = (deltaX / rect.width) * -100;
   setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
 });
 
 bannerCrop.addEventListener('pointerup', (event) => {
-  bannerDragging = false;
-  bannerCrop.releasePointerCapture(event.pointerId);
-  bannerCrop.classList.remove('dragging');
+  finishBannerDrag(event);
+});
+
+bannerCrop.addEventListener('pointercancel', (event) => {
+  finishBannerDrag(event);
+});
+
+bannerCrop.addEventListener('lostpointercapture', () => {
+  if (bannerDragging) finishBannerDrag();
+});
+
+// Um clique simples também posiciona o foco, sem exigir arrastar.
+bannerCrop.addEventListener('click', (event) => {
+  if (bannerDragging || bannerDragMoved) return;
+  const rect = bannerCrop.getBoundingClientRect();
+  if (!rect.width) return;
+  const position = ((event.clientX - rect.left) / rect.width) * 100;
+  setBannerPosition(String(Math.max(0, Math.min(100, position))));
   state.dirty.meta = true;
   scheduleAutosave();
   setSaved(false, 'Alterações não salvas');
