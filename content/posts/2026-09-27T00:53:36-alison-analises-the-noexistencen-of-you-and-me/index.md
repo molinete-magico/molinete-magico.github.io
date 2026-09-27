@@ -1,13 +1,14 @@
 ---
 title: Molinalises - The NOexistenceN of you AND me
 description: Você existe
-pubDate: '2026-09-27T01:29:41'
+pubDate: '2026-09-27T02:21:12'
 tags:
   - analise
 draft: false
-bannerPosition: 50%
-updatedDate: '2026-09-27T01:29:41'
+updatedDate: '2026-09-27T02:21:12'
 ---
+
+![banner](banner.jpg)
 
 É difícil descrever esse jogo em poucas palavras, principalmente os sentimentos mistos que ele me traz.
 
