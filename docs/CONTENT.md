@@ -79,22 +79,24 @@ O Writer mostra claramente se um documento é rascunho ou publicado.
 1. Imagens ficam na mesma pasta do post
 2. Use formatos modernos quando possível (WebP, PNG)
 3. Nomes descritivos em minúsculas: `banner.png`, `diagrama-arquitetura.png`
-4. Referencie com caminho relativo: `![alt](banner.png)`
+4. Para uma imagem de capa automática, use o nome `banner.webp`, `banner.png`, `banner.jpg` ou `banner.jpeg`
+5. O banner é detectado automaticamente e aparece no topo do post; não é necessário referenciá-lo no Markdown
+6. Para imagens comuns do conteúdo, referencie com caminho relativo: `![alt](imagem.png)`
 
 ### Exemplo
 
 ```
 content/posts/2026-09-17-comecando/
 ├── index.md           → post principal
-├── banner.png         → imagem de capa
+├── banner.png         → capa automática
 └── screenshot.png     → imagem no conteúdo
 ```
 
-No Markdown:
+O arquivo `banner.png` é reconhecido automaticamente como capa e aparece no topo do post. Ele não precisa estar escrito no `index.md`.
+
+As demais imagens continuam sendo inseridas normalmente no Markdown:
 
 ```markdown
-![Banner do post](banner.png)
-
 # Título
 
 ...
