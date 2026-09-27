@@ -438,7 +438,9 @@ bannerCrop.addEventListener('pointermove', (event) => {
   // revela uma região mais à esquerda da imagem.
   // O arraste acompanha diretamente a faixa de enquadramento.
   // Como a imagem se move no sentido oposto ao cursor, o sinal é invertido.
-  const delta = (deltaX / rect.width) * -100;
+  // Converte o movimento do mouse para a faixa de enquadramento.
+  // A área de arraste representa 0%..100% diretamente.
+  const delta = (deltaX / rect.width) * 100;
   setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
 });
 
