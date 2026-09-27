@@ -12,7 +12,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import path from 'node:path';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readFile } from 'node:fs';
 import {
   listPosts,
   readPost,
@@ -155,6 +155,34 @@ app.get('/api/posts', async (c) => c.json(await listPosts()));
 app.get('/api/post/:id', async (c) => {
   try {
     return c.json(await readPost(c.req.param('id')));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 404);
+  }
+});
+
+
+app.get('/api/post/:id/banner', async (c) => {
+  try {
+    const post = await readPost(c.req.param('id'));
+    const folder = path.join(contentRoot(), path.dirname(post.path));
+    const names = ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg'];
+    const name = names.find((candidate) => existsSync(path.join(folder, candidate)));
+    if (!name) return c.json({ error: 'Este post não possui banner.' }, 404);
+
+    const file = await readFile(path.join(folder, name));
+    const type = name.endsWith('.webp')
+      ? 'image/webp'
+      : name.endsWith('.png')
+        ? 'image/png'
+        : 'image/jpeg';
+
+    return new Response(file, {
+      status: 200,
+      headers: {
+        'Content-Type': type,
+        'Cache-Control': 'no-store',
+      },
+    });
   } catch (err) {
     return c.json({ error: (err as Error).message }, 404);
   }
