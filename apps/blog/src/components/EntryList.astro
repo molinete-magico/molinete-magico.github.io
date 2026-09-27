@@ -40,7 +40,10 @@ function getBanner(entry: PostEntry) {
       const banner = getBanner(entry);
 
       return (
-        <li class:list={['entry', { 'entry--banner': Boolean(banner) }]}>
+        <li
+          class:list={['entry', { 'entry--banner': Boolean(banner) }]}
+          style={banner ? `--banner-position: ${entry.data.bannerPosition ?? '50%'};` : undefined}
+        >
           {banner ? (
             <img
               class="entry-banner"
@@ -100,7 +103,7 @@ function getBanner(entry: PostEntry) {
     width: min(46%, 24rem);
     height: 100%;
     object-fit: cover;
-    object-position: center;
+    object-position: var(--banner-position, 50%) center;
     opacity: 0.52;
 
     /* A imagem começa visível no extremo direito e desaparece
