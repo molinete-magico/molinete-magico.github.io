@@ -45,13 +45,13 @@ function getBanner(entry: PostEntry) {
           style={banner ? `--banner-position: ${entry.data.bannerPosition ?? '50%'};` : undefined}
         >
           {banner ? (
-            <img
+            <div
               class="entry-banner"
-              src={banner}
-              alt=""
+              role="img"
+              aria-label=""
+              style={`background-image: url("${banner}");`}
               aria-hidden="true"
-              loading="lazy"
-            />
+            ></div>
           ) : null}
 
           <div class="entry-content">
@@ -102,8 +102,9 @@ function getBanner(entry: PostEntry) {
     right: 0;
     width: min(46%, 24rem);
     height: 100%;
-    object-fit: cover;
-    object-position: var(--banner-position, 50%) center;
+    background-size: auto 220%;
+    background-position: var(--banner-position, 50%) center;
+    background-repeat: no-repeat;
     opacity: 0.52;
 
     /* A imagem começa visível no extremo direito e desaparece
