@@ -5,6 +5,7 @@ pubDate: '2026-09-27T01:29:41'
 tags:
   - analise
 draft: false
+bannerPosition: 50%
 updatedDate: '2026-09-27T01:29:41'
 ---
 
