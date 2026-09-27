@@ -50,12 +50,46 @@ export function today(): string {
 //   content/posts/<slug>.md                (sem imagens)
 //   content/posts/<slug>/index.md          (post-pasta, com imagens junto)
 // Esta função resolve qual dos dois caminhos existe (ou lança erro).
-async function resolvePostFile(id: string): Promise<string> {
+export async function resolvePostFile(id: string): Promise<string> {
   const asFile = path.join(postsRoot(), `${id}.md`);
   const asFolder = path.join(postsRoot(), id, 'index.md');
   if (await exists(asFile)) return asFile;
   if (await exists(asFolder)) return asFolder;
   throw new Error(`Post não encontrado: ${id}`);
+}
+
+/**
+ * Resolve o banner usando o mesmo arquivo que identifica o post.
+ * Assim não existe uma segunda lógica de caminho para o banner.
+ */
+export async function readPostBanner(id: string): Promise<{
+  buffer: Buffer;
+  contentType: string;
+  name: string;
+}> {
+  const postFile = await resolvePostFile(id);
+  const folder = path.dirname(postFile);
+  const names = ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg'];
+
+  for (const name of names) {
+    const filePath = path.join(folder, name);
+    if (await exists(filePath)) {
+      const contentType =
+        name.endsWith('.webp')
+          ? 'image/webp'
+          : name.endsWith('.png')
+            ? 'image/png'
+            : 'image/jpeg';
+
+      return {
+        buffer: await fs.readFile(filePath),
+        contentType,
+        name,
+      };
+    }
+  }
+
+  throw new Error('Este post não possui banner.');
 }
 
 async function exists(p: string): Promise<boolean> {
