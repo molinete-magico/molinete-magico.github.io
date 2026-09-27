@@ -6,6 +6,7 @@ tags:
   - analise
 draft: false
 updatedDate: '2026-09-27T02:21:12'
+bannerPosition: 50%
 ---
 
 ![banner](banner.jpg)
