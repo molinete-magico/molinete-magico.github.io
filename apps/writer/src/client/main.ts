@@ -331,8 +331,9 @@ function setBannerPosition(value: string) {
   bannerPosition.value = String(Math.round(numeric));
   bannerPositionValue.textContent = String(Math.round(numeric)) + '%';
 
-  // O preview representa o mesmo enquadramento de uma imagem com
-  // object-fit: cover + object-position horizontal.
+  // O enquadramento do banner é vertical: 0% = topo, 50% = centro,
+  // 100% = base. Mantemos a imagem inteira na largura do preview e
+  // usamos o excesso vertical para calcular o deslocamento.
   const image = bannerCropImage as HTMLImageElement;
   const cropWidth = bannerCrop.clientWidth;
   const cropHeight = bannerCrop.clientHeight;
@@ -344,19 +345,15 @@ function setBannerPosition(value: string) {
     return;
   }
 
-  // cover: a imagem sempre preenche todo o recorte.
-  const scale = Math.max(
-    cropWidth / image.naturalWidth,
-    cropHeight / image.naturalHeight,
-  );
-  const renderedWidth = image.naturalWidth * scale;
+  const scale = cropWidth / image.naturalWidth;
+  const renderedWidth = cropWidth;
   const renderedHeight = image.naturalHeight * scale;
-  const overflowX = Math.max(0, renderedWidth - cropWidth);
-  const offsetX = overflowX * (numeric / 100);
+  const overflowY = Math.max(0, renderedHeight - cropHeight);
+  const offsetY = overflowY * (numeric / 100);
 
   image.style.width = renderedWidth + 'px';
   image.style.height = renderedHeight + 'px';
-  image.style.transform = 'translate3d(' + (-offsetX) + 'px, 0, 0)';
+  image.style.transform = 'translate3d(0, ' + (-offsetY) + 'px, 0)';
 }
 async function loadBannerPreview(id: string) {
   state.bannerAvailable = false;
@@ -438,8 +435,8 @@ bannerCrop.addEventListener('pointermove', (event) => {
   // revela uma região mais à esquerda da imagem.
   // O arraste acompanha diretamente a faixa de enquadramento.
   // Como a imagem se move no sentido oposto ao cursor, o sinal é invertido.
-  // Converte o movimento do mouse para a faixa de enquadramento.
-  // A área de arraste representa 0%..100% diretamente.
+  // O enquadramento é vertical. O arraste horizontal continua sendo
+  // usado como controle prático, mas agora altera a posição vertical.
   const delta = (deltaX / rect.width) * 100;
   setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
 });
