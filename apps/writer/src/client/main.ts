@@ -136,7 +136,7 @@ app.innerHTML = `
           <output id="banner-position-value">50%</output>
         </div>
         <div id="banner-crop" class="banner-crop" tabindex="0" aria-label="Enquadramento do banner">
-          <div id="banner-crop-image" class="banner-crop-image"></div>
+          <img id="banner-crop-image" class="banner-crop-image" alt="" draggable="false" />
           <div class="banner-crop-fade" aria-hidden="true"></div>
         </div>
         <input id="field-banner-position" type="range" min="0" max="100" value="50" step="1" aria-label="Posição horizontal do banner" />
@@ -330,13 +330,33 @@ function setBannerPosition(value: string) {
   const numeric = Math.max(0, Math.min(100, Number.parseFloat(value) || 50));
   bannerPosition.value = String(Math.round(numeric));
   bannerPositionValue.textContent = String(Math.round(numeric)) + '%';
-  bannerCropImage.style.backgroundPosition = String(numeric) + '% center';
+
+  // O preview usa um <img> real e calcula o deslocamento disponível.
+  // Isso torna 0%, 50% e 100% determinísticos, independentemente da
+  // proporção da imagem.
+  const image = bannerCropImage as HTMLImageElement;
+  const cropWidth = bannerCrop.clientWidth;
+  const cropHeight = bannerCrop.clientHeight;
+
+  if (!image.naturalWidth || !image.naturalHeight || !cropWidth || !cropHeight) {
+    image.style.transform = 'translateX(0)';
+    return;
+  }
+
+  const renderedWidth = cropHeight * (image.naturalWidth / image.naturalHeight);
+  const overflow = Math.max(0, renderedWidth - cropWidth);
+  const offset = overflow * (numeric / 100);
+
+  image.style.width = renderedWidth + 'px';
+  image.style.height = cropHeight + 'px';
+  image.style.transform = 'translate3d(' + (-offset) + 'px, 0, 0)';
 }
 
 async function loadBannerPreview(id: string) {
   state.bannerAvailable = false;
   bannerEditor.hidden = true;
-  bannerCropImage.style.backgroundImage = '';
+  (bannerCropImage as HTMLImageElement).removeAttribute('src');
+  bannerCropImage.style.transform = 'translate3d(0, 0, 0)';
   bannerStatus.textContent = 'procurando banner...';
 
   try {
@@ -353,8 +373,14 @@ async function loadBannerPreview(id: string) {
 
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
+    const image = bannerCropImage as HTMLImageElement;
 
-    bannerCropImage.style.backgroundImage = 'url("' + url + '")';
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(new Error('Não foi possível carregar o banner.'));
+      image.src = url;
+    });
+
     state.bannerAvailable = true;
     bannerEditor.hidden = false;
     bannerStatus.textContent = 'arraste a imagem ou use a barra para escolher o enquadramento';
@@ -404,6 +430,8 @@ bannerCrop.addEventListener('pointermove', (event) => {
   // 0% = extremo esquerdo, 50% = centro, 100% = extremo direito.
   // O sinal é invertido porque arrastar a imagem para a direita
   // revela uma região mais à esquerda da imagem.
+  // O arraste acompanha diretamente a faixa de enquadramento.
+  // Como a imagem se move no sentido oposto ao cursor, o sinal é invertido.
   const delta = (deltaX / rect.width) * -100;
   setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
 });
