@@ -1,7 +1,7 @@
 ---
 title: Molinalises - The NOexistenceN of you AND me
 description: Você existe
-pubDate: '2026-09-29T00:15:22'
+pubDate: '2026-09-27T00:15:22'
 tags:
   - analise
 draft: false
