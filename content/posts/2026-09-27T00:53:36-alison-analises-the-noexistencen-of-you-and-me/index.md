@@ -1,11 +1,11 @@
 ---
 title: Molinalises - The NOexistenceN of you AND me
 description: Você existe
-pubDate: '2026-09-29T00:08:46'
+pubDate: '2026-09-29T00:08:56'
 tags:
   - analise
 draft: false
-updatedDate: '2026-09-29T00:08:46'
+updatedDate: '2026-09-29T00:08:56'
 bannerPosition: 13%
 ---
 
@@ -15,7 +15,7 @@ bannerPosition: 13%
 
 É um jogo curto, pra ser zerado em uma tarde só, principalmente se você tiver tempo livre (ou estiver procrastinando como eu).
 
-O foco do jogo é falar sobre existencialismo, e sua relação com a lilith.
+O foco do jogo é falar sobre existencialismo e sua relação com a lilith.
 
 Primeira coisa diferente que faço aqui no blog, de vez em nunca vou soltar uma analise ou outra de um joguinho aqui, nada muito elaborado, apenas pra lembrar depois de muito tempo sem jogar.
 
