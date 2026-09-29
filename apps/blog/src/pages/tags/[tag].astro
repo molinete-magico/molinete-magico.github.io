@@ -21,7 +21,9 @@ const { tag, posts } = Astro.props as {
   posts: Awaited<ReturnType<typeof getCollection<'posts'>>>;
 };
 
-const filteredPosts = posts.filter((p) => p.data.tags.includes(tag));
+const filteredPosts = posts
+  .filter((p) => p.data.tags.includes(tag))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 ---
 
 <BaseLayout

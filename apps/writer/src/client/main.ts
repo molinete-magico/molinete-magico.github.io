@@ -301,7 +301,7 @@ async function openPost(id: string) {
   const p = state.current;
 
   fieldTitle.value = p.file.title;
-  fieldDate.value = p.file.pubDate;
+  fieldDate.value = p.file.pubDate.slice(0, 10);
   fieldDraft.checked = p.file.draft;
   fieldDescription.value = p.file.description;
   setBannerPosition(p.file.bannerPosition ?? '50%');
@@ -473,10 +473,16 @@ bannerPosition.addEventListener('input', () => {
 });
 
 function currentMeta(): PostMeta {
+  const original = state.current?.file.pubDate ?? '';
+  const chosen = fieldDate.value || todayClient();
+  // O campo de data só mostra o dia (YYYY-MM-DD). Se o usuário não
+  // alterou a data, mantemos o pubDate original do arquivo intacto —
+  // editar um post nunca deve mudar quando ele foi publicado.
+  const keepOriginal = Boolean(state.current) && original.slice(0, 10) === chosen;
   return {
     title: fieldTitle.value.trim() || 'Sem título',
     description: fieldDescription.value.trim(),
-    pubDate: fieldDate.value || todayClient(),
+    pubDate: keepOriginal ? original : chosen,
     tags: tags,
     draft: fieldDraft.checked,
     ...(state.bannerAvailable

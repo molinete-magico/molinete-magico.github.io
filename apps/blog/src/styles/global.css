@@ -774,6 +774,11 @@ th {
   color: var(--text-muted);
 }
 
+.post-edited {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
 .post-body { padding-bottom: var(--space-8); }
 .post-body .prose { padding-top: var(--space-4); }
 .post-body .prose > *:first-child { margin-top: 0; }

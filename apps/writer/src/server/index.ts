@@ -171,7 +171,7 @@ app.get('/api/post-banner', async (c) => {
 
     const banner = await readPostBanner(id);
 
-    return new Response(banner.buffer, {
+    return new Response(new Uint8Array(banner.buffer), {
       status: 200,
       headers: {
         'Content-Type': banner.contentType,

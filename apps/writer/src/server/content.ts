@@ -34,8 +34,17 @@ function slugify(title: string): string {
     .slice(0, 60);
 }
 
-// Gera a data/hora atual no formato ISO local (YYYY-MM-DDTHH:mm:ss),
-// para que posts publicados no mesmo dia sejam ordenados pela hora.
+// Gera a data atual em YYYY-MM-DD. O frontmatter dos posts guarda
+// apenas o dia da publicação/edição — nunca hora.
+export function todayDate(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Gera a data/hora atual no formato ISO local (YYYY-MM-DDTHH:mm:ss).
+// Usado apenas para gerar slugs únicos de novos posts.
 export function today(): string {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -167,7 +176,7 @@ async function readPostFile(id: string): Promise<{ body: string; meta: PostMeta 
   const meta: PostMeta = {
     title: stringOr(data.title, 'Sem título'),
     description: stringOr(data.description, ''),
-    pubDate: stringOr(data.pubDate, today()),
+    pubDate: stringOr(data.pubDate, todayDate()),
     tags: Array.isArray(data.tags)
       ? data.tags.map((t) => String(t))
       : [],
@@ -206,7 +215,7 @@ export async function createPost(title: string): Promise<Post> {
   const meta: PostMeta = {
     title,
     description: '',
-    pubDate: today(),
+    pubDate: todayDate(),
     tags: [],
     draft: true,
   };
@@ -221,13 +230,17 @@ export async function createPost(title: string): Promise<Post> {
 }
 
 // Salva um post existente (ou cria se o arquivo sumiu).
+//
+// A data de publicação NUNCA é sobrescrita por aqui: o cliente manda
+// o pubDate que já estava no arquivo (ou uma data editada pelo usuário)
+// e somente o `updatedDate` é atualizado — e apenas para posts já
+// publicados, marcando quando a última edição aconteceu.
 export async function savePost(id: string, file: PostMeta, body: string): Promise<Post> {
   const filePath = await resolvePostFile(id);
-  const date = file.pubDate || today();
   const meta: PostMeta = {
     ...file,
-    pubDate: date,
-    updatedDate: file.draft ? file.updatedDate : date,
+    pubDate: file.pubDate || todayDate(),
+    updatedDate: file.draft ? file.updatedDate : todayDate(),
   };
   await fs.writeFile(filePath, renderMarkdown(meta, body), 'utf-8');
   return readPost(id);

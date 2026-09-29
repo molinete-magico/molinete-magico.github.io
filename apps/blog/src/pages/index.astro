@@ -8,7 +8,7 @@ const posts = (await getCollection('posts'))
   .filter((p) => !p.data.draft)
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
-const recentPosts = posts.slice(0, 5);
+const recentPosts = posts.slice(0, 10);
 
 // Conta as tags utilizadas nos posts
 const tagCounts = new Map<string, number>();

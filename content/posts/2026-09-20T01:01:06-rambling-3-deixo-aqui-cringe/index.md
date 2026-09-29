@@ -1,11 +1,11 @@
 ---
 title: 'Rambling #3 - Deixo aqui cringe?'
 description: N pode ser tão ruim né?
-pubDate: '2026-09-20T01:10:36'
+pubDate: '2026-09-20'
 tags:
   - rambling
 draft: false
-updatedDate: '2026-09-20T01:10:36'
+updatedDate: '2026-09-20'
 ---
 
 Comentei antes, mas queria mostrar as minhas histórias aqui (o lugar perfeito pra elas já que o leitor é em .md), mas não sei se curto muito a ideia de deixar tão público assim.

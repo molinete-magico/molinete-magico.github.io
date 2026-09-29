@@ -1,11 +1,11 @@
 ---
 title: 'Rambling #4 - A faculdade realmente acaba com o homem'
 description: Eu te odeio PAA, eu te odeio
-pubDate: '2026-09-22T17:05:52'
+pubDate: '2026-09-22'
 tags:
   - rambling
 draft: false
-updatedDate: '2026-09-22T17:05:52'
+updatedDate: '2026-09-22'
 ---
 
 Acho muito engraçado que atualmente ou estou estudando ou pensando em estudar, não tem muito algo fora disso.

@@ -1,11 +1,11 @@
 ---
 title: 'Rambling #2 - Maldito reels do instagram'
 description: ''
-pubDate: '2026-09-19T21:13:22'
+pubDate: '2026-09-19'
 tags:
   - rambling
 draft: false
-updatedDate: '2026-09-19T21:13:22'
+updatedDate: '2026-09-19'
 ---
 
 Esses dias persebi que não consigo mais estudar. Hoje mesmo passei umas 1:30 estudando e já tava querendo parar.
