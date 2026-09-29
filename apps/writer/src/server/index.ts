@@ -22,7 +22,6 @@ import {
   deletePost,
   duplicatePost,
   saveImage,
-  today,
 } from './content.ts';
 import { gitStatus, commit, push, canPush, pull } from './git.ts';
 import type { PostMeta } from '../shared/types.ts';
@@ -190,9 +189,9 @@ app.post('/api/post', async (c) => {
 });
 
 app.post('/api/post/save', async (c) => {
-  const { id, file, body } = await c.req.json();
+  const { id, file, body, changeDate } = await c.req.json();
   try {
-    return c.json(await savePost(id, file, body));
+    return c.json(await savePost(id, file, body, Boolean(changeDate)));
   } catch (err) {
     return c.json({ error: (err as Error).message }, 500);
   }
@@ -268,6 +267,7 @@ app.post('/api/publish', async (c) => {
     id?: unknown;
     file?: unknown;
     body?: unknown;
+    changeDate?: unknown;
   };
   const id = typeof body.id === 'string' ? body.id : '';
   try {
@@ -276,9 +276,9 @@ app.post('/api/publish', async (c) => {
       {
         ...(body.file as Record<string, unknown>),
         draft: false,
-        pubDate: today(),
       } as unknown as PostMeta,
       String(body.body ?? ''),
+      Boolean(body.changeDate),
     );
     const file = (body.file as { title?: unknown }) ?? {};
     const subject = await commit(`post: ${String(file.title ?? id)}`);

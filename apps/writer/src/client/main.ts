@@ -506,6 +506,10 @@ async function saveCurrent(): Promise<boolean> {
       id: state.current.id,
       file: meta,
       body: currentBody(),
+      // Só mudamos a data se o usuário editou o campo de data. O servidor
+      // ignora a data enviada quando isso é false, então até um cliente
+      // velho/equivocado não avança a data de publicação.
+      changeDate: meta.pubDate !== state.current.file.pubDate,
     });
     state.dirty = { title: false, body: false, meta: false };
     state.tagsDirty = false;
@@ -532,6 +536,7 @@ async function publishCurrent() {
       id: state.current.id,
       file: meta,
       body: currentBody(),
+      changeDate: meta.pubDate !== state.current.file.pubDate,
     });
     setSaved(true, `Publicado ✓ ${res.subject}`);
     clearAutosave();

@@ -1,7 +1,7 @@
 ---
 title: 'Devlog <blog> #3 - Banners e nova interface do writer'
 description: deu trabalho essa daqui (eu e gpt quebramos a cabeça)
-pubDate: '2026-09-27'
+pubDate: '2026-09-27T13:21:12Z'
 tags:
   - devlog
   - blog

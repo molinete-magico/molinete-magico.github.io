@@ -132,7 +132,7 @@ function serializeMeta(meta: PostMeta): string {
     title: meta.title,
     description: meta.description,
     pubDate: meta.pubDate,
-    tags: meta.tags.length > 0 ? meta.tags : undefined,
+    tags: (meta.tags ?? []).length > 0 ? meta.tags : undefined,
     draft: meta.draft,
     ...(meta.updatedDate ? { updatedDate: meta.updatedDate } : {}),
     ...(meta.bannerPosition ? { bannerPosition: meta.bannerPosition } : {}),
@@ -245,15 +245,22 @@ export async function createPost(title: string): Promise<Post> {
 
 // Salva um post existente (ou cria se o arquivo sumiu).
 //
-// A data de publicação NUNCA é sobrescrita por aqui: o cliente manda
-// o pubDate que já estava no arquivo (ou uma data editada pelo usuário)
-// e somente o `updatedDate` é atualizado — e apenas para posts já
-// publicados, marcando quando a última edição aconteceu.
-export async function savePost(id: string, file: PostMeta, body: string): Promise<Post> {
+// A data de publicação só muda quando o usuário EDITA o campo de data
+// no escritor (`changeDate`). Publicar ou salvar conteúdo NUNCA avança
+// o pubDate, mesmo que o cliente mande a data "de hoje" por engano:
+// se `changeDate` é falso, mantemos a data que já está no arquivo.
+// Isso vale para qualquer versão do cliente — a garantia mora no servidor.
+export async function savePost(
+  id: string,
+  file: PostMeta,
+  body: string,
+  changeDate = false,
+): Promise<Post> {
   const filePath = await resolvePostFile(id);
+  const existing = await readPost(id);
   const meta: PostMeta = {
     ...file,
-    pubDate: file.pubDate || todayDate(),
+    pubDate: changeDate && file.pubDate ? file.pubDate : existing.file.pubDate,
     updatedDate: file.draft ? file.updatedDate : todayDate(),
   };
   await fs.writeFile(filePath, renderMarkdown(meta, body), 'utf-8');
