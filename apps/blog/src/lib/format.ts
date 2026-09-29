@@ -1,10 +1,11 @@
 // Utilitários de formatação de data.
 //
-// Os frontmatter usam datas apenas (YYYY-MM-DD), que o Zod interpreta
-// como meia-noite em UTC. Se formatarmos no fuso local do servidor,
-// o dia pode "andar" um para trás (ex.: mostra 16/09 para 2026-09-17).
-// Por isso fixamos `timeZone: 'UTC'`: o dia exibido é exatamente o
-// que foi escrito no arquivo Markdown.
+// Os frontmatter guardam o dia (YYYY-MM-DD), e posts novos podem
+// carregar também a hora com `Z` (YYYY-MM-DDTHH:mm:ssZ, relógio local
+// rotulado como UTC) para ordenar posts do mesmo dia. Se formatássemos
+// no fuso local do servidor, o dia poderia "andar" um para trás (ex.:
+// mostra 16/09 para 2026-09-17). Por isso fixamos `timeZone: 'UTC'`:
+// o dia exibido é exatamente o que foi escrito no arquivo Markdown.
 export const shortDate = new Intl.DateTimeFormat('pt-BR', {
   timeZone: 'UTC',
   day: '2-digit',

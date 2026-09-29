@@ -34,13 +34,27 @@ function slugify(title: string): string {
     .slice(0, 60);
 }
 
-// Gera a data atual em YYYY-MM-DD. O frontmatter dos posts guarda
-// apenas o dia da publicação/edição — nunca hora.
+// Gera a data atual em YYYY-MM-DD. Usada quando uma data não é
+// obrigatória (updatedDate, fallback).
 export function todayDate(): string {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Gera o instante de criação de um post como YYYY-MM-DDTHH:mm:ssZ.
+// Usamos a hora do relógio local rotulada como UTC: assim o dia exibido
+// no site (formatado em UTC) é exatamente o dia local em que o post foi
+// feito, e posts publicados no mesmo dia ordenam por hora.
+export function todayStamp(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}T${hh}:${min}:${ss}Z`;
 }
 
 // Gera a data/hora atual no formato ISO local (YYYY-MM-DDTHH:mm:ss).
@@ -215,7 +229,7 @@ export async function createPost(title: string): Promise<Post> {
   const meta: PostMeta = {
     title,
     description: '',
-    pubDate: todayDate(),
+    pubDate: todayStamp(),
     tags: [],
     draft: true,
   };
