@@ -8,6 +8,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/build-writer-windows.yml"
+      - "content/posts/**"
 
 jobs:
   build-writer:
