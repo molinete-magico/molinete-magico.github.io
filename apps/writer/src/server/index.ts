@@ -142,6 +142,10 @@ app.post('/api/workspace', async (c) => {
     }
     if (!target) return c.json({ ok: false, error: 'Nenhuma pasta informada.' }, 400);
     const root = setRepoRoot(target);
+    const persist = (globalThis as Record<string, unknown>).__writerWorkspacePersist;
+    if (typeof persist === 'function') {
+      await (persist as (value: string) => unknown)(root);
+    }
     return c.json({ ok: true, root, contentRoot: contentRoot() });
   } catch (err) {
     return c.json({ ok: false, error: (err as Error).message }, 400);
