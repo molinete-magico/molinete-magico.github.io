@@ -56,10 +56,12 @@ export function postsRoot(): string {
   return path.resolve(contentRoot(), 'posts');
 }
 
-// Cliente compilado (esbuild) — o servidor serve do disco, sem
-// empacotar em memória a cada boot.
+// Cliente compilado (esbuild). No desktop empacotado, o Electron
+// fornece WRITER_CLIENT_DIR para os assets incluídos no aplicativo.
 export function clientDir(): string {
-  return path.resolve(repoRoot(), 'apps/writer/dist/client');
+  return process.env.WRITER_CLIENT_DIR
+    ? path.resolve(process.env.WRITER_CLIENT_DIR)
+    : path.resolve(repoRoot(), 'apps/writer/dist/client');
 }
 
 // Porta do servidor local. Pode ser substituída por env var.
