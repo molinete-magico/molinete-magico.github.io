@@ -63,10 +63,17 @@ async function createWindow() {
   process.env.WRITER_REPO_ROOT = workspace;
   process.env.WRITER_IN_PROCESS = '1';
   const resourceRoot = app.isPackaged ? process.resourcesPath : app.getAppPath();
-  process.env.WRITER_CLIENT_DIR = path.join(resourceRoot, 'writer-client');
+  const clientRoot = app.isPackaged
+    ? path.join(resourceRoot, 'writer-client')
+    : path.join(resourceRoot, 'dist', 'client');
+  const serverPath = app.isPackaged
+    ? path.join(resourceRoot, 'writer-server', 'writer.cjs')
+    : path.join(resourceRoot, 'dist', 'writer.cjs');
+
+  process.env.WRITER_CLIENT_DIR = clientRoot;
 
   const require = createRequire(import.meta.url);
-  const writerServer = require(path.join(resourceRoot, 'writer-server', 'writer.cjs'));
+  const writerServer = require(serverPath);
   globalThis.__writerWorkspacePersist = saveWorkspace;
 
   server = await writerServer.startWriterServer({ port: PORT, repoRoot: workspace });
