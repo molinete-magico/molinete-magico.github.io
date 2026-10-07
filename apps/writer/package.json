@@ -41,6 +41,7 @@
   "build": {
     "appId": "com.molinete.writer",
     "productName": "Writer",
+    "directories": { "output": "release" },
     "asar": true,
     "files": [
       "electron/**/*",
