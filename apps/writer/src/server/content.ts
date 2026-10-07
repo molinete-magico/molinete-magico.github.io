@@ -66,7 +66,7 @@ export function today(): string {
   const hh = String(d.getHours()).padStart(2, '0');
   const min = String(d.getMinutes()).padStart(2, '0');
   const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}T${hh}:${min}:${ss}`;
+  return `${d.getFullYear()}-${mm}-${dd}T${hh}-${min}-${ss}`;
 }
 
 // Um post pode existir de duas formas:
