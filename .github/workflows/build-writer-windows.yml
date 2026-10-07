@@ -1,3 +1,4 @@
+# The workflow is intentionally kept in the default branch too, so PR/branch pushes can be validated.
 name: Build Writer for Windows
 
 on:
