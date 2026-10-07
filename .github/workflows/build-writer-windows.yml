@@ -1,0 +1,36 @@
+name: Build Writer for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/writer/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/build-writer-windows.yml"
+
+jobs:
+  build-writer:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build Writer
+        run: npm run writer:build:windows
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: writer-windows
+          path: apps/writer/release/*
+          if-no-files-found: error
