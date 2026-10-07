@@ -3,12 +3,16 @@
   "type": "module",
   "version": "0.2.0",
   "private": true,
+  "main": "electron/main.mjs",
   "scripts": {
     "dev": "npm run build:client && tsx src/server/standalone.ts",
     "check": "tsc --noEmit",
     "build:client": "esbuild src/client/main.ts --bundle --outdir=dist/client --format=esm --target=es2020 --minify",
     "build": "npm run build:client && node build.mjs",
-    "start": "node dist/writer.cjs"
+    "start": "node dist/writer.cjs",
+    "desktop": "npm run build:desktop && electron .",
+    "build:desktop": "npm run build:client && node build.mjs",
+    "build:windows": "npm run build:desktop && electron-builder --win --x64"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
@@ -28,8 +32,43 @@
     "@types/dompurify": "^3.0.5",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.20.3",
+    "electron": "^38.0.0",
+    "electron-builder": "^26.0.12",
     "esbuild": "^0.28.2",
     "tsx": "^4.23.13",
     "typescript": "^5.9.0"
+  },
+  "build": {
+    "appId": "com.molinete.writer",
+    "productName": "Writer",
+    "asar": true,
+    "files": [
+      "electron/**/*",
+      "dist/writer.cjs"
+    ],
+    "extraResources": [
+      {
+        "from": "dist/client",
+        "to": "writer-client",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "dist/writer.cjs",
+        "to": "writer-server/writer.cjs"
+      }
+    ],
+    "win": {
+      "target": ["nsis", "portable"],
+      "artifactName": "Writer-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "portable": {
+      "artifactName": "Writer-${version}-portable-${arch}.${ext}"
+    }
   }
 }
