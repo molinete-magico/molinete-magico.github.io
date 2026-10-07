@@ -8,6 +8,8 @@
     "dev": "npm run dev --workspace=apps/blog",
     "build": "npm run build --workspace=apps/blog",
     "writer": "npm run dev --workspace=apps/writer",
+    "writer:desktop": "npm run desktop --workspace=apps/writer",
+    "writer:build:windows": "npm run build:windows --workspace=apps/writer",
     "check": "npm run check --workspace=apps/blog"
   }
 }
