@@ -6,7 +6,7 @@ tags:
   - rambling
   - '#devlog'
 draft: false
-updatedDate: '2026-10-07'
+updatedDate: '2026-10-08'
 ---
 
 Recentemente me bateu uma saudade daqueles chatbots de IA que eu brincava com meus amigos, fui dar uma olhada e encontrei o status, que é estilo uma "rede social" de chatbots que dá pra criar as histórias e tal. Como o status está uma grandissíssima MERDA (sem energia nenhuma pra fazer nada) eu decidi fazer o meu próprio.
