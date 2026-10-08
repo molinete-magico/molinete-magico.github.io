@@ -4,7 +4,7 @@ description: Nem sempre é sucesso
 pubDate: '2026-10-07T22:59:05Z'
 tags:
   - rambling
-  - '#devlog'
+  - devlog
 draft: false
 updatedDate: '2026-10-08'
 ---
