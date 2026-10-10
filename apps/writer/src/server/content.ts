@@ -542,6 +542,8 @@ export async function saveProject(
     showHomepage: Boolean(file.showHomepage),
     order: Number.isFinite(file.order) ? file.order : 0,
   };
+  if (typeof next.cover !== 'string' || !next.cover.trim()) delete next.cover;
+  if (typeof next.bannerPosition !== 'string' || !next.bannerPosition.trim()) delete next.bannerPosition;
   await fs.writeFile(filePath, renderContentFile(next, body), 'utf-8');
   return readProject(id);
 }
