@@ -512,35 +512,23 @@ async function saveProjectCurrent(): Promise<boolean> {
 }
 
 async function publishProjectCurrent() {
+  // Salva exatamente o estado escolhido no editor, inclusive published=false.
   if (!(await saveProjectCurrent())) return;
-  setSaving('Publicando projeto...');
+  setSaving('Publicando alterações do projeto...');
   try {
     const currentId = state.currentProject?.id;
     const currentDoc = state.currentProjectDoc;
-    if (state.projectItemKind === 'project' && state.currentProject) {
-      const file = { ...state.currentProject.file, published: true };
-      state.currentProject = await api<Project>('POST', '/api/project/save', {
-        id: state.currentProject.id, file, body: currentBody(),
-      });
-    } else if (currentDoc) {
-      const file = { ...currentDoc.file, published: true };
-      state.currentProjectDoc = await api<ProjectDocument>('POST', '/api/project-document/save', {
-        projectId: currentDoc.projectId, kind: currentDoc.kind, id: currentDoc.id, file, body: currentBody(),
-      });
-    }
     const label = state.projectItemKind === 'project'
       ? `project: ${state.currentProject?.file.title ?? currentId}`
       : `project document: ${currentDoc?.file.title ?? currentDoc?.id}`;
+    const isPublished = state.projectItemKind === 'project'
+      ? Boolean(state.currentProject?.file.published)
+      : Boolean(state.currentProjectDoc?.file.published);
     await api('POST', '/api/git/commit', { message: label });
     await api('POST', '/api/git/push');
-    if (state.projectItemKind === 'project' && state.currentProject) {
-      fieldProjectPublished.checked = true;
-    } else {
-      fieldDocPublished.checked = true;
-    }
     await loadProjects();
     await refreshGit();
-    setSaved(true, `Publicado ✓ ${label}`);
+    setSaved(true, `${isPublished ? 'Publicado' : 'Ocultado'} ✓ ${label}`);
   } catch (err) {
     setSaved(false, (err as Error).message);
   }
@@ -1038,6 +1026,12 @@ fieldDescription.addEventListener('input', () => {
 
 [fieldProjectType, fieldProjectPublished, fieldProjectHomepage, fieldProjectOrder, fieldProjectCover, fieldDocPublished, fieldDocOrder].forEach((field) => {
   field.addEventListener('input', () => {
+    if (field === fieldProjectPublished || field === fieldDocPublished) {
+      ($('#btn-publish') as HTMLButtonElement).textContent =
+        (state.projectItemKind === 'project' ? fieldProjectPublished.checked : fieldDocPublished.checked)
+          ? 'Publicar'
+          : 'Salvar e ocultar';
+    }
     state.dirty.meta = true;
     scheduleAutosave();
     setSaved(false, 'Alterações não salvas');
