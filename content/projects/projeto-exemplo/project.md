@@ -1,30 +1,22 @@
 ---
-title: "Projeto de exemplo"
+title: "As Cinzas de Véspera"
 type: "rpg"
-description: "Um projeto fictício para testar o catálogo público, os cards e a página individual de projetos."
+description: "Um sistema de RPG de fantasia sombria sobre juramentos, ruínas e o preço de continuar lutando."
 published: true
 showHomepage: true
 order: 1
 ---
 
-# Projeto de exemplo
+# As Cinzas de Véspera
 
-Este é um projeto de demonstração para testar a nova área **Projetos** do Molinete.
+As Cinzas de Véspera é um projeto demonstrativo de um sistema de RPG. Este espaço reúne as regras principais em um documento contínuo e deixa materiais de consulta — como bestiário e tabelas — em páginas separadas.
 
-A ideia é verificar o fluxo completo de publicação de um projeto independente de um post comum: sua presença no catálogo, a página individual e a possibilidade de destacá-lo na página inicial.
+A proposta é mostrar como uma documentação extensa pode continuar fácil de navegar: escolha um tópico no **sumário à esquerda** e leia o conteúdo à direita.
 
-## Objetivos
+## Como explorar
 
-- Confirmar que o projeto aparece em **Projetos**.
-- Confirmar que o card abre sua página individual.
-- Verificar o título, o tipo e a descrição no catálogo.
-- Confirmar que o conteúdo em Markdown é renderizado corretamente.
-- Verificar que o projeto aparece na página inicial quando `showHomepage` está habilitado.
+- Abra a documentação para ver o sistema principal.
+- Use o sumário para saltar entre regras.
+- Entre em **Complementos** para consultar material adicional sem misturá-lo ao documento principal.
 
-## Estado
-
-Este conteúdo é apenas um teste. Pode ser removido depois de validarmos a feature.
-
-## Notas de implementação
-
-Os projetos são documentos independentes dos posts. Este exemplo não deve entrar no Arquivo de posts, a menos que isso seja configurado explicitamente.
+Este cenário é fictício e serve como exemplo visual para a área Projetos.
