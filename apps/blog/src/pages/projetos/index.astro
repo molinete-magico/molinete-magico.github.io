@@ -1,0 +1,202 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { withBase } from '../../lib/paths';
+
+const projects = (await getCollection('projects', ({ data }) => data.published))
+  .sort((a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title, 'pt-BR'));
+---
+
+<BaseLayout
+  title="Projetos"
+  description="Sistemas de RPG e histórias autorais, cada um com seu próprio espaço."
+  canonicalPath="/projetos"
+>
+  <section class="container projects-page">
+    <header class="post-header">
+      <h1>Projetos</h1>
+      <p class="post-meta">
+        Sistemas de RPG e histórias autorais. Cada projeto reúne seus próprios textos e materiais.
+      </p>
+    </header>
+
+    {projects.length > 0 ? (
+      <ul class="project-grid">
+        {projects.map((project) => (
+          <li class="project-card">
+            <a
+              class:list={['project-card-link', { 'project-card-link--banner': Boolean(project.data.cover) }]}
+              href={withBase(`/projetos/${project.id}/`)}
+              style={project.data.cover ? `--project-banner: url("${withBase(project.data.cover)}"); --banner-position: ${project.data.bannerPosition ?? '50%'};` : undefined}
+            >
+              <div class="project-card-body">
+                <p class="project-type">{project.data.type === 'rpg' ? 'Sistema de RPG' : 'História'}</p>
+                <h2>{project.data.title}</h2>
+                {project.data.description && <p class="project-description">{project.data.description}</p>}
+                <span class="project-open">Abrir projeto →</span>
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <div class="projects-empty">
+        <p class="empty-label">[ NENHUM PROJETO PUBLICADO ]</p>
+        <p>Quando você publicar um sistema de RPG ou uma história pelo Writer, ele aparecerá aqui.</p>
+      </div>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .projects-page {
+    padding-bottom: var(--space-8);
+  }
+
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    margin: var(--space-6) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .project-card {
+    min-width: 0;
+    border: 1px solid var(--border-rest);
+    background: var(--bg-elevated);
+    transition: border-color 120ms ease, background-color 120ms ease;
+  }
+
+  .project-card:hover {
+    border-color: var(--border-hover);
+    background: var(--bg-soft);
+  }
+
+  .project-card-link {
+    position: relative;
+    display: flex;
+    min-height: 10rem;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+  }
+
+  .project-card-link--banner::before {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    right: 0;
+    width: min(46%, 24rem);
+    height: 100%;
+    content: "";
+    background-image: var(--project-banner);
+    background-size: cover;
+    background-position: center var(--banner-position, 50%);
+    background-repeat: no-repeat;
+    opacity: 0.52;
+    -webkit-mask-image: linear-gradient(to left, black 0%, black 42%, transparent 100%);
+    mask-image: linear-gradient(to left, black 0%, black 42%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .project-card-link:hover {
+    color: inherit;
+    text-shadow: none;
+  }
+
+  .project-cover {
+    aspect-ratio: 16 / 7;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-rest);
+    background: var(--bg-soft);
+  }
+
+  .project-cover img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 50%;
+  }
+
+  .project-card-body {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: var(--space-4);
+  }
+
+  .project-card-link--banner .project-card-body {
+    padding-right: min(34%, 15rem);
+  }
+
+  .project-type,
+  .empty-label {
+    margin: 0;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .project-card h2 {
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    border: 0;
+    font-size: var(--fs-h3);
+  }
+
+  .project-description {
+    margin: var(--space-3) 0 var(--space-4);
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+
+  .project-open {
+    margin-top: auto;
+    padding-top: var(--space-3);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
+  .projects-empty {
+    margin-top: var(--space-6);
+    padding: var(--space-6);
+    border: 1px dashed var(--border-rest);
+    color: var(--text-muted);
+  }
+
+  .projects-empty p:last-child {
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 650px) {
+    .project-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .project-card-link--banner .project-card-body {
+      padding-right: var(--space-4);
+    }
+
+    .project-card-link--banner::before {
+      width: 62%;
+      opacity: 0.3;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .project-card {
+      transition: none;
+    }
+  }
+</style>
