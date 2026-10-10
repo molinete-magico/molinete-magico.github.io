@@ -34,12 +34,10 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
 >
   <article class="container project-page">
     <p class="project-breadcrumb"><a href={withBase('/projetos')}>← Todos os projetos</a></p>
-    {project.data.cover && (
-      <div class="project-hero-cover">
-        <img src={withBase(project.data.cover)} alt="" style={`object-position: center ${project.data.bannerPosition ?? '50%'};`} />
-      </div>
-    )}
-    <header class="post-header">
+    <header
+      class:list={['post-header', 'project-heading', { 'project-heading--banner': Boolean(project.data.cover) }]}
+      style={project.data.cover ? `--project-banner: url("${withBase(project.data.cover)}"); --banner-position: ${project.data.bannerPosition ?? '50%'};` : undefined}
+    >
       <p class="project-type">{kind}</p>
       <h1>{project.data.title}</h1>
       {project.data.description && <p class="post-meta">{project.data.description}</p>}
@@ -94,19 +92,38 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
     text-transform: uppercase;
   }
 
-  .project-hero-cover {
-    max-height: 24rem;
+  .project-heading {
+    position: relative;
+    isolation: isolate;
     overflow: hidden;
-    border: 1px solid var(--border-rest);
-    background: var(--bg-soft);
   }
 
-  .project-hero-cover img {
-    display: block;
-    width: 100%;
-    max-height: 24rem;
-    object-fit: cover;
-    object-position: center 50%;
+  .project-heading--banner::after {
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    right: 0;
+    width: min(46%, 24rem);
+    height: 100%;
+    content: "";
+    background-image: var(--project-banner);
+    background-size: cover;
+    background-position: center var(--banner-position, 50%);
+    background-repeat: no-repeat;
+    opacity: 0.52;
+    -webkit-mask-image: linear-gradient(to left, black 0%, black 42%, transparent 100%);
+    mask-image: linear-gradient(to left, black 0%, black 42%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .project-heading--banner > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .project-heading--banner h1,
+  .project-heading--banner .post-meta {
+    max-width: 66%;
   }
 
   .project-homepage {
@@ -171,8 +188,14 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
       flex-direction: column;
     }
 
-    .project-hero-cover img {
-      max-height: 14rem;
+    .project-heading--banner h1,
+    .project-heading--banner .post-meta {
+      max-width: 100%;
+    }
+
+    .project-heading--banner::after {
+      width: 62%;
+      opacity: 0.3;
     }
   }
 </style>
