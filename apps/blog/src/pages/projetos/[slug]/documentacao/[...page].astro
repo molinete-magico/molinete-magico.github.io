@@ -1,0 +1,188 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../../../../layouts/BaseLayout.astro';
+import { withBase } from '../../../../../lib/paths';
+
+export async function getStaticPaths() {
+  const [projects, chapters, supplements] = await Promise.all([
+    getCollection('projects', ({ data }) => data.published),
+    getCollection('projectChapters', ({ data }) => data.published),
+    getCollection('projectSupplements', ({ data }) => data.published),
+  ]);
+  const projectsById = new Map(projects.map((project) => [project.id, project] as const));
+  const entries = [
+    ...chapters.map((entry) => ({ entry, group: 'chapters' as const })),
+    ...supplements.map((entry) => ({ entry, group: 'supplements' as const })),
+  ];
+
+  return entries.flatMap(({ entry, group }) => {
+    const project = projects.find((candidate) => entry.id.startsWith(`${candidate.id}/${group}/`));
+    if (!project || !projectsById.has(project.id)) return [];
+    return [{
+      params: {
+        slug: project.id,
+        page: entry.id.slice(project.id.length + 1),
+      },
+      props: { entry, project, group },
+    }];
+  });
+}
+
+const { entry, project, group } = Astro.props;
+const { Content, headings } = await render(entry);
+const toc = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3);
+const [documentEntries, allChapters, allSupplements] = await Promise.all([
+  getCollection('projectDocs', ({ data }) => data.published),
+  getCollection('projectChapters', ({ data }) => data.published),
+  getCollection('projectSupplements', ({ data }) => data.published),
+]);
+const mainDocument = documentEntries.find((document) => document.id === project.id);
+const chapters = allChapters
+  .filter((page) => page.id.startsWith(`${project.id}/chapters/`))
+  .sort((a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title, 'pt-BR'));
+const supplements = allSupplements
+  .filter((page) => page.id.startsWith(`${project.id}/supplements/`))
+  .sort((a, b) => a.data.order - b.data.order || a.data.title.localeCompare(b.data.title, 'pt-BR'));
+const pageUrl = (id: string) => withBase(`/projetos/${project.id}/documentacao/${id.slice(project.id.length + 1)}/`);
+const currentList = group === 'chapters' ? chapters : supplements;
+const currentIndex = currentList.findIndex((page) => page.id === entry.id);
+const previousPage = currentIndex > 0 ? currentList[currentIndex - 1] : null;
+const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? currentList[currentIndex + 1] : null;
+---
+
+<BaseLayout
+  title={`${entry.data.title} — ${project.data.title}`}
+  description={`Conteúdo de ${project.data.title}: ${entry.data.title}`}
+  canonicalPath={`/projetos/${project.id}/documentacao/${entry.id.slice(project.id.length + 1)}`}
+>
+  <article class="container project-document-page">
+    <p class="document-breadcrumb">
+      <a href={withBase(`/projetos/${project.id}/`)}>← Voltar ao projeto</a>
+      <span aria-hidden="true">/</span>
+      <a href={withBase(`/projetos/${project.id}/documentacao/`)}>{project.data.title}</a>
+    </p>
+
+    <header class="document-header">
+      <p class="document-eyebrow">
+        {group === 'chapters' ? 'CAPÍTULO' : 'COMPLEMENTO'} / {project.data.type === 'rpg' ? 'SISTEMA DE RPG' : 'HISTÓRIA'}
+      </p>
+      <h1>{entry.data.title}</h1>
+      <p class="document-project-title">{project.data.title}</p>
+    </header>
+
+    <div class="project-doc-layout">
+      <nav class="document-toc" aria-label="Sumário do projeto">
+        <p class="toc-title">Sumário</p>
+        {mainDocument && (
+          <a class="toc-main-link" href={withBase(`/projetos/${project.id}/documentacao/`)}>{mainDocument.data.title}</a>
+        )}
+        {chapters.length > 0 && (
+          <section class="toc-group" aria-labelledby="toc-chapters">
+            <p id="toc-chapters" class="toc-group-title">Capítulos</p>
+            <ol>
+              {chapters.map((page) => (
+                <li>
+                  <a class:list={{ 'toc-current': page.id === entry.id }} aria-current={page.id === entry.id ? 'page' : undefined} href={pageUrl(page.id)}>{page.data.title}</a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+        {supplements.length > 0 && (
+          <section class="toc-group" aria-labelledby="toc-supplements">
+            <p id="toc-supplements" class="toc-group-title">Complementos</p>
+            <ol>
+              {supplements.map((page) => (
+                <li>
+                  <a class:list={{ 'toc-current': page.id === entry.id }} aria-current={page.id === entry.id ? 'page' : undefined} href={pageUrl(page.id)}>{page.data.title}</a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+        {toc.length > 0 && (
+          <section class="toc-group" aria-labelledby="toc-sections">
+            <p id="toc-sections" class="toc-group-title">Nesta página</p>
+            <ol class="toc-sections">
+              {toc.map((heading) => (
+                <li class:list={{ 'toc-subheading': heading.depth === 3 }}>
+                  <a href={`#${heading.slug}`}>{heading.text}</a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+      </nav>
+
+      <div class="document-content post-body">
+        <div class="prose">
+          <Content />
+        </div>
+        <nav class="document-footer" aria-label="Navegação entre páginas">
+          {previousPage ? <a href={pageUrl(previousPage.id)}>← {previousPage.data.title}</a> : <span />}
+          {nextPage ? <a href={pageUrl(nextPage.id)}>{nextPage.data.title} →</a> : <a href={withBase(`/projetos/${project.id}/`)}>Página do projeto →</a>}
+        </nav>
+      </div>
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .project-document-page { padding-bottom: var(--space-8); }
+  .document-breadcrumb {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
+    margin: var(--space-4) 0 var(--space-6); color: var(--text-muted);
+    font-family: var(--font-mono); font-size: 0.78rem;
+  }
+  .document-header {
+    margin-bottom: var(--space-6); padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-rest);
+  }
+  .document-eyebrow, .toc-title, .toc-group-title {
+    margin: 0 0 var(--space-2); color: var(--text-muted);
+    font-family: var(--font-mono); font-size: 0.72rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .document-header h1 { margin: 0; }
+  .document-project-title { margin: var(--space-2) 0 0; color: var(--text-muted); }
+  .project-doc-layout {
+    display: grid; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+    align-items: start; gap: clamp(var(--space-5), 4vw, var(--space-8));
+  }
+  .document-toc {
+    position: sticky; top: var(--space-4); max-height: calc(100vh - 2rem);
+    overflow-y: auto; padding-right: var(--space-4);
+    border-right: 1px solid var(--border-rest);
+  }
+  .document-toc ol { margin: 0; padding: 0; list-style: none; }
+  .document-toc li { margin: 0; }
+  .document-toc a {
+    display: block; padding: 0.32rem 0; color: var(--text-secondary);
+    font-size: 0.88rem; line-height: 1.45; text-decoration: none;
+  }
+  .document-toc a:hover { color: var(--text-primary); text-decoration: underline; text-underline-offset: 0.2em; }
+  .document-toc .toc-main-link { display: block; padding: 0.32rem 0; color: var(--text-secondary); }
+  .document-toc a.toc-current { color: var(--text-primary); font-weight: 600; }
+  .toc-group { margin-top: var(--space-5); padding-top: var(--space-3); border-top: 1px solid var(--border-rest); }
+  .toc-group-title { margin-bottom: var(--space-1); }
+  .toc-sections { padding-left: var(--space-2) !important; }
+  .document-toc .toc-subheading { padding-left: var(--space-3); }
+  .document-toc .toc-subheading a { font-size: 0.82rem; }
+  .document-content { min-width: 0; }
+  .document-content .prose { max-width: none; }
+  .document-content :global(h2), .document-content :global(h3) { scroll-margin-top: var(--space-6); }
+  .document-footer {
+    display: flex; justify-content: space-between; gap: var(--space-3);
+    margin-top: var(--space-8); padding-top: var(--space-4);
+    border-top: 1px solid var(--border-rest);
+    font-family: var(--font-mono); font-size: 0.82rem;
+  }
+  .document-footer a { max-width: 48%; }
+  @media (max-width: 760px) {
+    .project-doc-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+    .document-toc {
+      position: static; max-height: none; padding: 0 0 var(--space-4);
+      border-right: 0; border-bottom: 1px solid var(--border-rest);
+    }
+  }
+</style>
