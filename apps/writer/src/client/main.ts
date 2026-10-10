@@ -145,7 +145,7 @@ app.innerHTML = `
 
       <div id="post-banner-actions" class="post-banner-actions">
         <button id="btn-post-banner" class="ghost tiny" type="button">Adicionar banner</button>
-        <input id="file-post-banner" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden />
+        <input id="file-post-banner" type="file" accept="image/jpeg,image/png,image/webp" hidden />
         <span class="pane-hint">banner.jpg / .png / .webp — salvo junto ao post</span>
       </div>
 
