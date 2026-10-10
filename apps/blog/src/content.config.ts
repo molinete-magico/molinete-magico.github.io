@@ -37,6 +37,8 @@ const projects = defineCollection({
     type: z.enum(['rpg', 'story']),
     description: z.string().default(''),
     cover: z.string().optional(),
+    // Posição vertical do enquadramento do banner (0% = topo, 100% = base).
+    bannerPosition: z.string().optional(),
     published: z.boolean().default(false),
     showHomepage: z.boolean().default(true),
     order: z.number().default(0),
