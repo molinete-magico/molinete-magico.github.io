@@ -26,6 +26,7 @@ import {
   readProject,
   createProject,
   saveProject,
+  saveProjectBanner,
   readProjectDocument,
   createProjectDocument,
   saveProjectDocument,
@@ -183,6 +184,25 @@ app.post('/api/project', async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { title?: unknown; type?: unknown };
     const type = body.type === 'rpg' ? 'rpg' : 'story';
     return c.json(await createProject(String(body.title ?? 'Novo projeto'), type), 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post('/api/project/:id/banner', async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem para o banner.' }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (file.size > 15 * 1024 * 1024) return c.json({ error: 'A imagem deve ter até 15 MB.' }, 400);
+
+    const cover = await saveProjectBanner(
+      c.req.param('id'),
+      file.name,
+      Buffer.from(await file.arrayBuffer()),
+    );
+    return c.json({ cover }, 201);
   } catch (err) {
     return c.json({ error: (err as Error).message }, 400);
   }
