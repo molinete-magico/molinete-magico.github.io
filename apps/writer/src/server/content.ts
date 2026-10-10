@@ -303,10 +303,9 @@ export async function savePostBanner(postId: string, filename: string, buffer: B
     '.jpeg': 'banner.jpeg',
     '.png': 'banner.png',
     '.webp': 'banner.webp',
-    '.avif': 'banner.avif',
   };
   const name = extensions[extension];
-  if (!name) throw new Error('Formato inválido. Use JPG, PNG, WEBP ou AVIF.');
+  if (!name) throw new Error('Formato inválido. Use JPG, PNG ou WEBP.');
   if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) {
     throw new Error('A imagem deve ter até 15 MB.');
   }
