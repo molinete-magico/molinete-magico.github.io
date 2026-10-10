@@ -6,11 +6,10 @@ import sitemap from '@astrojs/sitemap';
 // https://molinete-magico.github.io/blog/
 const base = process.env.BASE_PATH ?? '/blog';
 
-// O conteúdo Markdown e seus banners ficam na raiz do monorepo,
-// fora da raiz do app Astro. Autorize explicitamente ambos os diretórios
-// para o Vite conseguir servir os assets durante o desenvolvimento.
+// Os posts e banners ficam fora da raiz do app Astro, na raiz do monorepo.
 const appRoot = fileURLToPath(new URL('.', import.meta.url));
 const repositoryRoot = fileURLToPath(new URL('../..', import.meta.url));
+const contentRoot = fileURLToPath(new URL('../../content', import.meta.url));
 
 export default defineConfig({
   site: (process.env.SITE_URL ?? 'https://molinete-magico.github.io').replace(/\/$/, ''),
@@ -21,7 +20,11 @@ export default defineConfig({
   vite: {
     server: {
       fs: {
-        allow: [appRoot, repositoryRoot],
+        // Autoriza explicitamente a raiz, a pasta de conteúdo e o app.
+        allow: [appRoot, repositoryRoot, contentRoot],
+        // O Vite ainda rejeita esses assets no modo estrito em alguns
+        // setups de monorepo/symlink. Isso afeta apenas o servidor local.
+        strict: false,
       },
     },
   },
