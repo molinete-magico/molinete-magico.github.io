@@ -4,12 +4,7 @@ import { z } from 'astro/zod';
 
 // IMPORTANTE: cada coleção é declarada diretamente neste arquivo,
 // sem funções auxiliares. O Astro analisa este arquivo de forma
-// estática para gerar os tipos de `CollectionEntry` — esconder a
-// definição atrás de uma função impede a inferência de tipos.
-
-// O site é focado em posts (gerenciados pelo Writer). Projetos e notas
-// não são mais coleções: se ainda existirem arquivos em content/projects
-// e content/notes, eles são simplesmente ignorados.
+// estática para gerar os tipos de `CollectionEntry`.
 
 // O loader `glob` aponta para a raiz do monorepo (../../content),
 // onde os arquivos Markdown são versionados pelo Git.
@@ -37,4 +32,25 @@ const posts = defineCollection({
   }),
 });
 
-export const collections = { posts };
+// Projetos são entidades próprias: seus arquivos não fazem parte da
+// coleção de posts e não entram no feed, na página inicial ou no
+// arquivo global automaticamente. Cada projeto é definido por
+// content/projects/<slug>/project.md.
+const projects = defineCollection({
+  loader: glob({
+    base: '../../content/projects',
+    pattern: '**/project.md',
+    generateId: ({ entry }) => entry.replace(/\/project\.md$/, ''),
+  }),
+  schema: z.object({
+    title: z.string(),
+    type: z.enum(['rpg', 'story']),
+    description: z.string().default(''),
+    cover: z.string().optional(),
+    published: z.boolean().default(false),
+    showHomepage: z.boolean().default(true),
+    order: z.number().default(0),
+  }),
+});
+
+export const collections = { posts, projects };
