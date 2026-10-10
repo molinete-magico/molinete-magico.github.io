@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 import yaml from 'js-yaml';
-import { contentRoot, postsRoot, projectsRoot } from './fs.ts';
+import { contentRoot, postsRoot, projectsRoot, repoRoot } from './fs.ts';
 import type { Post, PostListItem, PostMeta } from '../shared/types.ts';
 
 // O gray-matter traz um parse YAML baseado em `safeLoad` (removido no
@@ -546,6 +546,35 @@ export async function saveProject(
   if (typeof next.bannerPosition !== 'string' || !next.bannerPosition.trim()) delete next.bannerPosition;
   await fs.writeFile(filePath, renderContentFile(next, body), 'utf-8');
   return readProject(id);
+}
+
+export async function saveProjectBanner(
+  projectId: string,
+  filename: string,
+  buffer: Buffer,
+): Promise<string> {
+  await projectFile(projectId);
+  const slug = safeSegment(projectId, 'projeto');
+  const extension = path.extname(filename).toLowerCase();
+  const allowedExtensions = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
+  if (!allowedExtensions.has(extension)) {
+    throw new Error('Formato de imagem inválido. Use JPG, PNG, WEBP, GIF ou AVIF.');
+  }
+  if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) {
+    throw new Error('A imagem deve ter até 15 MB.');
+  }
+
+  const name = `banner${extension}`;
+  const contentDir = path.join(projectsRoot(), slug);
+  const publicDir = path.join(repoRoot(), 'apps', 'blog', 'public', 'projects', slug);
+  await fs.mkdir(contentDir, { recursive: true });
+  await fs.mkdir(publicDir, { recursive: true });
+  await Promise.all([
+    fs.writeFile(path.join(contentDir, name), buffer),
+    fs.writeFile(path.join(publicDir, name), buffer),
+  ]);
+
+  return `/projects/${slug}/${name}`;
 }
 
 export async function readProjectDocument(
