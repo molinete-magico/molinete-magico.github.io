@@ -27,7 +27,7 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
             <a class="project-card-link" href={withBase(`/projetos/${project.id}/`)}>
               {project.data.cover && (
                 <div class="project-cover">
-                  <img src={withBase(project.data.cover)} alt="" loading="lazy" />
+                  <img src={withBase(project.data.cover)} alt="" loading="lazy" style={`object-position: center ${project.data.bannerPosition ?? '50%'};`} />
                 </div>
               )}
               <div class="project-card-body">
@@ -100,6 +100,7 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center 50%;
   }
 
   .project-card-body {
