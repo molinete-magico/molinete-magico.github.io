@@ -534,6 +534,12 @@ async function publishProjectCurrent() {
 
 async function openPost(id: string) {
   state.current = await api<Post>('GET', `/api/post/${encodeURIComponent(id)}`);
+  postMeta.hidden = false;
+  projectMetaPanel.hidden = true;
+  projectDocMetaPanel.hidden = true;
+  $('#field-description')!.hidden = false;
+  $('#btn-image')!.hidden = false;
+  projectActions.hidden = true;
   const p = state.current;
 
   fieldTitle.value = p.file.title;
@@ -735,6 +741,7 @@ function todayClient() {
 }
 
 async function saveCurrent(): Promise<boolean> {
+  if (state.projectMode) return saveProjectCurrent();
   if (!state.current) return false;
   const meta = currentMeta();
   try {
@@ -763,6 +770,7 @@ async function saveCurrent(): Promise<boolean> {
 // Publicar (compensa no site: salva, commit e push ao GitHub)
 // ------------------------------------------------------------------
 async function publishCurrent() {
+  if (state.projectMode) return publishProjectCurrent();
   if (!state.current) return;
   const meta = { ...currentMeta(), draft: false };
   fieldDraft.checked = false;
@@ -852,11 +860,87 @@ function modal(title: string, body: string) {
 // ------------------------------------------------------------------
 $('#btn-new')!.addEventListener('click', async () => {
   if (!(await confirmNavigation())) return;
-  const title = window.prompt('Título do novo post:')?.trim();
+  const title = window.prompt(state.projectMode ? 'Nome do novo projeto:' : 'Título do novo post:')?.trim();
   if (!title) return;
+  if (state.projectMode) {
+    const typeInput = window.prompt('Tipo do projeto: digite "rpg" ou "story".', 'story')?.trim().toLowerCase();
+    const project = await api<Project>('POST', '/api/project', { title, type: typeInput === 'rpg' ? 'rpg' : 'story' });
+    await loadProjects();
+    await openProject(project.id);
+    return;
+  }
   const post = await api<Post>('POST', '/api/post', { title });
   await loadList();
   await openPost(post.id);
+});
+
+$('#btn-mode')!.addEventListener('click', async () => {
+  if (!(await confirmNavigation())) return;
+  state.projectMode = !state.projectMode;
+  const modeButton = $('#btn-mode') as HTMLButtonElement;
+  modeButton.textContent = state.projectMode ? 'Posts' : 'Projetos';
+  modeButton.setAttribute('aria-pressed', String(state.projectMode));
+  ($('#btn-new') as HTMLButtonElement).textContent = state.projectMode ? '+ Novo projeto' : '+ Novo post';
+  postList.hidden = state.projectMode;
+  projectList.hidden = !state.projectMode;
+  projectActions.hidden = !state.projectMode;
+  search.placeholder = state.projectMode ? 'Pesquisar projetos e documentos...' : 'Pesquisar posts...';
+  search.value = '';
+  state.filter = '';
+  if (state.projectMode) {
+    emptyState.hidden = false;
+    editorView.hidden = true;
+    await loadProjects();
+    if (state.currentProject) await openProject(state.currentProject.id);
+  } else {
+    projectMetaPanel.hidden = true;
+    projectDocMetaPanel.hidden = true;
+    if (state.current) await openPost(state.current.id);
+    else {
+      emptyState.hidden = false;
+      editorView.hidden = true;
+    }
+    await loadList();
+  }
+  setSaved(true, state.projectMode ? 'Área de projetos' : 'Área de posts');
+});
+
+$('#btn-new-chapter')!.addEventListener('click', async () => {
+  if (!(await confirmNavigation())) return;
+  if (!state.currentProject) {
+    setSaved(false, 'Selecione um projeto antes de criar um capítulo.');
+    return;
+  }
+  const title = window.prompt('Título do novo capítulo:')?.trim();
+  if (!title) return;
+  try {
+    const doc = await api<ProjectDocument>('POST', '/api/project-document', {
+      projectId: state.currentProject.id, kind: 'chapter', title,
+    });
+    await loadProjects();
+    await openProjectDocument(doc.projectId, doc.kind, doc.id);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
+});
+
+$('#btn-new-supplement')!.addEventListener('click', async () => {
+  if (!(await confirmNavigation())) return;
+  if (!state.currentProject) {
+    setSaved(false, 'Selecione um projeto antes de criar um complemento.');
+    return;
+  }
+  const title = window.prompt('Título do material complementar:')?.trim();
+  if (!title) return;
+  try {
+    const doc = await api<ProjectDocument>('POST', '/api/project-document', {
+      projectId: state.currentProject.id, kind: 'supplement', title,
+    });
+    await loadProjects();
+    await openProjectDocument(doc.projectId, doc.kind, doc.id);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
 });
 
 $('#btn-save')!.addEventListener('click', () => saveCurrent());
@@ -866,6 +950,22 @@ $('#btn-settings')!.addEventListener('click', () => openSettings());
 // ------------------------------------------------------------------
 // Ações por post (duplicar/excluir) — delegação de eventos
 // ------------------------------------------------------------------
+projectList.addEventListener('click', async (e) => {
+  const target = (e.target as HTMLElement).closest('button') as HTMLElement | null;
+  if (!target) return;
+  if (!(await confirmNavigation())) return;
+  const projectId = target.getAttribute('data-project-id');
+  if (!projectId) return;
+  const kind = target.getAttribute('data-doc-kind') as ProjectDocumentKind | null;
+  const id = target.getAttribute('data-doc-id');
+  try {
+    if (kind && id) await openProjectDocument(projectId, kind, id);
+    else await openProject(projectId);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
+});
+
 postList.addEventListener('click', async (e) => {
   const openBtn = (e.target as HTMLElement).closest('.post-open') as HTMLElement | null;
   if (openBtn) {
@@ -901,7 +1001,8 @@ postList.addEventListener('click', async (e) => {
 
 search.addEventListener('input', () => {
   state.filter = search.value;
-  renderList();
+  if (state.projectMode) renderProjectList();
+  else renderList();
 });
 
 // Marca os campos de metadados como sujos ao editar
@@ -930,10 +1031,10 @@ fieldDescription.addEventListener('input', () => {
 // Navegação segura + divisão redimensionável
 // ------------------------------------------------------------------
 function hasUnsavedChanges() {
-  return Boolean(
-    state.current &&
-      (state.dirty.title || state.dirty.body || state.dirty.meta || state.tagsDirty),
-  );
+  const dirty = state.dirty.title || state.dirty.body || state.dirty.meta || state.tagsDirty;
+  return state.projectMode
+    ? Boolean((state.currentProject || state.currentProjectDoc) && dirty)
+    : Boolean(state.current && dirty);
 }
 
 async function confirmNavigation(): Promise<boolean> {
@@ -1094,12 +1195,12 @@ function setSaved(ok: boolean, message?: string) {
     ? message ?? `Salvo ✓ ${state.savedAt?.toLocaleTimeString() ?? ''}`
     : `${message ?? 'Alterações não salvas'} •`;
   saveState.className = ok ? 'save-state ok' : 'save-state err';
-  const hasDirty = state.dirty.title || state.dirty.body || state.dirty.meta;
-  ($('#btn-save') as HTMLButtonElement).disabled = !(
-    state.current && (hasDirty || state.tagsDirty)
-  );
-  ($('#btn-publish') as HTMLButtonElement).disabled =
-    !state.current || !fieldTitle.value.trim();
+  const hasDirty = state.dirty.title || state.dirty.body || state.dirty.meta || state.tagsDirty;
+  const hasActiveDocument = state.projectMode
+    ? Boolean(state.currentProject && (state.projectItemKind === 'project' || state.currentProjectDoc))
+    : Boolean(state.current);
+  ($('#btn-save') as HTMLButtonElement).disabled = !(hasActiveDocument && hasDirty);
+  ($('#btn-publish') as HTMLButtonElement).disabled = !hasActiveDocument || !fieldTitle.value.trim();
 }
 
 function setSaving(msg: string) {
