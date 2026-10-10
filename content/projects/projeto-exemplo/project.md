@@ -1,6 +1,6 @@
 ---
 title: "Projeto de exemplo"
-type: "Laboratório"
+type: "rpg"
 description: "Um projeto fictício para testar o catálogo público, os cards e a página individual de projetos."
 published: true
 showHomepage: true
