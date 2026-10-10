@@ -1313,7 +1313,7 @@ function restoreAutosave() {
   }
   try {
     const s = JSON.parse(saved);
-    if (!s?.id || typeof s.body !== 'string') {
+    if ((!s?.id && !(s?.mode === 'project' && s?.projectId)) || typeof s.body !== 'string') {
       localStorage.removeItem(LS_KEY);
       return;
     }
