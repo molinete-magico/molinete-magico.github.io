@@ -5,7 +5,7 @@ description: "Uma história curta sobre uma cartógrafa que encontra lugares que
 published: true
 showHomepage: true
 order: 2
-cover: "./banner.jpeg"
+cover: "/projects/o-mapa-das-coisas-perdidas/banner.jpeg"
 bannerPosition: "50%"
 ---
 
