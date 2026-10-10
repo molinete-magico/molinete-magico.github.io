@@ -169,7 +169,10 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   .document-toc .toc-subheading { padding-left: var(--space-3); }
   .document-toc .toc-subheading a { font-size: 0.82rem; }
   .document-content { min-width: 0; }
-  .document-content .prose { max-width: none; }
+  .document-content .prose { max-width: none; padding-left: clamp(12px, 2vw, 24px); }
+  @media (max-width: 760px) {
+    .document-content .prose { padding-left: 8px; }
+  }
   .document-content :global(h2), .document-content :global(h3) { scroll-margin-top: var(--space-6); }
   .document-footer {
     display: flex; justify-content: space-between; gap: var(--space-3);
