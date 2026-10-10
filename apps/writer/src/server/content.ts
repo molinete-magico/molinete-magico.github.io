@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
 import yaml from 'js-yaml';
-import { contentRoot, postsRoot } from './fs.ts';
+import { contentRoot, postsRoot, projectsRoot } from './fs.ts';
 import type { Post, PostListItem, PostMeta } from '../shared/types.ts';
 
 // O gray-matter traz um parse YAML baseado em `safeLoad` (removido no
@@ -304,4 +304,306 @@ export async function saveImage(postId: string, filename: string, buffer: Buffer
 
 function stringOr(v: unknown, fallback: string): string {
   return typeof v === 'string' && v.trim() !== '' ? v : fallback;
+}
+
+// ------------------------------------------------------------------
+// Projetos e documentos Markdown
+// ------------------------------------------------------------------
+
+export type ProjectKind = 'rpg' | 'story';
+export type ProjectDocumentKind = 'document' | 'chapter' | 'supplement';
+
+export interface ProjectMeta {
+  title: string;
+  type: ProjectKind;
+  description: string;
+  cover?: string;
+  bannerPosition?: string;
+  published: boolean;
+  showHomepage: boolean;
+  order: number;
+  [key: string]: unknown;
+}
+
+export interface ProjectDocumentMeta {
+  title: string;
+  published: boolean;
+  order: number;
+  [key: string]: unknown;
+}
+
+export interface ProjectDocumentListItem {
+  id: string;
+  kind: ProjectDocumentKind;
+  title: string;
+  published: boolean;
+  order: number;
+  path: string;
+}
+
+export interface ProjectListItem {
+  id: string;
+  title: string;
+  type: ProjectKind;
+  description: string;
+  published: boolean;
+  cover?: string;
+  documents: ProjectDocumentListItem[];
+}
+
+export interface Project {
+  id: string;
+  path: string;
+  body: string;
+  file: ProjectMeta;
+  documents: ProjectDocumentListItem[];
+}
+
+export interface ProjectDocument {
+  projectId: string;
+  id: string;
+  kind: ProjectDocumentKind;
+  path: string;
+  body: string;
+  file: ProjectDocumentMeta;
+}
+
+function safeSegment(value: string, label: string): string {
+  const segment = value.trim();
+  if (!/^[a-z0-9][a-z0-9-]{0,100}$/.test(segment)) {
+    throw new Error(`Identificador de ${label} inválido.`);
+  }
+  return segment;
+}
+
+async function projectFile(id: string): Promise<string> {
+  const slug = safeSegment(id, 'projeto');
+  const file = path.join(projectsRoot(), slug, 'project.md');
+  if (!(await exists(file))) throw new Error(`Projeto não encontrado: ${slug}`);
+  return file;
+}
+
+function parseMarkdownFile(text: string): { body: string; data: Record<string, unknown> } {
+  const parsed = matter(text, MATTER_OPTIONS);
+  return { body: parsed.content.trim(), data: parsed.data as Record<string, unknown> };
+}
+
+function renderContentFile(meta: Record<string, unknown>, body: string): string {
+  return `---\n${yaml.dump(meta, { lineWidth: 90 }).trimEnd()}\n---\n\n${body.trim()}\n`;
+}
+
+function projectMeta(data: Record<string, unknown>, id: string): ProjectMeta {
+  const type = data.type === 'rpg' ? 'rpg' : 'story';
+  return {
+    ...data,
+    title: stringOr(data.title, id),
+    type,
+    description: typeof data.description === 'string' ? data.description : '',
+    published: typeof data.published === 'boolean' ? data.published : false,
+    showHomepage: typeof data.showHomepage === 'boolean' ? data.showHomepage : true,
+    order: typeof data.order === 'number' ? data.order : 0,
+    ...(typeof data.cover === 'string' ? { cover: data.cover } : {}),
+    ...(typeof data.bannerPosition === 'string' ? { bannerPosition: data.bannerPosition } : {}),
+  };
+}
+
+function documentLocation(projectId: string, kind: ProjectDocumentKind, id = ''): string {
+  const project = safeSegment(projectId, 'projeto');
+  const base = path.join(projectsRoot(), project);
+  if (kind === 'document') {
+    if (id && id !== 'document') throw new Error('Identificador inválido para o documento principal.');
+    return path.join(base, 'document.md');
+  }
+  const slug = safeSegment(id, 'documento');
+  const folder = kind === 'chapter' ? 'chapters' : 'supplements';
+  return path.join(base, folder, `${slug}.md`);
+}
+
+function documentMeta(data: Record<string, unknown>, id: string): ProjectDocumentMeta {
+  return {
+    ...data,
+    title: stringOr(data.title, id || 'Documento principal'),
+    published: typeof data.published === 'boolean' ? data.published : true,
+    order: typeof data.order === 'number' ? data.order : 0,
+  };
+}
+
+async function listProjectDocuments(projectId: string): Promise<ProjectDocumentListItem[]> {
+  const base = path.join(projectsRoot(), safeSegment(projectId, 'projeto'));
+  const result: ProjectDocumentListItem[] = [];
+  const readOne = async (file: string, kind: ProjectDocumentKind, id: string) => {
+    if (!(await exists(file))) return;
+    const parsed = parseMarkdownFile(await fs.readFile(file, 'utf-8'));
+    const meta = documentMeta(parsed.data, id);
+    result.push({
+      id: kind === 'document' ? 'document' : id,
+      kind,
+      title: meta.title,
+      published: meta.published,
+      order: meta.order,
+      path: path.relative(contentRoot(), file).split(path.sep).join('/'),
+    });
+  };
+
+  await readOne(path.join(base, 'document.md'), 'document', 'document');
+  for (const [folder, kind] of [['chapters', 'chapter'], ['supplements', 'supplement']] as const) {
+    const dir = path.join(base, folder);
+    if (!(await exists(dir))) continue;
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+      const id = entry.name.slice(0, -3);
+      await readOne(path.join(dir, entry.name), kind, id);
+    }
+  }
+  return result.sort((a, b) => {
+    const group = (kind: ProjectDocumentKind) => kind === 'document' ? 0 : kind === 'chapter' ? 1 : 2;
+    return group(a.kind) - group(b.kind) || a.order - b.order || a.title.localeCompare(b.title, 'pt-BR');
+  });
+}
+
+export async function listProjects(): Promise<ProjectListItem[]> {
+  await fs.mkdir(projectsRoot(), { recursive: true });
+  const entries = await fs.readdir(projectsRoot(), { withFileTypes: true });
+  const projects = await Promise.all(entries.filter((entry) => entry.isDirectory()).map(async (entry) => {
+    const id = entry.name;
+    const file = path.join(projectsRoot(), id, 'project.md');
+    if (!(await exists(file))) return null;
+    const parsed = parseMarkdownFile(await fs.readFile(file, 'utf-8'));
+    const meta = projectMeta(parsed.data, id);
+    return {
+      id,
+      title: meta.title,
+      type: meta.type,
+      description: meta.description,
+      published: meta.published,
+      ...(meta.cover ? { cover: meta.cover } : {}),
+      documents: await listProjectDocuments(id),
+    } satisfies ProjectListItem;
+  }));
+  return projects.filter((project): project is ProjectListItem => project !== null)
+    .sort((a, b) => Number(b.published) - Number(a.published) || a.title.localeCompare(b.title, 'pt-BR'));
+}
+
+export async function readProject(id: string): Promise<Project> {
+  const filePath = await projectFile(id);
+  const parsed = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
+  return {
+    id,
+    path: path.relative(contentRoot(), filePath).split(path.sep).join('/'),
+    body: parsed.body,
+    file: projectMeta(parsed.data, id),
+    documents: await listProjectDocuments(id),
+  };
+}
+
+export async function createProject(title: string, type: ProjectKind = 'story'): Promise<Project> {
+  const cleanTitle = title.trim() || 'Novo projeto';
+  const base = slugify(cleanTitle) || 'novo-projeto';
+  let id = base;
+  let suffix = 2;
+  while (await exists(path.join(projectsRoot(), id))) {
+    id = `${base}-${suffix++}`;
+  }
+  const dir = path.join(projectsRoot(), id);
+  await fs.mkdir(path.join(dir, 'chapters'), { recursive: true });
+  await fs.mkdir(path.join(dir, 'supplements'), { recursive: true });
+  const meta: ProjectMeta = {
+    title: cleanTitle,
+    type,
+    description: '',
+    published: false,
+    showHomepage: true,
+    order: 0,
+  };
+  await fs.writeFile(path.join(dir, 'project.md'), renderContentFile(meta, ''), 'utf-8');
+  await fs.writeFile(
+    path.join(dir, 'document.md'),
+    renderContentFile({ title: 'Documento principal', published: true }, ''),
+    'utf-8',
+  );
+  return readProject(id);
+}
+
+export async function saveProject(
+  id: string,
+  file: ProjectMeta,
+  body: string,
+): Promise<Project> {
+  const filePath = await projectFile(id);
+  const existing = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
+  const next: ProjectMeta = {
+    ...existing.data,
+    ...file,
+    title: file.title.trim() || id,
+    type: file.type === 'rpg' ? 'rpg' : 'story',
+    description: file.description ?? '',
+    published: Boolean(file.published),
+    showHomepage: Boolean(file.showHomepage),
+    order: Number.isFinite(file.order) ? file.order : 0,
+  };
+  await fs.writeFile(filePath, renderContentFile(next, body), 'utf-8');
+  return readProject(id);
+}
+
+export async function readProjectDocument(
+  projectId: string,
+  kind: ProjectDocumentKind,
+  id = 'document',
+): Promise<ProjectDocument> {
+  await projectFile(projectId);
+  const filePath = documentLocation(projectId, kind, id);
+  if (!(await exists(filePath))) throw new Error('Documento não encontrado.');
+  const parsed = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
+  return {
+    projectId,
+    id: kind === 'document' ? 'document' : id,
+    kind,
+    path: path.relative(contentRoot(), filePath).split(path.sep).join('/'),
+    body: parsed.body,
+    file: documentMeta(parsed.data, id),
+  };
+}
+
+export async function createProjectDocument(
+  projectId: string,
+  kind: Exclude<ProjectDocumentKind, 'document'>,
+  title: string,
+): Promise<ProjectDocument> {
+  await projectFile(projectId);
+  const base = slugify(title) || (kind === 'chapter' ? 'novo-capitulo' : 'novo-complemento');
+  const folder = path.join(projectsRoot(), safeSegment(projectId, 'projeto'), kind === 'chapter' ? 'chapters' : 'supplements');
+  await fs.mkdir(folder, { recursive: true });
+  let id = base;
+  let suffix = 2;
+  while (await exists(path.join(folder, `${id}.md`))) id = `${base}-${suffix++}`;
+  const meta: ProjectDocumentMeta = {
+    title: title.trim() || (kind === 'chapter' ? 'Novo capítulo' : 'Novo complemento'),
+    published: false,
+    order: 0,
+  };
+  const filePath = path.join(folder, `${id}.md`);
+  await fs.writeFile(filePath, renderContentFile(meta, ''), 'utf-8');
+  return readProjectDocument(projectId, kind, id);
+}
+
+export async function saveProjectDocument(
+  projectId: string,
+  kind: ProjectDocumentKind,
+  id: string,
+  file: ProjectDocumentMeta,
+  body: string,
+): Promise<ProjectDocument> {
+  const filePath = documentLocation(projectId, kind, id);
+  if (!(await exists(filePath))) throw new Error('Documento não encontrado.');
+  const existing = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
+  const next: ProjectDocumentMeta = {
+    ...existing.data,
+    ...file,
+    title: file.title.trim() || id,
+    published: Boolean(file.published),
+    order: Number.isFinite(file.order) ? file.order : 0,
+  };
+  await fs.writeFile(filePath, renderContentFile(next, body), 'utf-8');
+  return readProjectDocument(projectId, kind, id);
 }
