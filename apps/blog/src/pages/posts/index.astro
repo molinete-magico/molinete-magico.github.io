@@ -1,6 +1,4 @@
 ---
-import { withBase } from '../../lib/paths';
-
-// Mantém links antigos para a listagem /posts funcionando,
-// sem recriar a aba removida. As páginas individuais /posts/[slug] continuam existindo.
-return Astro.redirect(withBase('/archive'));
+// Mantém a URL antiga /posts funcionando sem recriar a aba removida.
+// O site é publicado na raiz do domínio GitHub Pages.
+return Astro.redirect('/archive/');
