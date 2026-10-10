@@ -43,3 +43,61 @@ export interface GitStatus {
   ahead: number;
   lastCommit: { hash: string; date: string; subject: string } | null;
 }
+
+// Metadados do catálogo de projetos, espelhados em content.config.ts.
+export interface ProjectMeta {
+  title: string;
+  type: 'rpg' | 'story';
+  description: string;
+  cover?: string;
+  bannerPosition?: string;
+  published: boolean;
+  showHomepage: boolean;
+  order: number;
+  [key: string]: unknown;
+}
+
+export type ProjectDocumentKind = 'document' | 'chapter' | 'supplement';
+
+export interface ProjectDocumentListItem {
+  id: string;
+  kind: ProjectDocumentKind;
+  title: string;
+  published: boolean;
+  order: number;
+  path: string;
+}
+
+export interface ProjectListItem {
+  id: string;
+  title: string;
+  type: 'rpg' | 'story';
+  description: string;
+  published: boolean;
+  cover?: string;
+  documents: ProjectDocumentListItem[];
+}
+
+export interface Project {
+  id: string;
+  path: string;
+  body: string;
+  file: ProjectMeta;
+  documents: ProjectDocumentListItem[];
+}
+
+export interface ProjectDocumentMeta {
+  title: string;
+  published: boolean;
+  order: number;
+  [key: string]: unknown;
+}
+
+export interface ProjectDocument {
+  projectId: string;
+  id: string;
+  kind: ProjectDocumentKind;
+  path: string;
+  body: string;
+  file: ProjectDocumentMeta;
+}
