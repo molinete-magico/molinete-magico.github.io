@@ -13,8 +13,7 @@ interface Props {
 const { entries, showTags = false } = Astro.props;
 
 // Os banners vivem junto do index.md de cada post.
-// O glob gera as URLs processadas pelo Vite/Astro e permite que
-// a lista saiba quais posts realmente possuem banner.
+// O glob transforma as imagens em URLs processadas pelo Vite/Astro.
 const bannerFiles = import.meta.glob(
   '../../../../content/posts/**/banner.{webp,png,jpg,jpeg}',
   {
@@ -25,9 +24,12 @@ const bannerFiles = import.meta.glob(
 ) as Record<string, string>;
 
 function getBanner(entry: PostEntry) {
-  const suffix = `/content/posts/${entry.id}/banner.`;
+  // Normalize separators because Vite can return glob keys with
+  // either slash style depending on the build platform.
+  const normalizedId = entry.id.replaceAll('\\', '/');
+  const suffix = `/content/posts/${normalizedId}/banner.`;
   const match = Object.entries(bannerFiles).find(([file]) =>
-    file.replaceAll('\\\\', '/').includes(suffix),
+    file.replaceAll('\\', '/').includes(suffix),
   );
 
   return match?.[1] ?? null;
@@ -102,13 +104,12 @@ function getBanner(entry: PostEntry) {
     right: 0;
     width: min(46%, 24rem);
     height: 100%;
-    background-size: 100% auto;
+    background-size: cover;
     background-position: center var(--banner-position, 50%);
     background-repeat: no-repeat;
     opacity: 0.52;
 
-    /* A imagem começa visível no extremo direito e desaparece
-       suavemente antes de chegar ao texto do post. */
+    /* A imagem fica à direita e desaparece suavemente antes do texto. */
     -webkit-mask-image: linear-gradient(
       to left,
       black 0%,
