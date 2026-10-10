@@ -29,6 +29,8 @@ const posts = defineCollection({
     draft: z.boolean().default(false),
     updatedDate: z.coerce.date().optional(),
     bannerPosition: z.string().optional(),
+    // Slug do projeto ao qual o post pertence; opcional para manter posts antigos compatíveis.
+    project: z.string().optional(),
   }),
 });
 
@@ -53,4 +55,17 @@ const projects = defineCollection({
   }),
 });
 
-export const collections = { posts, projects };
+// Cada projeto pode ter um documento principal independente dos posts.
+// O documento é Markdown e usa os títulos para gerar o índice lateral.
+const projectDocs = defineCollection({
+  loader: glob({
+    base: '../../content/projects',
+    pattern: '**/document.md',
+    generateId: ({ entry }) => entry.replace(/\/document\.md$/, ''),
+  }),
+  schema: z.object({
+    title: z.string().default('Documentação'),
+  }),
+});
+
+export const collections = { posts, projects, projectDocs };
