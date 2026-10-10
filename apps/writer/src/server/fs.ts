@@ -56,6 +56,10 @@ export function postsRoot(): string {
   return path.resolve(contentRoot(), 'posts');
 }
 
+export function projectsRoot(): string {
+  return path.resolve(contentRoot(), 'projects');
+}
+
 // Cliente compilado (esbuild) — o servidor serve do disco, sem
 // empacotar em memória a cada boot.
 export function clientDir(): string {
