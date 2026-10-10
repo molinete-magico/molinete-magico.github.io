@@ -1,6 +1,5 @@
 ---
 import { getCollection, render } from 'astro:content';
-import EntryList from '../../../components/EntryList.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { withBase } from '../../../lib/paths';
 
@@ -14,8 +13,6 @@ export async function getStaticPaths() {
 
 const { project } = Astro.props;
 const { Content } = await render(project);
-const posts = (await getCollection('posts', ({ data }) => !data.draft && data.project === project.id))
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 const [documents, chapters, supplements] = await Promise.all([
   getCollection('projectDocs', ({ data }) => data.published),
   getCollection('projectChapters', ({ data }) => data.published),
@@ -50,25 +47,10 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
       </div>
     )}
     {hasReader && (
-      <section class="project-reader-link" aria-labelledby="project-reader-title">
-        <div>
-          <p class="project-type">LEITURA DO PROJETO</p>
-          <h2 id="project-reader-title">Capítulos e documentação</h2>
-          <p>Leia o conteúdo principal, navegue pelo sumário e explore os materiais complementares.</p>
-        </div>
+      <section class="project-reader-link" aria-label="Leitor do projeto">
         <a href={withBase(`/projetos/${project.id}/documentacao/`)}>Abrir leitor →</a>
       </section>
     )}
-    <section class="project-documents" aria-labelledby="project-posts-title">
-      <div class="project-section-heading">
-        <h2 id="project-posts-title">Publicações do projeto</h2>
-      </div>
-      {posts.length > 0 ? (
-        <EntryList entries={posts} />
-      ) : (
-        <p class="post-meta">Ainda não há posts associados a este projeto. Para associar uma publicação, use <code>project: "{project.id}"</code> no frontmatter do post.</p>
-      )}
-    </section>
   </article>
 </BaseLayout>
 
@@ -141,48 +123,13 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
     border-bottom: 1px solid var(--border-rest);
   }
 
-  .project-reader-link h2 {
-    margin: 0;
-  }
-
-  .project-reader-link p:not(.project-type) {
-    margin: var(--space-2) 0 0;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-  }
-
   .project-reader-link > a {
     flex-shrink: 0;
     font-family: var(--font-mono);
     font-size: 0.82rem;
   }
 
-  .project-documents {
-    margin-top: var(--space-8);
-  }
-
-  .project-documents h2 {
-    margin-top: 0;
-  }
-
-  .project-section-heading {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-3);
-    margin-bottom: var(--space-3);
-  }
-
-  .project-section-heading h2 {
-    margin-bottom: 0;
-  }
-
   @media (max-width: 650px) {
-    .project-section-heading {
-      align-items: flex-start;
-      flex-direction: column;
-    }
-
     .project-reader-link {
       align-items: flex-start;
       flex-direction: column;
