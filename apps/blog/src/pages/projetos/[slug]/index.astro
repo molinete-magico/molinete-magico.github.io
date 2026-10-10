@@ -1,5 +1,6 @@
 ---
 import { getCollection, render } from 'astro:content';
+import EntryList from '../../../components/EntryList.astro';
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { withBase } from '../../../lib/paths';
 
@@ -13,6 +14,10 @@ export async function getStaticPaths() {
 
 const { project } = Astro.props;
 const { Content } = await render(project);
+const posts = (await getCollection('posts', ({ data }) => !data.draft && data.project === project.id))
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+const documents = await getCollection('projectDocs');
+const hasDocumentation = documents.some((document) => document.id === project.id);
 const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
 ---
 
@@ -40,9 +45,16 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
         </div>
       </div>
     )}
-    <section class="project-documents" aria-labelledby="project-documents-title">
-      <h2 id="project-documents-title">Conteúdo do projeto</h2>
-      <p class="post-meta">Os documentos deste projeto serão exibidos aqui quando a próxima etapa da feature for implementada.</p>
+    <section class="project-documents" aria-labelledby="project-posts-title">
+      <div class="project-section-heading">
+        <h2 id="project-posts-title">Publicações do projeto</h2>
+        {hasDocumentation && <a href={withBase(`/projetos/${project.id}/documentacao/`)}>Abrir documentação →</a>}
+      </div>
+      {posts.length > 0 ? (
+        <EntryList entries={posts} />
+      ) : (
+        <p class="post-meta">Ainda não há posts associados a este projeto. Para associar uma publicação, use <code>project: "{project.id}"</code> no frontmatter do post.</p>
+      )}
     </section>
   </article>
 </BaseLayout>
@@ -91,6 +103,31 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
 
   .project-documents h2 {
     margin-top: 0;
+  }
+
+  .project-section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .project-section-heading h2 {
+    margin-bottom: 0;
+  }
+
+  .project-section-heading a {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
+  @media (max-width: 650px) {
+    .project-section-heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
   }
 
   @media (max-width: 650px) {
