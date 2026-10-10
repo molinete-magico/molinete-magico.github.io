@@ -1027,6 +1027,19 @@ fieldDescription.addEventListener('input', () => {
   setSaved(false, 'Alterações não salvas');
 });
 
+[fieldProjectType, fieldProjectPublished, fieldProjectHomepage, fieldProjectOrder, fieldProjectCover, fieldDocPublished, fieldDocOrder].forEach((field) => {
+  field.addEventListener('input', () => {
+    state.dirty.meta = true;
+    scheduleAutosave();
+    setSaved(false, 'Alterações não salvas');
+  });
+  field.addEventListener('change', () => {
+    state.dirty.meta = true;
+    scheduleAutosave();
+    setSaved(false, 'Alterações não salvas');
+  });
+});
+
 // ------------------------------------------------------------------
 // Navegação segura + divisão redimensionável
 // ------------------------------------------------------------------
@@ -1179,7 +1192,13 @@ async function refreshGit() {
       await api('POST', '/api/git/pull');
       await refreshGit();
       await loadList();
-      if (state.current) await openPost(state.current.id);
+      if (state.projectMode) {
+        await loadProjects();
+        if (state.currentProject) {
+          if (state.currentProjectDoc) await openProjectDocument(state.currentProject.id, state.currentProjectDoc.kind, state.currentProjectDoc.id);
+          else await openProject(state.currentProject.id);
+        }
+      } else if (state.current) await openPost(state.current.id);
     } catch (err) {
       setSaved(false, (err as Error).message);
     }
@@ -1221,8 +1240,30 @@ function scheduleAutosave() {
 }
 
 function writeAutosave() {
-  if (!state.current || !hasUnsavedChanges()) return;
+  if (!hasUnsavedChanges()) return;
   try {
+    if (state.projectMode && state.currentProject) {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        mode: 'project',
+        projectId: state.currentProject.id,
+        itemKind: state.projectItemKind,
+        docKind: state.currentProjectDoc?.kind,
+        docId: state.currentProjectDoc?.id,
+        title: fieldTitle.value,
+        description: fieldDescription.value,
+        projectType: fieldProjectType.value,
+        projectPublished: fieldProjectPublished.checked,
+        projectHomepage: fieldProjectHomepage.checked,
+        projectOrder: fieldProjectOrder.value,
+        projectCover: fieldProjectCover.value,
+        docPublished: fieldDocPublished.checked,
+        docOrder: fieldDocOrder.value,
+        body: currentBody(),
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
+    if (!state.current) return;
     localStorage.setItem(
       LS_KEY,
       JSON.stringify({
@@ -1274,6 +1315,28 @@ function restoreAutosave() {
     const s = JSON.parse(saved);
     if (!s?.id || typeof s.body !== 'string') {
       localStorage.removeItem(LS_KEY);
+      return;
+    }
+
+    if (s?.mode === 'project' && typeof s.projectId === 'string' && typeof s.body === 'string') {
+      const restoreProject = async () => {
+        if (s.itemKind === 'project') await openProject(s.projectId);
+        else await openProjectDocument(s.projectId, s.docKind as ProjectDocumentKind, String(s.docId ?? 'document'));
+        fieldTitle.value = s.title ?? '';
+        fieldDescription.value = s.description ?? '';
+        fieldProjectType.value = s.projectType ?? 'story';
+        fieldProjectPublished.checked = Boolean(s.projectPublished);
+        fieldProjectHomepage.checked = s.projectHomepage !== false;
+        fieldProjectOrder.value = String(s.projectOrder ?? 0);
+        fieldProjectCover.value = s.projectCover ?? '';
+        fieldDocPublished.checked = Boolean(s.docPublished);
+        fieldDocOrder.value = String(s.docOrder ?? 0);
+        cmView?.dispatch({ changes: { from: 0, to: cmView.state.doc.length, insert: s.body } });
+        renderPreview();
+        state.dirty = { title: true, body: true, meta: true };
+        setSaved(false, 'Recuperação automática de projeto — ainda não salvo');
+      };
+      void restoreProject().catch(() => localStorage.removeItem(LS_KEY));
       return;
     }
 
