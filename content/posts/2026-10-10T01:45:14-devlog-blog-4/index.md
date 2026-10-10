@@ -22,4 +22,4 @@ No geral, essas foram as modificações:
 
 Acredito que é só isso msm, toma mais uma imagem da lilith aí.
 
-![banner](banner.png)
+![banner](banner.jpg)
