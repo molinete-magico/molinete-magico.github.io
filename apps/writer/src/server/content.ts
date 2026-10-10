@@ -293,6 +293,41 @@ export async function duplicatePost(id: string): Promise<Post> {
   return savePost(fresh.id, { ...fresh.file, title: newTitle }, source.body);
 }
 
+// Salva o banner com nome canônico na pasta do post, ao lado de index.md.
+// O blog detecta automaticamente banner.webp/png/jpg/jpeg nessa estrutura.
+export async function savePostBanner(postId: string, filename: string, buffer: Buffer): Promise<string> {
+  const postFile = await resolvePostFile(postId);
+  const extension = path.extname(filename).toLowerCase();
+  const extensions: Record<string, string> = {
+    '.jpg': 'banner.jpg',
+    '.jpeg': 'banner.jpeg',
+    '.png': 'banner.png',
+    '.webp': 'banner.webp',
+  };
+  const name = extensions[extension];
+  if (!name) throw new Error('Formato inválido. Use JPG, PNG ou WEBP.');
+  if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) {
+    throw new Error('A imagem deve ter até 15 MB.');
+  }
+
+  let folder = path.dirname(postFile);
+  // Posts antigos em arquivo único não podem compartilhar o banner na raiz
+  // de content/posts. Migra esse post para a estrutura de pasta esperada.
+  if (path.dirname(postFile) === postsRoot()) {
+    folder = path.join(postsRoot(), postId);
+    await fs.mkdir(folder, { recursive: true });
+    const destination = path.join(folder, 'index.md');
+    if (await exists(destination)) throw new Error('Já existe uma pasta para este post; resolva o conflito antes de adicionar o banner.');
+    await fs.rename(postFile, destination);
+  }
+
+  for (const oldName of ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg', 'banner.avif']) {
+    await fs.rm(path.join(folder, oldName), { force: true });
+  }
+  await fs.writeFile(path.join(folder, name), buffer);
+  return name;
+}
+
 // Guarda uma imagem dentro da pasta do post e devolve o nome do arquivo.
 export async function saveImage(postId: string, filename: string, buffer: Buffer): Promise<string> {
   const safe = filename.replace(/[^a-zA-Z0-9._-]/g, '-');

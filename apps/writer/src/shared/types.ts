@@ -10,7 +10,7 @@ export interface PostMeta {
   tags: string[];
   draft: boolean;
   updatedDate?: string;
-  /** Posição horizontal do enquadramento do banner, em %. */
+  /** Posição vertical do enquadramento do banner: 0% topo, 50% centro, 100% base. */
   bannerPosition?: string;
 }
 
