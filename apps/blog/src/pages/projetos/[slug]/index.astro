@@ -1,0 +1,101 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { withBase } from '../../../lib/paths';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects', ({ data }) => data.published);
+  return projects.map((project) => ({
+    params: { slug: project.id },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const { Content } = await render(project);
+const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
+---
+
+<BaseLayout
+  title={project.data.title}
+  description={project.data.description || `Projeto: ${project.data.title}`}
+  canonicalPath={`/projetos/${project.id}`}
+>
+  <article class="container project-page">
+    <p class="project-breadcrumb"><a href={withBase('/projetos')}>← Todos os projetos</a></p>
+    {project.data.cover && (
+      <div class="project-hero-cover">
+        <img src={withBase(project.data.cover)} alt="" />
+      </div>
+    )}
+    <header class="post-header">
+      <p class="project-type">{kind}</p>
+      <h1>{project.data.title}</h1>
+      {project.data.description && <p class="post-meta">{project.data.description}</p>}
+    </header>
+    {project.data.showHomepage && (
+      <div class="post-body project-homepage">
+        <div class="prose">
+          <Content />
+        </div>
+      </div>
+    )}
+    <section class="project-documents" aria-labelledby="project-documents-title">
+      <h2 id="project-documents-title">Conteúdo do projeto</h2>
+      <p class="post-meta">Os documentos deste projeto serão exibidos aqui quando a próxima etapa da feature for implementada.</p>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .project-page {
+    padding-bottom: var(--space-8);
+  }
+
+  .project-breadcrumb {
+    margin: var(--space-4) 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .project-type {
+    margin: 0 0 var(--space-2);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .project-hero-cover {
+    max-height: 24rem;
+    overflow: hidden;
+    border: 1px solid var(--border-rest);
+    background: var(--bg-soft);
+  }
+
+  .project-hero-cover img {
+    display: block;
+    width: 100%;
+    max-height: 24rem;
+    object-fit: cover;
+  }
+
+  .project-homepage {
+    margin-top: var(--space-6);
+  }
+
+  .project-documents {
+    margin-top: var(--space-8);
+  }
+
+  .project-documents h2 {
+    margin-top: 0;
+  }
+
+  @media (max-width: 650px) {
+    .project-hero-cover img {
+      max-height: 14rem;
+    }
+  }
+</style>
