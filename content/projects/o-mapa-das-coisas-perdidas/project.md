@@ -1,12 +1,14 @@
 ---
-title: "O Mapa das Coisas Perdidas"
-type: "story"
-description: "Uma história curta sobre uma cartógrafa que encontra lugares que desapareceram da memória de todos."
-published: true
+title: O Mapa das Coisas Perdidas
+type: story
+description: >-
+  Uma história curta sobre uma cartógrafa que encontra lugares que desapareceram da
+  memória de todos.
+published: false
 showHomepage: true
 order: 2
-cover: "/projects/o-mapa-das-coisas-perdidas/banner.jpeg"
-bannerPosition: "50%"
+cover: /projects/o-mapa-das-coisas-perdidas/banner.jpeg
+bannerPosition: 50%
 ---
 
 # O Mapa das Coisas Perdidas
