@@ -1,39 +1,6 @@
 ---
-// Lista de todos os posts publicados, do mais recente ao mais antigo.
-import { getCollection } from 'astro:content';
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import EntryList from '../../components/EntryList.astro';
 import { withBase } from '../../lib/paths';
 
-const posts = (await getCollection('posts'))
-  .filter((p) => !p.data.draft)
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
-
-// Coleção de todas as tags usadas em posts publicados,
-// para listar no fim da página.
-const allTags = [...new Set(posts.flatMap((p) => p.data.tags))].sort();
----
-
-<BaseLayout
-  title="Posts"
-  description="Todos os artigos e reflexões do arquivo pessoal."
->
-  <section class="container post-header">
-    <h1>Posts</h1>
-  </section>
-
-  <section class="container">
-    <EntryList entries={posts} />
-
-    <h2 class="section-title" style="margin-top: 3.5rem">Tags</h2>
-    <ul class="tag-list">
-      {
-        allTags.map((tag) => (
-          <li>
-            <a href={withBase(`/tags/${tag}`)}>{tag}</a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
-</BaseLayout>
+// Mantém links antigos para a listagem /posts funcionando,
+// sem recriar a aba removida. As páginas individuais /posts/[slug] continuam existindo.
+return Astro.redirect(withBase('/archive'));

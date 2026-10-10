@@ -3,6 +3,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import EntryList from '../../components/EntryList.astro';
+import { withBase } from '../../lib/paths';
 
 const entries = (
   await getCollection('posts', ({ data }) => !data.draft)
@@ -17,17 +18,37 @@ for (const entry of entries) {
 }
 
 const years = [...byYear.keys()].sort((a, b) => b - a);
+const allTags = [...new Set(entries.flatMap((entry) => entry.data.tags))].sort(
+  (a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }),
+);
 ---
 
 <BaseLayout
-  title="Arquivo"
-  description="Índice cronológico de todos os posts publicados."
+  title="Arquivos"
+  description="Índice cronológico de todos os posts publicados, com navegação por tags."
 >
   <section class="container post-header">
-    <h1>Arquivo</h1>
+    <h1>Arquivos</h1>
     <p class="post-meta">
-      Todos os posts, do mais recente ao mais antigo.
+      Todos os posts publicados, do mais recente ao mais antigo. Explore também por tag.
     </p>
+  </section>
+
+  <section class="container archive-tags" aria-labelledby="archive-tags-title">
+    <h2 id="archive-tags-title" class="section-title">Explorar por tag</h2>
+    {
+      allTags.length > 0 ? (
+        <ul class="tag-list">
+          {allTags.map((tag) => (
+            <li>
+              <a href={withBase(`/tags/${encodeURIComponent(tag)}`)}>{tag}</a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="post-meta">Ainda não há tags nos posts publicados.</p>
+      )
+    }
   </section>
 
   <section class="container">

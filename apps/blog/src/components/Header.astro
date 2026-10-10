@@ -1,6 +1,4 @@
 ---
-// Navegação principal. `Astro.url.pathname` nos permite marcar
-// o link da página atual com aria-current para acessibilidade.
 import ThemeToggle from './ThemeToggle.astro';
 import { withBase } from '../lib/paths';
 
@@ -10,12 +8,9 @@ const pathname = Astro.url.pathname;
 // do pathname para comparar com os links da navegação.
 const currentPath = pathname.replace(import.meta.env.BASE_URL, '');
 
-// O site vive em pastas (apps/blog), o header precisa listar
-// as seções principais do arquivo.
 const links = [
   { href: withBase('/'), label: 'Início' },
-  { href: withBase('/posts'), label: 'Posts' },
-  { href: withBase('/archive'), label: 'Arquivo' },
+  { href: withBase('/archive'), label: 'Arquivos' },
   { href: withBase('/about'), label: 'Sobre' },
 ];
 
