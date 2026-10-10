@@ -17,6 +17,7 @@ import {
   listPosts,
   readPost,
   readPostBanner,
+  savePostBanner,
   createPost,
   savePost,
   deletePost,
@@ -355,6 +356,27 @@ app.post('/api/post/delete', async (c) => {
 app.post('/api/post/duplicate', async (c) => {
   const { id } = await c.req.json();
   return c.json(await duplicatePost(String(id)), 201);
+});
+
+app.post('/api/post/:id/banner', async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem para o banner.' }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (file.size === 0 || file.size > 15 * 1024 * 1024) {
+      return c.json({ error: 'A imagem deve ter até 15 MB.' }, 400);
+    }
+
+    const name = await savePostBanner(
+      c.req.param('id'),
+      file.name,
+      Buffer.from(await file.arrayBuffer()),
+    );
+    return c.json({ name }, 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
 });
 
 app.post('/api/post/:id/image', async (c) => {
