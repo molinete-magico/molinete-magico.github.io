@@ -143,6 +143,12 @@ app.innerHTML = `
 
       <textarea id="field-description" placeholder="Descrição curta (usada nos cards e SEO)" rows="2" aria-label="Descrição"></textarea>
 
+      <div id="post-banner-actions" class="post-banner-actions">
+        <button id="btn-post-banner" class="ghost tiny" type="button">Adicionar banner</button>
+        <input id="file-post-banner" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden />
+        <span class="pane-hint">banner.jpg / .png / .webp — salvo junto ao post</span>
+      </div>
+
       <section id="project-meta" class="project-meta" hidden>
         <div class="project-fields">
           <label>Tipo
@@ -181,7 +187,7 @@ app.innerHTML = `
           <img id="banner-crop-image" class="banner-crop-image" alt="" draggable="false" />
           <div class="banner-crop-fade" aria-hidden="true"></div>
         </div>
-        <input id="field-banner-position" type="range" min="0" max="100" value="50" step="1" aria-label="Posição horizontal do banner" />
+        <input id="field-banner-position" type="range" min="0" max="100" value="50" step="1" aria-label="Posição vertical do banner" />
       </section>
 
       <div class="split">
@@ -297,6 +303,9 @@ const fieldProjectPublished = $('#field-project-published') as HTMLInputElement;
 const fieldProjectHomepage = $('#field-project-homepage') as HTMLInputElement;
 const fieldProjectOrder = $('#field-project-order') as HTMLInputElement;
 const fieldProjectCover = $('#field-project-cover') as HTMLInputElement;
+const postBannerActions = $('#post-banner-actions')!;
+const btnPostBanner = $('#btn-post-banner') as HTMLButtonElement;
+const filePostBanner = $('#file-post-banner') as HTMLInputElement;
 const btnProjectBanner = $('#btn-project-banner') as HTMLButtonElement;
 const fileProjectBanner = $('#file-project-banner') as HTMLInputElement;
 const fieldDocPublished = $('#field-doc-published') as HTMLInputElement;
@@ -397,6 +406,7 @@ async function loadProjects() {
 
 function setProjectEditorVisibility(kind: 'project' | ProjectDocumentKind) {
   postMeta.hidden = true;
+  postBannerActions.hidden = true;
   $('#field-description')!.toggleAttribute('hidden', kind !== 'project');
   projectMetaPanel.hidden = kind !== 'project';
   projectDocMetaPanel.hidden = kind === 'project';
@@ -539,6 +549,7 @@ async function publishProjectCurrent() {
 async function openPost(id: string) {
   state.current = await api<Post>('GET', `/api/post/${encodeURIComponent(id)}`);
   postMeta.hidden = false;
+  postBannerActions.hidden = false;
   projectMetaPanel.hidden = true;
   projectDocMetaPanel.hidden = true;
   $('#field-description')!.hidden = false;
@@ -675,14 +686,8 @@ bannerCrop.addEventListener('pointermove', (event) => {
   const deltaY = event.clientY - bannerDragStartY;
   if (Math.abs(deltaY) > 2) bannerDragMoved = true;
 
-  // O valor salvo é exatamente o mesmo conceito usado pelo site:
-  // 0% = extremo esquerdo, 50% = centro, 100% = extremo direito.
-  // O sinal é invertido porque arrastar a imagem para a direita
-  // revela uma região mais à esquerda da imagem.
-  // O arraste acompanha diretamente a faixa de enquadramento.
-  // Como a imagem se move no sentido oposto ao cursor, o sinal é invertido.
-  // O enquadramento é vertical. O arraste horizontal continua sendo
-  // usado como controle prático, mas agora altera a posição vertical.
+  // O enquadramento é vertical: arrastar para baixo revela regiões
+  // mais próximas do topo; arrastar para cima revela regiões mais baixas.
   const delta = (deltaY / rect.height) * 100;
   setBannerPosition(String(Math.max(0, Math.min(100, bannerDragStartPosition + delta))));
 });
@@ -704,7 +709,7 @@ bannerCrop.addEventListener('click', (event) => {
   if (bannerDragging || bannerDragMoved) return;
   const rect = bannerCrop.getBoundingClientRect();
   if (!rect.height) return;
-  const position = ((event.clientY - rect.left) / rect.height) * 100;
+  const position = ((event.clientY - rect.top) / rect.height) * 100;
   setBannerPosition(String(Math.max(0, Math.min(100, position))));
   state.dirty.meta = true;
   scheduleAutosave();
@@ -1152,6 +1157,42 @@ $('#file-image')!.addEventListener('change', async (e) => {
 // ------------------------------------------------------------------
 // Painel Git
 // ------------------------------------------------------------------
+btnPostBanner.addEventListener('click', () => {
+  if (!state.current || state.projectMode) {
+    setSaved(false, 'Abra um post antes de adicionar um banner.');
+    return;
+  }
+  filePostBanner.click();
+});
+
+filePostBanner.addEventListener('change', async () => {
+  const file = filePostBanner.files?.[0];
+  const post = state.current;
+  if (!file || !post || state.projectMode) return;
+
+  const form = new FormData();
+  form.append('file', file);
+  setSaved(false, 'Enviando banner...');
+  try {
+    const response = await fetch(`/api/post/${encodeURIComponent(post.id)}/banner`, {
+      method: 'POST',
+      body: form,
+    });
+    const data = await response.json() as { name?: string; error?: string };
+    if (!response.ok || !data.name) throw new Error(data.error ?? 'Não foi possível enviar o banner.');
+
+    await loadBannerPreview(post.id);
+    if (!state.bannerAvailable) throw new Error('O banner foi enviado, mas não foi possível carregá-lo no preview.');
+    state.dirty.meta = true;
+    const saved = await saveCurrent();
+    if (saved) setSaved(true, 'Banner adicionado e salvo');
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  } finally {
+    filePostBanner.value = '';
+  }
+});
+
 btnProjectBanner.addEventListener('click', () => {
   if (!state.currentProject || state.projectItemKind !== 'project') {
     setSaved(false, 'Abra um projeto antes de adicionar um banner.');
