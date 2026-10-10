@@ -14,7 +14,7 @@ import { keymap } from '@codemirror/view';
 import { defaultKeymap } from '@codemirror/commands';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import type { Post, PostListItem, GitStatus, PostMeta } from '../shared/types';
+import type { Post, PostListItem, GitStatus, PostMeta, Project, ProjectListItem, ProjectDocument, ProjectDocumentKind, ProjectMeta, ProjectDocumentMeta } from '../shared/types';
 
 // ------------------------------------------------------------------
 // Estado global da aplicação.
@@ -28,6 +28,11 @@ const state: {
   savedAt: Date | null;
   tagsDirty: boolean;
   bannerAvailable: boolean;
+  projectMode: boolean;
+  projects: ProjectListItem[];
+  currentProject: Project | null;
+  currentProjectDoc: ProjectDocument | null;
+  projectItemKind: 'project' | ProjectDocumentKind;
 } = {
   posts: [],
   current: null,
@@ -37,6 +42,11 @@ const state: {
   savedAt: null,
   tagsDirty: false,
   bannerAvailable: false,
+  projectMode: false,
+  projects: [],
+  currentProject: null,
+  currentProjectDoc: null,
+  projectItemKind: 'project',
 };
 
 // ------------------------------------------------------------------
@@ -93,7 +103,8 @@ app.innerHTML = `
       <span class="git-badge" id="git-badge">…</span>
     </div>
     <div class="actions">
-      <button id="btn-new" class="ghost">+ Novo</button>
+      <button id="btn-mode" class="ghost" aria-pressed="false">Projetos</button>
+      <button id="btn-new" class="ghost">+ Novo post</button>
       <span id="save-state" class="save-state" role="status"></span>
       <button id="btn-save" class="ghost" disabled>Salvar</button>
       <button id="btn-publish" class="primary" disabled>Publicar</button>
@@ -102,9 +113,14 @@ app.innerHTML = `
   </header>
 
   <aside class="sidebar">
-    <input id="search" type="search" placeholder="Pesquisar..." aria-label="Pesquisar posts" />
+    <input id="search" type="search" placeholder="Pesquisar posts..." aria-label="Pesquisar conteúdo" />
+    <div id="project-actions" class="project-actions" hidden>
+      <button id="btn-new-chapter" class="ghost tiny">+ capítulo</button>
+      <button id="btn-new-supplement" class="ghost tiny">+ complemento</button>
+    </div>
     <div id="git-panel" class="git-panel"></div>
     <ul id="post-list" class="post-list"></ul>
+    <ul id="project-list" class="post-list project-list" hidden></ul>
   </aside>
 
   <main id="editor" class="editor">
@@ -114,7 +130,7 @@ app.innerHTML = `
     <div class="editor-view" id="editor-view" hidden>
       <input id="field-title" class="title-input" type="text" placeholder="Título do post" aria-label="Título do post" />
 
-      <div class="meta-row">
+      <div id="post-meta" class="meta-row">
         <label>Data
           <input id="field-date" type="date" />
         </label>
@@ -126,6 +142,30 @@ app.innerHTML = `
       </div>
 
       <textarea id="field-description" placeholder="Descrição curta (usada nos cards e SEO)" rows="2" aria-label="Descrição"></textarea>
+
+      <section id="project-meta" class="project-meta" hidden>
+        <div class="project-fields">
+          <label>Tipo
+            <select id="field-project-type">
+              <option value="story">História</option>
+              <option value="rpg">RPG</option>
+            </select>
+          </label>
+          <label class="project-check"><input id="field-project-published" type="checkbox" /> Projeto publicado</label>
+          <label class="project-check"><input id="field-project-homepage" type="checkbox" /> Exibir documento principal na entrada</label>
+          <label>Ordem <input id="field-project-order" type="number" min="0" step="1" /></label>
+          <label class="project-cover-field">Caminho da capa <input id="field-project-cover" type="text" placeholder="/projects/meu-projeto/banner.jpg" /></label>
+        </div>
+        <p class="pane-hint">Os arquivos permanecem em content/projects/ e são publicados pelo Git.</p>
+      </section>
+
+      <section id="project-doc-meta" class="project-meta" hidden>
+        <div class="project-fields">
+          <label class="project-check"><input id="field-doc-published" type="checkbox" /> Documento publicado</label>
+          <label>Ordem <input id="field-doc-order" type="number" min="0" step="1" /></label>
+        </div>
+        <p id="project-doc-path" class="pane-hint"></p>
+      </section>
 
       <section id="banner-editor" class="banner-editor" hidden>
         <div class="banner-editor-head">
