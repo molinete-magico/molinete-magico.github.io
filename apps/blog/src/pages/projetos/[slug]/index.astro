@@ -16,8 +16,14 @@ const { project } = Astro.props;
 const { Content } = await render(project);
 const posts = (await getCollection('posts', ({ data }) => !data.draft && data.project === project.id))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
-const documents = await getCollection('projectDocs');
-const hasDocumentation = documents.some((document) => document.id === project.id);
+const [documents, chapters, supplements] = await Promise.all([
+  getCollection('projectDocs', ({ data }) => data.published),
+  getCollection('projectChapters', ({ data }) => data.published),
+  getCollection('projectSupplements', ({ data }) => data.published),
+]);
+const hasReader = documents.some((document) => document.id === project.id)
+  || chapters.some((page) => page.id.startsWith(`${project.id}/chapters/`))
+  || supplements.some((page) => page.id.startsWith(`${project.id}/supplements/`));
 const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
 ---
 
@@ -45,10 +51,19 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
         </div>
       </div>
     )}
+    {hasReader && (
+      <section class="project-reader-link" aria-labelledby="project-reader-title">
+        <div>
+          <p class="project-type">LEITURA DO PROJETO</p>
+          <h2 id="project-reader-title">Capítulos e documentação</h2>
+          <p>Leia o conteúdo principal, navegue pelo sumário e explore os materiais complementares.</p>
+        </div>
+        <a href={withBase(`/projetos/${project.id}/documentacao/`)}>Abrir leitor →</a>
+      </section>
+    )}
     <section class="project-documents" aria-labelledby="project-posts-title">
       <div class="project-section-heading">
         <h2 id="project-posts-title">Publicações do projeto</h2>
-        {hasDocumentation && <a href={withBase(`/projetos/${project.id}/documentacao/`)}>Abrir documentação →</a>}
       </div>
       {posts.length > 0 ? (
         <EntryList entries={posts} />
@@ -97,6 +112,33 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
     margin-top: var(--space-6);
   }
 
+  .project-reader-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+    padding: var(--space-4) 0;
+    border-top: 1px solid var(--border-rest);
+    border-bottom: 1px solid var(--border-rest);
+  }
+
+  .project-reader-link h2 {
+    margin: 0;
+  }
+
+  .project-reader-link p:not(.project-type) {
+    margin: var(--space-2) 0 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .project-reader-link > a {
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+  }
+
   .project-documents {
     margin-top: var(--space-8);
   }
@@ -117,20 +159,17 @@ const kind = project.data.type === 'rpg' ? 'Sistema de RPG' : 'História';
     margin-bottom: 0;
   }
 
-  .project-section-heading a {
-    flex-shrink: 0;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-  }
-
   @media (max-width: 650px) {
     .project-section-heading {
       align-items: flex-start;
       flex-direction: column;
     }
-  }
 
-  @media (max-width: 650px) {
+    .project-reader-link {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
     .project-hero-cover img {
       max-height: 14rem;
     }
