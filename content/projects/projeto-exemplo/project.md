@@ -4,7 +4,7 @@ type: rpg
 description: >-
   Um sistema de RPG de fantasia sombria sobre juramentos, ruínas e o preço de continuar
   lutando.
-published: false
+published: true
 showHomepage: true
 order: 1
 ---
