@@ -285,6 +285,19 @@ const renderPreviewDebounced = debounce(renderPreview, 250);
 // Lista de posts
 // ------------------------------------------------------------------
 const postList = $('#post-list')!;
+const projectList = $('#project-list')!;
+const projectActions = $('#project-actions')!;
+const postMeta = $('#post-meta')!;
+const projectMetaPanel = $('#project-meta')!;
+const projectDocMetaPanel = $('#project-doc-meta')!;
+const fieldProjectType = $('#field-project-type') as HTMLSelectElement;
+const fieldProjectPublished = $('#field-project-published') as HTMLInputElement;
+const fieldProjectHomepage = $('#field-project-homepage') as HTMLInputElement;
+const fieldProjectOrder = $('#field-project-order') as HTMLInputElement;
+const fieldProjectCover = $('#field-project-cover') as HTMLInputElement;
+const fieldDocPublished = $('#field-doc-published') as HTMLInputElement;
+const fieldDocOrder = $('#field-doc-order') as HTMLInputElement;
+const projectDocPath = $('#project-doc-path')!;
 const search = $('#search')! as HTMLInputElement;
 const fieldTitle = $('#field-title') as HTMLInputElement;
 const fieldDate = $('#field-date') as HTMLInputElement;
@@ -334,6 +347,189 @@ async function loadList() {
     state.posts = [];
   }
   renderList();
+}
+
+
+function renderProjectList() {
+  const q = state.filter.trim().toLowerCase();
+  const projects = state.projects.filter((project) =>
+    !q || [project.title, project.id, project.description].join(' ').toLowerCase().includes(q) ||
+      project.documents.some((doc) => [doc.title, doc.path].join(' ').toLowerCase().includes(q)),
+  );
+  projectList.innerHTML = projects.map((project) => {
+    const selectedProject = state.currentProject?.id === project.id && state.projectItemKind === 'project';
+    const docs = project.documents.map((doc) => {
+      const selected = state.currentProject?.id === project.id &&
+        state.currentProjectDoc?.kind === doc.kind && state.currentProjectDoc?.id === doc.id;
+      const kindLabel = doc.kind === 'document' ? 'Entrada' : doc.kind === 'chapter' ? 'Capítulo' : 'Complemento';
+      return `<li class="project-doc-item ${selected ? 'active' : ''}">
+        <button class="project-doc-open" data-project-id="${escapeHtml(project.id)}" data-doc-kind="${doc.kind}" data-doc-id="${escapeHtml(doc.id)}">
+          <span class="project-doc-kind">${kindLabel}</span>
+          <span class="project-doc-title">${escapeHtml(doc.title)}</span>
+          <span class="project-doc-state">${doc.published ? 'publicado' : 'rascunho'}</span>
+        </button>
+      </li>`;
+    }).join('');
+    return `<li class="project-item ${selectedProject ? 'active' : ''}">
+      <button class="project-open" data-project-id="${escapeHtml(project.id)}">
+        <span class="dot ${project.published ? 'pub' : 'draft'}" title="${project.published ? 'Publicado' : 'Rascunho'}"></span>
+        <span class="post-title">${escapeHtml(project.title)}</span>
+        <span class="post-date">${project.type === 'rpg' ? 'RPG' : 'HISTÓRIA'}</span>
+      </button>
+      <ul class="project-doc-list">${docs}</ul>
+    </li>`;
+  }).join('');
+}
+
+async function loadProjects() {
+  try {
+    state.projects = await api<ProjectListItem[]>('GET', '/api/projects');
+  } catch (err) {
+    state.projects = [];
+    setSaved(false, (err as Error).message);
+  }
+  renderProjectList();
+}
+
+function setProjectEditorVisibility(kind: 'project' | ProjectDocumentKind) {
+  postMeta.hidden = true;
+  $('#field-description')!.toggleAttribute('hidden', kind !== 'project');
+  projectMetaPanel.hidden = kind !== 'project';
+  projectDocMetaPanel.hidden = kind === 'project';
+  bannerEditor.hidden = true;
+  $('#btn-image')!.toggleAttribute('hidden', true);
+  projectActions.hidden = false;
+}
+
+async function openProject(id: string) {
+  const project = await api<Project>('GET', `/api/project/${encodeURIComponent(id)}`);
+  state.currentProject = project;
+  state.currentProjectDoc = null;
+  state.projectItemKind = 'project';
+  fieldTitle.value = project.file.title;
+  fieldDescription.value = project.file.description;
+  fieldProjectType.value = project.file.type;
+  fieldProjectPublished.checked = project.file.published;
+  fieldProjectHomepage.checked = project.file.showHomepage;
+  fieldProjectOrder.value = String(project.file.order);
+  fieldProjectCover.value = project.file.cover ?? '';
+  projectDocPath.textContent = project.path;
+  setProjectEditorVisibility('project');
+  if (cmView) cmView.destroy();
+  cmView = createEditor(project.body, () => renderPreviewDebounced());
+  renderPreview();
+  state.dirty = { title: false, body: false, meta: false };
+  state.tagsDirty = false;
+  renderProjectList();
+  emptyState.hidden = true;
+  editorView.hidden = false;
+  setSaved(true);
+  fieldTitle.focus();
+}
+
+async function openProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
+  let project = state.currentProject;
+  if (!project || project.id !== projectId) {
+    project = await api<Project>('GET', `/api/project/${encodeURIComponent(projectId)}`);
+    state.currentProject = project;
+  }
+  const params = new URLSearchParams({ project: projectId, kind, id });
+  const doc = await api<ProjectDocument>('GET', `/api/project-document?${params.toString()}`);
+  state.currentProjectDoc = doc;
+  state.projectItemKind = kind;
+  fieldTitle.value = doc.file.title;
+  fieldDocPublished.checked = doc.file.published;
+  fieldDocOrder.value = String(doc.file.order);
+  projectDocPath.textContent = doc.path;
+  setProjectEditorVisibility(kind);
+  if (cmView) cmView.destroy();
+  cmView = createEditor(doc.body, () => renderPreviewDebounced());
+  renderPreview();
+  state.dirty = { title: false, body: false, meta: false };
+  state.tagsDirty = false;
+  renderProjectList();
+  emptyState.hidden = true;
+  editorView.hidden = false;
+  setSaved(true);
+  fieldTitle.focus();
+}
+
+async function saveProjectCurrent(): Promise<boolean> {
+  try {
+    if (state.projectItemKind === 'project') {
+      if (!state.currentProject) return false;
+      const file: ProjectMeta = {
+        ...state.currentProject.file,
+        title: fieldTitle.value.trim() || state.currentProject.id,
+        description: fieldDescription.value.trim(),
+        type: fieldProjectType.value === 'rpg' ? 'rpg' : 'story',
+        published: fieldProjectPublished.checked,
+        showHomepage: fieldProjectHomepage.checked,
+        order: Number(fieldProjectOrder.value) || 0,
+        ...(fieldProjectCover.value.trim() ? { cover: fieldProjectCover.value.trim() } : { cover: undefined }),
+      };
+      state.currentProject = await api<Project>('POST', '/api/project/save', {
+        id: state.currentProject.id, file, body: currentBody(),
+      });
+    } else {
+      if (!state.currentProjectDoc) return false;
+      const file: ProjectDocumentMeta = {
+        ...state.currentProjectDoc.file,
+        title: fieldTitle.value.trim() || state.currentProjectDoc.id,
+        published: fieldDocPublished.checked,
+        order: Number(fieldDocOrder.value) || 0,
+      };
+      state.currentProjectDoc = await api<ProjectDocument>('POST', '/api/project-document/save', {
+        projectId: state.currentProjectDoc.projectId,
+        kind: state.currentProjectDoc.kind,
+        id: state.currentProjectDoc.id,
+        file,
+        body: currentBody(),
+      });
+    }
+    state.dirty = { title: false, body: false, meta: false };
+    await loadProjects();
+    setSaved(true);
+    return true;
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+    return false;
+  }
+}
+
+async function publishProjectCurrent() {
+  if (!(await saveProjectCurrent())) return;
+  setSaving('Publicando projeto...');
+  try {
+    const currentId = state.currentProject?.id;
+    const currentDoc = state.currentProjectDoc;
+    if (state.projectItemKind === 'project' && state.currentProject) {
+      const file = { ...state.currentProject.file, published: true };
+      state.currentProject = await api<Project>('POST', '/api/project/save', {
+        id: state.currentProject.id, file, body: currentBody(),
+      });
+    } else if (currentDoc) {
+      const file = { ...currentDoc.file, published: true };
+      state.currentProjectDoc = await api<ProjectDocument>('POST', '/api/project-document/save', {
+        projectId: currentDoc.projectId, kind: currentDoc.kind, id: currentDoc.id, file, body: currentBody(),
+      });
+    }
+    const label = state.projectItemKind === 'project'
+      ? `project: ${state.currentProject?.file.title ?? currentId}`
+      : `project document: ${currentDoc?.file.title ?? currentDoc?.id}`;
+    await api('POST', '/api/git/commit', { message: label });
+    await api('POST', '/api/git/push');
+    if (state.projectItemKind === 'project' && state.currentProject) {
+      fieldProjectPublished.checked = true;
+    } else {
+      fieldDocPublished.checked = true;
+    }
+    await loadProjects();
+    await refreshGit();
+    setSaved(true, `Publicado ✓ ${label}`);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
 }
 
 async function openPost(id: string) {
