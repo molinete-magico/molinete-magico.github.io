@@ -1320,6 +1320,14 @@ function restoreAutosave() {
 
     if (s?.mode === 'project' && typeof s.projectId === 'string' && typeof s.body === 'string') {
       const restoreProject = async () => {
+        state.projectMode = true;
+        ($('#btn-mode') as HTMLButtonElement).textContent = 'Posts';
+        ($('#btn-mode') as HTMLButtonElement).setAttribute('aria-pressed', 'true');
+        ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo projeto';
+        postList.hidden = true;
+        projectList.hidden = false;
+        projectActions.hidden = false;
+        search.placeholder = 'Pesquisar projetos e documentos...';
         if (s.itemKind === 'project') await openProject(s.projectId);
         else await openProjectDocument(s.projectId, s.docKind as ProjectDocumentKind, String(s.docId ?? 'document'));
         fieldTitle.value = s.title ?? '';
