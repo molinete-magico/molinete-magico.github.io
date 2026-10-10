@@ -4,7 +4,7 @@ type: story
 description: >-
   Uma história curta sobre uma cartógrafa que encontra lugares que desapareceram da
   memória de todos.
-published: true
+published: false
 showHomepage: true
 order: 2
 cover: /projects/o-mapa-das-coisas-perdidas/banner.jpeg
