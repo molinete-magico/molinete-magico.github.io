@@ -155,6 +155,8 @@ app.innerHTML = `
           <label class="project-check"><input id="field-project-homepage" type="checkbox" /> Exibir documento principal na entrada</label>
           <label>Ordem <input id="field-project-order" type="number" min="0" step="1" /></label>
           <label class="project-cover-field">Caminho da capa <input id="field-project-cover" type="text" placeholder="/projects/meu-projeto/banner.jpg" /></label>
+          <button id="btn-project-banner" class="ghost tiny" type="button">Adicionar banner</button>
+          <input id="file-project-banner" type="file" accept="image/*" hidden />
         </div>
         <p class="pane-hint">Os arquivos permanecem em content/projects/ e são publicados pelo Git.</p>
       </section>
@@ -295,6 +297,8 @@ const fieldProjectPublished = $('#field-project-published') as HTMLInputElement;
 const fieldProjectHomepage = $('#field-project-homepage') as HTMLInputElement;
 const fieldProjectOrder = $('#field-project-order') as HTMLInputElement;
 const fieldProjectCover = $('#field-project-cover') as HTMLInputElement;
+const btnProjectBanner = $('#btn-project-banner') as HTMLButtonElement;
+const fileProjectBanner = $('#file-project-banner') as HTMLInputElement;
 const fieldDocPublished = $('#field-doc-published') as HTMLInputElement;
 const fieldDocOrder = $('#field-doc-order') as HTMLInputElement;
 const projectDocPath = $('#project-doc-path')!;
@@ -1148,6 +1152,41 @@ $('#file-image')!.addEventListener('change', async (e) => {
 // ------------------------------------------------------------------
 // Painel Git
 // ------------------------------------------------------------------
+btnProjectBanner.addEventListener('click', () => {
+  if (!state.currentProject || state.projectItemKind !== 'project') {
+    setSaved(false, 'Abra um projeto antes de adicionar um banner.');
+    return;
+  }
+  fileProjectBanner.click();
+});
+
+fileProjectBanner.addEventListener('change', async () => {
+  const file = fileProjectBanner.files?.[0];
+  const project = state.currentProject;
+  if (!file || !project || state.projectItemKind !== 'project') return;
+
+  const form = new FormData();
+  form.append('file', file);
+  setSaved(false, 'Enviando banner...');
+  try {
+    const response = await fetch(`/api/project/${encodeURIComponent(project.id)}/banner`, {
+      method: 'POST',
+      body: form,
+    });
+    const data = await response.json() as { cover?: string; error?: string };
+    if (!response.ok || !data.cover) throw new Error(data.error ?? 'Não foi possível enviar o banner.');
+
+    fieldProjectCover.value = data.cover;
+    state.dirty.meta = true;
+    const saved = await saveProjectCurrent();
+    if (saved) setSaved(true, 'Banner adicionado');
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  } finally {
+    fileProjectBanner.value = '';
+  }
+});
+
 const gitBadge = $('#git-badge')!;
 const gitPanel = $('#git-panel')!;
 
