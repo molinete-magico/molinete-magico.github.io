@@ -1,0 +1,52 @@
+name: Check Writer and Blog
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "apps/writer/**"
+      - "apps/blog/**"
+      - "content/projects/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/check-writer.yml"
+  push:
+    branches: [feat/writer-projects]
+    paths:
+      - "apps/writer/**"
+      - "apps/blog/**"
+      - "content/projects/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/check-writer.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check Writer
+        run: npm run check --workspace=apps/writer
+
+      - name: Build Writer
+        run: npm run build --workspace=apps/writer
+
+      - name: Build blog
+        env:
+          BASE_PATH: /blog
+          SITE_URL: https://molinete-magico.github.io
+        run: npm run build --workspace=apps/blog

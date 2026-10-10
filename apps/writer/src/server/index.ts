@@ -22,9 +22,17 @@ import {
   deletePost,
   duplicatePost,
   saveImage,
+  listProjects,
+  readProject,
+  createProject,
+  saveProject,
+  saveProjectBanner,
+  readProjectDocument,
+  createProjectDocument,
+  saveProjectDocument,
 } from './content.ts';
 import { gitStatus, commit, push, canPush, pull } from './git.ts';
-import type { PostMeta } from '../shared/types.ts';
+import type { PostMeta, ProjectDocumentKind, ProjectMeta, ProjectDocumentMeta } from '../shared/types.ts';
 import { PORT, repoRoot, contentRoot, clientDir, setRepoRoot } from './fs.ts';
 
 function clientAsset(filename: string, contentType: string) {
@@ -150,7 +158,140 @@ app.post('/api/workspace', async (c) => {
 
 // --- Conteúdo -------------------------------------------------------------
 
+
 app.get('/api/posts', async (c) => c.json(await listPosts()));
+
+// --- Projetos ------------------------------------------------------------
+
+app.get('/api/projects', async (c) => {
+  try {
+    return c.json(await listProjects());
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 500);
+  }
+});
+
+app.get('/api/project/:id', async (c) => {
+  try {
+    return c.json(await readProject(c.req.param('id')));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 404);
+  }
+});
+
+app.post('/api/project', async (c) => {
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as { title?: unknown; type?: unknown };
+    const type = body.type === 'rpg' ? 'rpg' : 'story';
+    return c.json(await createProject(String(body.title ?? 'Novo projeto'), type), 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post('/api/project/:id/banner', async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem para o banner.' }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (file.size > 15 * 1024 * 1024) return c.json({ error: 'A imagem deve ter até 15 MB.' }, 400);
+
+    const cover = await saveProjectBanner(
+      c.req.param('id'),
+      file.name,
+      Buffer.from(await file.arrayBuffer()),
+    );
+    return c.json({ cover }, 201);
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post('/api/project/save', async (c) => {
+  try {
+    const body = (await c.req.json()) as {
+      id?: unknown;
+      file?: ProjectMeta;
+      body?: unknown;
+    };
+    if (typeof body.id !== 'string' || !body.file) {
+      return c.json({ error: 'Projeto ou metadados ausentes.' }, 400);
+    }
+    return c.json(await saveProject(body.id, body.file, String(body.body ?? '')));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.get('/api/project-document', async (c) => {
+  try {
+    const project = c.req.query('project') ?? '';
+    const kind = c.req.query('kind') ?? 'document';
+    const id = c.req.query('id') ?? 'document';
+    if (!['document', 'chapter', 'supplement'].includes(kind)) {
+      return c.json({ error: 'Tipo de documento inválido.' }, 400);
+    }
+    return c.json(await readProjectDocument(project, kind as ProjectDocumentKind, id));
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 404);
+  }
+});
+
+app.post('/api/project-document', async (c) => {
+  try {
+    const body = (await c.req.json().catch(() => ({}))) as {
+      projectId?: unknown;
+      kind?: unknown;
+      title?: unknown;
+    };
+    if (typeof body.projectId !== 'string' || !['chapter', 'supplement'].includes(String(body.kind))) {
+      return c.json({ error: 'Projeto ou tipo de documento inválido.' }, 400);
+    }
+    return c.json(
+      await createProjectDocument(
+        body.projectId,
+        body.kind as 'chapter' | 'supplement',
+        String(body.title ?? ''),
+      ),
+      201,
+    );
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post('/api/project-document/save', async (c) => {
+  try {
+    const body = (await c.req.json()) as {
+      projectId?: unknown;
+      kind?: unknown;
+      id?: unknown;
+      file?: ProjectDocumentMeta;
+      body?: unknown;
+    };
+    if (
+      typeof body.projectId !== 'string' ||
+      typeof body.id !== 'string' ||
+      !['document', 'chapter', 'supplement'].includes(String(body.kind)) ||
+      !body.file
+    ) {
+      return c.json({ error: 'Documento ou metadados ausentes.' }, 400);
+    }
+    return c.json(
+      await saveProjectDocument(
+        body.projectId,
+        body.kind as ProjectDocumentKind,
+        body.id,
+        body.file,
+        String(body.body ?? ''),
+      ),
+    );
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
 
 app.get('/api/post/:id', async (c) => {
   try {

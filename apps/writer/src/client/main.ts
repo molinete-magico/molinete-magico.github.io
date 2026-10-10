@@ -14,7 +14,7 @@ import { keymap } from '@codemirror/view';
 import { defaultKeymap } from '@codemirror/commands';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import type { Post, PostListItem, GitStatus, PostMeta } from '../shared/types';
+import type { Post, PostListItem, GitStatus, PostMeta, Project, ProjectListItem, ProjectDocument, ProjectDocumentKind, ProjectMeta, ProjectDocumentMeta } from '../shared/types';
 
 // ------------------------------------------------------------------
 // Estado global da aplicação.
@@ -28,6 +28,11 @@ const state: {
   savedAt: Date | null;
   tagsDirty: boolean;
   bannerAvailable: boolean;
+  projectMode: boolean;
+  projects: ProjectListItem[];
+  currentProject: Project | null;
+  currentProjectDoc: ProjectDocument | null;
+  projectItemKind: 'project' | ProjectDocumentKind;
 } = {
   posts: [],
   current: null,
@@ -37,6 +42,11 @@ const state: {
   savedAt: null,
   tagsDirty: false,
   bannerAvailable: false,
+  projectMode: false,
+  projects: [],
+  currentProject: null,
+  currentProjectDoc: null,
+  projectItemKind: 'project',
 };
 
 // ------------------------------------------------------------------
@@ -93,7 +103,8 @@ app.innerHTML = `
       <span class="git-badge" id="git-badge">…</span>
     </div>
     <div class="actions">
-      <button id="btn-new" class="ghost">+ Novo</button>
+      <button id="btn-mode" class="ghost" aria-pressed="false">Projetos</button>
+      <button id="btn-new" class="ghost">+ Novo post</button>
       <span id="save-state" class="save-state" role="status"></span>
       <button id="btn-save" class="ghost" disabled>Salvar</button>
       <button id="btn-publish" class="primary" disabled>Publicar</button>
@@ -102,9 +113,14 @@ app.innerHTML = `
   </header>
 
   <aside class="sidebar">
-    <input id="search" type="search" placeholder="Pesquisar..." aria-label="Pesquisar posts" />
+    <input id="search" type="search" placeholder="Pesquisar posts..." aria-label="Pesquisar conteúdo" />
+    <div id="project-actions" class="project-actions" hidden>
+      <button id="btn-new-chapter" class="ghost tiny">+ capítulo</button>
+      <button id="btn-new-supplement" class="ghost tiny">+ complemento</button>
+    </div>
     <div id="git-panel" class="git-panel"></div>
     <ul id="post-list" class="post-list"></ul>
+    <ul id="project-list" class="post-list project-list" hidden></ul>
   </aside>
 
   <main id="editor" class="editor">
@@ -114,7 +130,7 @@ app.innerHTML = `
     <div class="editor-view" id="editor-view" hidden>
       <input id="field-title" class="title-input" type="text" placeholder="Título do post" aria-label="Título do post" />
 
-      <div class="meta-row">
+      <div id="post-meta" class="meta-row">
         <label>Data
           <input id="field-date" type="date" />
         </label>
@@ -126,6 +142,32 @@ app.innerHTML = `
       </div>
 
       <textarea id="field-description" placeholder="Descrição curta (usada nos cards e SEO)" rows="2" aria-label="Descrição"></textarea>
+
+      <section id="project-meta" class="project-meta" hidden>
+        <div class="project-fields">
+          <label>Tipo
+            <select id="field-project-type">
+              <option value="story">História</option>
+              <option value="rpg">RPG</option>
+            </select>
+          </label>
+          <label class="project-check"><input id="field-project-published" type="checkbox" /> Projeto publicado</label>
+          <label class="project-check"><input id="field-project-homepage" type="checkbox" /> Exibir documento principal na entrada</label>
+          <label>Ordem <input id="field-project-order" type="number" min="0" step="1" /></label>
+          <label class="project-cover-field">Caminho da capa <input id="field-project-cover" type="text" placeholder="/projects/meu-projeto/banner.jpg" /></label>
+          <button id="btn-project-banner" class="ghost tiny" type="button">Adicionar banner</button>
+          <input id="file-project-banner" type="file" accept="image/*" hidden />
+        </div>
+        <p class="pane-hint">Os arquivos permanecem em content/projects/ e são publicados pelo Git.</p>
+      </section>
+
+      <section id="project-doc-meta" class="project-meta" hidden>
+        <div class="project-fields">
+          <label class="project-check"><input id="field-doc-published" type="checkbox" /> Documento publicado</label>
+          <label>Ordem <input id="field-doc-order" type="number" min="0" step="1" /></label>
+        </div>
+        <p id="project-doc-path" class="pane-hint"></p>
+      </section>
 
       <section id="banner-editor" class="banner-editor" hidden>
         <div class="banner-editor-head">
@@ -245,6 +287,21 @@ const renderPreviewDebounced = debounce(renderPreview, 250);
 // Lista de posts
 // ------------------------------------------------------------------
 const postList = $('#post-list')!;
+const projectList = $('#project-list')!;
+const projectActions = $('#project-actions')!;
+const postMeta = $('#post-meta')!;
+const projectMetaPanel = $('#project-meta')!;
+const projectDocMetaPanel = $('#project-doc-meta')!;
+const fieldProjectType = $('#field-project-type') as HTMLSelectElement;
+const fieldProjectPublished = $('#field-project-published') as HTMLInputElement;
+const fieldProjectHomepage = $('#field-project-homepage') as HTMLInputElement;
+const fieldProjectOrder = $('#field-project-order') as HTMLInputElement;
+const fieldProjectCover = $('#field-project-cover') as HTMLInputElement;
+const btnProjectBanner = $('#btn-project-banner') as HTMLButtonElement;
+const fileProjectBanner = $('#file-project-banner') as HTMLInputElement;
+const fieldDocPublished = $('#field-doc-published') as HTMLInputElement;
+const fieldDocOrder = $('#field-doc-order') as HTMLInputElement;
+const projectDocPath = $('#project-doc-path')!;
 const search = $('#search')! as HTMLInputElement;
 const fieldTitle = $('#field-title') as HTMLInputElement;
 const fieldDate = $('#field-date') as HTMLInputElement;
@@ -296,8 +353,197 @@ async function loadList() {
   renderList();
 }
 
+
+function renderProjectList() {
+  const q = state.filter.trim().toLowerCase();
+  const projects = state.projects.filter((project) =>
+    !q || [project.title, project.id, project.description].join(' ').toLowerCase().includes(q) ||
+      project.documents.some((doc) => [doc.title, doc.path].join(' ').toLowerCase().includes(q)),
+  );
+  projectList.innerHTML = projects.map((project) => {
+    const selectedProject = state.currentProject?.id === project.id && state.projectItemKind === 'project';
+    const docs = project.documents.map((doc) => {
+      const selected = state.currentProject?.id === project.id &&
+        state.currentProjectDoc?.kind === doc.kind && state.currentProjectDoc?.id === doc.id;
+      const kindLabel = doc.kind === 'document' ? 'Entrada' : doc.kind === 'chapter' ? 'Capítulo' : 'Complemento';
+      return `<li class="project-doc-item ${selected ? 'active' : ''}">
+        <button class="project-doc-open" data-project-id="${escapeHtml(project.id)}" data-doc-kind="${doc.kind}" data-doc-id="${escapeHtml(doc.id)}">
+          <span class="project-doc-kind">${kindLabel}</span>
+          <span class="project-doc-title">${escapeHtml(doc.title)}</span>
+          <span class="project-doc-state">${doc.published ? 'publicado' : 'rascunho'}</span>
+        </button>
+      </li>`;
+    }).join('');
+    return `<li class="project-item ${selectedProject ? 'active' : ''}">
+      <button class="project-open" data-project-id="${escapeHtml(project.id)}">
+        <span class="dot ${project.published ? 'pub' : 'draft'}" title="${project.published ? 'Publicado' : 'Rascunho'}"></span>
+        <span class="post-title">${escapeHtml(project.title)}</span>
+        <span class="post-date">${project.type === 'rpg' ? 'RPG' : 'HISTÓRIA'}</span>
+      </button>
+      <ul class="project-doc-list">${docs}</ul>
+    </li>`;
+  }).join('');
+}
+
+async function loadProjects() {
+  try {
+    state.projects = await api<ProjectListItem[]>('GET', '/api/projects');
+  } catch (err) {
+    state.projects = [];
+    setSaved(false, (err as Error).message);
+  }
+  renderProjectList();
+}
+
+function setProjectEditorVisibility(kind: 'project' | ProjectDocumentKind) {
+  postMeta.hidden = true;
+  $('#field-description')!.toggleAttribute('hidden', kind !== 'project');
+  projectMetaPanel.hidden = kind !== 'project';
+  projectDocMetaPanel.hidden = kind === 'project';
+  bannerEditor.hidden = true;
+  $('#btn-image')!.toggleAttribute('hidden', true);
+  projectActions.hidden = false;
+}
+
+async function openProject(id: string) {
+  const project = await api<Project>('GET', `/api/project/${encodeURIComponent(id)}`);
+  state.currentProject = project;
+  state.currentProjectDoc = null;
+  state.projectItemKind = 'project';
+  fieldTitle.value = project.file.title;
+  fieldDescription.value = project.file.description;
+  fieldProjectType.value = project.file.type;
+  fieldProjectPublished.checked = project.file.published;
+  fieldProjectHomepage.checked = project.file.showHomepage;
+  fieldProjectOrder.value = String(project.file.order);
+  fieldProjectCover.value = project.file.cover ?? '';
+  projectDocPath.textContent = project.path;
+  setProjectEditorVisibility('project');
+  if (cmView) cmView.destroy();
+  cmView = createEditor(project.body, () => renderPreviewDebounced());
+  renderPreview();
+  state.dirty = { title: false, body: false, meta: false };
+  state.tagsDirty = false;
+  renderProjectList();
+  emptyState.hidden = true;
+  editorView.hidden = false;
+  setSaved(true);
+  fieldTitle.focus();
+}
+
+async function openProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
+  let project = state.currentProject;
+  if (!project || project.id !== projectId) {
+    project = await api<Project>('GET', `/api/project/${encodeURIComponent(projectId)}`);
+    state.currentProject = project;
+  }
+  const params = new URLSearchParams({ project: projectId, kind, id });
+  const doc = await api<ProjectDocument>('GET', `/api/project-document?${params.toString()}`);
+  state.currentProjectDoc = doc;
+  state.projectItemKind = kind;
+  fieldTitle.value = doc.file.title;
+  fieldDocPublished.checked = doc.file.published;
+  fieldDocOrder.value = String(doc.file.order);
+  projectDocPath.textContent = doc.path;
+  setProjectEditorVisibility(kind);
+  if (cmView) cmView.destroy();
+  cmView = createEditor(doc.body, () => renderPreviewDebounced());
+  renderPreview();
+  state.dirty = { title: false, body: false, meta: false };
+  state.tagsDirty = false;
+  renderProjectList();
+  emptyState.hidden = true;
+  editorView.hidden = false;
+  setSaved(true);
+  fieldTitle.focus();
+}
+
+async function saveProjectCurrent(): Promise<boolean> {
+  try {
+    if (state.projectItemKind === 'project') {
+      if (!state.currentProject) return false;
+      const file: ProjectMeta = {
+        ...state.currentProject.file,
+        title: fieldTitle.value.trim() || state.currentProject.id,
+        description: fieldDescription.value.trim(),
+        type: fieldProjectType.value === 'rpg' ? 'rpg' : 'story',
+        published: fieldProjectPublished.checked,
+        showHomepage: fieldProjectHomepage.checked,
+        order: Number(fieldProjectOrder.value) || 0,
+        ...(fieldProjectCover.value.trim() ? { cover: fieldProjectCover.value.trim() } : { cover: undefined }),
+      };
+      state.currentProject = await api<Project>('POST', '/api/project/save', {
+        id: state.currentProject.id, file, body: currentBody(),
+      });
+    } else {
+      if (!state.currentProjectDoc) return false;
+      const file: ProjectDocumentMeta = {
+        ...state.currentProjectDoc.file,
+        title: fieldTitle.value.trim() || state.currentProjectDoc.id,
+        published: fieldDocPublished.checked,
+        order: Number(fieldDocOrder.value) || 0,
+      };
+      state.currentProjectDoc = await api<ProjectDocument>('POST', '/api/project-document/save', {
+        projectId: state.currentProjectDoc.projectId,
+        kind: state.currentProjectDoc.kind,
+        id: state.currentProjectDoc.id,
+        file,
+        body: currentBody(),
+      });
+    }
+    state.dirty = { title: false, body: false, meta: false };
+    await loadProjects();
+    setSaved(true);
+    return true;
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+    return false;
+  }
+}
+
+async function publishProjectCurrent() {
+  if (!(await saveProjectCurrent())) return;
+  setSaving('Publicando projeto...');
+  try {
+    const currentId = state.currentProject?.id;
+    const currentDoc = state.currentProjectDoc;
+    if (state.projectItemKind === 'project' && state.currentProject) {
+      const file = { ...state.currentProject.file, published: true };
+      state.currentProject = await api<Project>('POST', '/api/project/save', {
+        id: state.currentProject.id, file, body: currentBody(),
+      });
+    } else if (currentDoc) {
+      const file = { ...currentDoc.file, published: true };
+      state.currentProjectDoc = await api<ProjectDocument>('POST', '/api/project-document/save', {
+        projectId: currentDoc.projectId, kind: currentDoc.kind, id: currentDoc.id, file, body: currentBody(),
+      });
+    }
+    const label = state.projectItemKind === 'project'
+      ? `project: ${state.currentProject?.file.title ?? currentId}`
+      : `project document: ${currentDoc?.file.title ?? currentDoc?.id}`;
+    await api('POST', '/api/git/commit', { message: label });
+    await api('POST', '/api/git/push');
+    if (state.projectItemKind === 'project' && state.currentProject) {
+      fieldProjectPublished.checked = true;
+    } else {
+      fieldDocPublished.checked = true;
+    }
+    await loadProjects();
+    await refreshGit();
+    setSaved(true, `Publicado ✓ ${label}`);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
+}
+
 async function openPost(id: string) {
   state.current = await api<Post>('GET', `/api/post/${encodeURIComponent(id)}`);
+  postMeta.hidden = false;
+  projectMetaPanel.hidden = true;
+  projectDocMetaPanel.hidden = true;
+  $('#field-description')!.hidden = false;
+  $('#btn-image')!.hidden = false;
+  projectActions.hidden = true;
   const p = state.current;
 
   fieldTitle.value = p.file.title;
@@ -499,6 +745,7 @@ function todayClient() {
 }
 
 async function saveCurrent(): Promise<boolean> {
+  if (state.projectMode) return saveProjectCurrent();
   if (!state.current) return false;
   const meta = currentMeta();
   try {
@@ -527,6 +774,7 @@ async function saveCurrent(): Promise<boolean> {
 // Publicar (compensa no site: salva, commit e push ao GitHub)
 // ------------------------------------------------------------------
 async function publishCurrent() {
+  if (state.projectMode) return publishProjectCurrent();
   if (!state.current) return;
   const meta = { ...currentMeta(), draft: false };
   fieldDraft.checked = false;
@@ -616,11 +864,87 @@ function modal(title: string, body: string) {
 // ------------------------------------------------------------------
 $('#btn-new')!.addEventListener('click', async () => {
   if (!(await confirmNavigation())) return;
-  const title = window.prompt('Título do novo post:')?.trim();
+  const title = window.prompt(state.projectMode ? 'Nome do novo projeto:' : 'Título do novo post:')?.trim();
   if (!title) return;
+  if (state.projectMode) {
+    const typeInput = window.prompt('Tipo do projeto: digite "rpg" ou "story".', 'story')?.trim().toLowerCase();
+    const project = await api<Project>('POST', '/api/project', { title, type: typeInput === 'rpg' ? 'rpg' : 'story' });
+    await loadProjects();
+    await openProject(project.id);
+    return;
+  }
   const post = await api<Post>('POST', '/api/post', { title });
   await loadList();
   await openPost(post.id);
+});
+
+$('#btn-mode')!.addEventListener('click', async () => {
+  if (!(await confirmNavigation())) return;
+  state.projectMode = !state.projectMode;
+  const modeButton = $('#btn-mode') as HTMLButtonElement;
+  modeButton.textContent = state.projectMode ? 'Posts' : 'Projetos';
+  modeButton.setAttribute('aria-pressed', String(state.projectMode));
+  ($('#btn-new') as HTMLButtonElement).textContent = state.projectMode ? '+ Novo projeto' : '+ Novo post';
+  postList.hidden = state.projectMode;
+  projectList.hidden = !state.projectMode;
+  projectActions.hidden = !state.projectMode;
+  search.placeholder = state.projectMode ? 'Pesquisar projetos e documentos...' : 'Pesquisar posts...';
+  search.value = '';
+  state.filter = '';
+  if (state.projectMode) {
+    emptyState.hidden = false;
+    editorView.hidden = true;
+    await loadProjects();
+    if (state.currentProject) await openProject(state.currentProject.id);
+  } else {
+    projectMetaPanel.hidden = true;
+    projectDocMetaPanel.hidden = true;
+    if (state.current) await openPost(state.current.id);
+    else {
+      emptyState.hidden = false;
+      editorView.hidden = true;
+    }
+    await loadList();
+  }
+  setSaved(true, state.projectMode ? 'Área de projetos' : 'Área de posts');
+});
+
+$('#btn-new-chapter')!.addEventListener('click', async () => {
+  if (!(await confirmNavigation())) return;
+  if (!state.currentProject) {
+    setSaved(false, 'Selecione um projeto antes de criar um capítulo.');
+    return;
+  }
+  const title = window.prompt('Título do novo capítulo:')?.trim();
+  if (!title) return;
+  try {
+    const doc = await api<ProjectDocument>('POST', '/api/project-document', {
+      projectId: state.currentProject.id, kind: 'chapter', title,
+    });
+    await loadProjects();
+    await openProjectDocument(doc.projectId, doc.kind, doc.id);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
+});
+
+$('#btn-new-supplement')!.addEventListener('click', async () => {
+  if (!(await confirmNavigation())) return;
+  if (!state.currentProject) {
+    setSaved(false, 'Selecione um projeto antes de criar um complemento.');
+    return;
+  }
+  const title = window.prompt('Título do material complementar:')?.trim();
+  if (!title) return;
+  try {
+    const doc = await api<ProjectDocument>('POST', '/api/project-document', {
+      projectId: state.currentProject.id, kind: 'supplement', title,
+    });
+    await loadProjects();
+    await openProjectDocument(doc.projectId, doc.kind, doc.id);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
 });
 
 $('#btn-save')!.addEventListener('click', () => saveCurrent());
@@ -630,6 +954,22 @@ $('#btn-settings')!.addEventListener('click', () => openSettings());
 // ------------------------------------------------------------------
 // Ações por post (duplicar/excluir) — delegação de eventos
 // ------------------------------------------------------------------
+projectList.addEventListener('click', async (e) => {
+  const target = (e.target as HTMLElement).closest('button') as HTMLElement | null;
+  if (!target) return;
+  if (!(await confirmNavigation())) return;
+  const projectId = target.getAttribute('data-project-id');
+  if (!projectId) return;
+  const kind = target.getAttribute('data-doc-kind') as ProjectDocumentKind | null;
+  const id = target.getAttribute('data-doc-id');
+  try {
+    if (kind && id) await openProjectDocument(projectId, kind, id);
+    else await openProject(projectId);
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  }
+});
+
 postList.addEventListener('click', async (e) => {
   const openBtn = (e.target as HTMLElement).closest('.post-open') as HTMLElement | null;
   if (openBtn) {
@@ -665,7 +1005,8 @@ postList.addEventListener('click', async (e) => {
 
 search.addEventListener('input', () => {
   state.filter = search.value;
-  renderList();
+  if (state.projectMode) renderProjectList();
+  else renderList();
 });
 
 // Marca os campos de metadados como sujos ao editar
@@ -690,14 +1031,27 @@ fieldDescription.addEventListener('input', () => {
   setSaved(false, 'Alterações não salvas');
 });
 
+[fieldProjectType, fieldProjectPublished, fieldProjectHomepage, fieldProjectOrder, fieldProjectCover, fieldDocPublished, fieldDocOrder].forEach((field) => {
+  field.addEventListener('input', () => {
+    state.dirty.meta = true;
+    scheduleAutosave();
+    setSaved(false, 'Alterações não salvas');
+  });
+  field.addEventListener('change', () => {
+    state.dirty.meta = true;
+    scheduleAutosave();
+    setSaved(false, 'Alterações não salvas');
+  });
+});
+
 // ------------------------------------------------------------------
 // Navegação segura + divisão redimensionável
 // ------------------------------------------------------------------
 function hasUnsavedChanges() {
-  return Boolean(
-    state.current &&
-      (state.dirty.title || state.dirty.body || state.dirty.meta || state.tagsDirty),
-  );
+  const dirty = state.dirty.title || state.dirty.body || state.dirty.meta || state.tagsDirty;
+  return state.projectMode
+    ? Boolean((state.currentProject || state.currentProjectDoc) && dirty)
+    : Boolean(state.current && dirty);
 }
 
 async function confirmNavigation(): Promise<boolean> {
@@ -798,6 +1152,41 @@ $('#file-image')!.addEventListener('change', async (e) => {
 // ------------------------------------------------------------------
 // Painel Git
 // ------------------------------------------------------------------
+btnProjectBanner.addEventListener('click', () => {
+  if (!state.currentProject || state.projectItemKind !== 'project') {
+    setSaved(false, 'Abra um projeto antes de adicionar um banner.');
+    return;
+  }
+  fileProjectBanner.click();
+});
+
+fileProjectBanner.addEventListener('change', async () => {
+  const file = fileProjectBanner.files?.[0];
+  const project = state.currentProject;
+  if (!file || !project || state.projectItemKind !== 'project') return;
+
+  const form = new FormData();
+  form.append('file', file);
+  setSaved(false, 'Enviando banner...');
+  try {
+    const response = await fetch(`/api/project/${encodeURIComponent(project.id)}/banner`, {
+      method: 'POST',
+      body: form,
+    });
+    const data = await response.json() as { cover?: string; error?: string };
+    if (!response.ok || !data.cover) throw new Error(data.error ?? 'Não foi possível enviar o banner.');
+
+    fieldProjectCover.value = data.cover;
+    state.dirty.meta = true;
+    const saved = await saveProjectCurrent();
+    if (saved) setSaved(true, 'Banner adicionado');
+  } catch (err) {
+    setSaved(false, (err as Error).message);
+  } finally {
+    fileProjectBanner.value = '';
+  }
+});
+
 const gitBadge = $('#git-badge')!;
 const gitPanel = $('#git-panel')!;
 
@@ -842,7 +1231,13 @@ async function refreshGit() {
       await api('POST', '/api/git/pull');
       await refreshGit();
       await loadList();
-      if (state.current) await openPost(state.current.id);
+      if (state.projectMode) {
+        await loadProjects();
+        if (state.currentProject) {
+          if (state.currentProjectDoc) await openProjectDocument(state.currentProject.id, state.currentProjectDoc.kind, state.currentProjectDoc.id);
+          else await openProject(state.currentProject.id);
+        }
+      } else if (state.current) await openPost(state.current.id);
     } catch (err) {
       setSaved(false, (err as Error).message);
     }
@@ -858,12 +1253,12 @@ function setSaved(ok: boolean, message?: string) {
     ? message ?? `Salvo ✓ ${state.savedAt?.toLocaleTimeString() ?? ''}`
     : `${message ?? 'Alterações não salvas'} •`;
   saveState.className = ok ? 'save-state ok' : 'save-state err';
-  const hasDirty = state.dirty.title || state.dirty.body || state.dirty.meta;
-  ($('#btn-save') as HTMLButtonElement).disabled = !(
-    state.current && (hasDirty || state.tagsDirty)
-  );
-  ($('#btn-publish') as HTMLButtonElement).disabled =
-    !state.current || !fieldTitle.value.trim();
+  const hasDirty = state.dirty.title || state.dirty.body || state.dirty.meta || state.tagsDirty;
+  const hasActiveDocument = state.projectMode
+    ? Boolean(state.currentProject && (state.projectItemKind === 'project' || state.currentProjectDoc))
+    : Boolean(state.current);
+  ($('#btn-save') as HTMLButtonElement).disabled = !(hasActiveDocument && hasDirty);
+  ($('#btn-publish') as HTMLButtonElement).disabled = !hasActiveDocument || !fieldTitle.value.trim();
 }
 
 function setSaving(msg: string) {
@@ -884,8 +1279,30 @@ function scheduleAutosave() {
 }
 
 function writeAutosave() {
-  if (!state.current || !hasUnsavedChanges()) return;
+  if (!hasUnsavedChanges()) return;
   try {
+    if (state.projectMode && state.currentProject) {
+      localStorage.setItem(LS_KEY, JSON.stringify({
+        mode: 'project',
+        projectId: state.currentProject.id,
+        itemKind: state.projectItemKind,
+        docKind: state.currentProjectDoc?.kind,
+        docId: state.currentProjectDoc?.id,
+        title: fieldTitle.value,
+        description: fieldDescription.value,
+        projectType: fieldProjectType.value,
+        projectPublished: fieldProjectPublished.checked,
+        projectHomepage: fieldProjectHomepage.checked,
+        projectOrder: fieldProjectOrder.value,
+        projectCover: fieldProjectCover.value,
+        docPublished: fieldDocPublished.checked,
+        docOrder: fieldDocOrder.value,
+        body: currentBody(),
+        updatedAt: Date.now(),
+      }));
+      return;
+    }
+    if (!state.current) return;
     localStorage.setItem(
       LS_KEY,
       JSON.stringify({
@@ -935,8 +1352,38 @@ function restoreAutosave() {
   }
   try {
     const s = JSON.parse(saved);
-    if (!s?.id || typeof s.body !== 'string') {
+    if ((!s?.id && !(s?.mode === 'project' && s?.projectId)) || typeof s.body !== 'string') {
       localStorage.removeItem(LS_KEY);
+      return;
+    }
+
+    if (s?.mode === 'project' && typeof s.projectId === 'string' && typeof s.body === 'string') {
+      const restoreProject = async () => {
+        state.projectMode = true;
+        ($('#btn-mode') as HTMLButtonElement).textContent = 'Posts';
+        ($('#btn-mode') as HTMLButtonElement).setAttribute('aria-pressed', 'true');
+        ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo projeto';
+        postList.hidden = true;
+        projectList.hidden = false;
+        projectActions.hidden = false;
+        search.placeholder = 'Pesquisar projetos e documentos...';
+        if (s.itemKind === 'project') await openProject(s.projectId);
+        else await openProjectDocument(s.projectId, s.docKind as ProjectDocumentKind, String(s.docId ?? 'document'));
+        fieldTitle.value = s.title ?? '';
+        fieldDescription.value = s.description ?? '';
+        fieldProjectType.value = s.projectType ?? 'story';
+        fieldProjectPublished.checked = Boolean(s.projectPublished);
+        fieldProjectHomepage.checked = s.projectHomepage !== false;
+        fieldProjectOrder.value = String(s.projectOrder ?? 0);
+        fieldProjectCover.value = s.projectCover ?? '';
+        fieldDocPublished.checked = Boolean(s.docPublished);
+        fieldDocOrder.value = String(s.docOrder ?? 0);
+        cmView?.dispatch({ changes: { from: 0, to: cmView.state.doc.length, insert: s.body } });
+        renderPreview();
+        state.dirty = { title: true, body: true, meta: true };
+        setSaved(false, 'Recuperação automática de projeto — ainda não salvo');
+      };
+      void restoreProject().catch(() => localStorage.removeItem(LS_KEY));
       return;
     }
 
