@@ -4,23 +4,15 @@ import { z } from 'astro/zod';
 
 // IMPORTANTE: cada coleção é declarada diretamente neste arquivo,
 // sem funções auxiliares. O Astro analisa este arquivo de forma
-// estática para gerar os tipos de `CollectionEntry`.
-
-// O loader `glob` aponta para a raiz do monorepo (../../content),
-// onde os arquivos Markdown são versionados pelo Git.
+// estática para gerar os tipos de CollectionEntry.
 
 const posts = defineCollection({
   loader: glob({
     base: '../../content/posts',
     pattern: '**/*.md',
-    // Posts podem ser um arquivo solto (post.md) ou uma pasta
-    // (post/index.md + imagens). Em ambos os casos o slug (id)
-    // deve ser apenas o nome da pasta/arquivo, sem a extensão.
     generateId: ({ entry }) =>
       entry.replace(/\.md$/, '').replace(/\/index$/, ''),
   }),
-  // `draft: true` faz o post desaparecer do site público — é como
-  // o Writer mantém rascunhos sem publicá-los.
   schema: z.object({
     title: z.string(),
     description: z.string(),
@@ -29,15 +21,11 @@ const posts = defineCollection({
     draft: z.boolean().default(false),
     updatedDate: z.coerce.date().optional(),
     bannerPosition: z.string().optional(),
-    // Slug do projeto ao qual o post pertence; opcional para manter posts antigos compatíveis.
+    // Slug do projeto ao qual o post pertence.
     project: z.string().optional(),
   }),
 });
 
-// Projetos são entidades próprias: seus arquivos não fazem parte da
-// coleção de posts e não entram no feed, na página inicial ou no
-// arquivo global automaticamente. Cada projeto é definido por
-// content/projects/<slug>/project.md.
 const projects = defineCollection({
   loader: glob({
     base: '../../content/projects',
@@ -55,8 +43,8 @@ const projects = defineCollection({
   }),
 });
 
-// Cada projeto pode ter um documento principal independente dos posts.
-// O documento é Markdown e usa os títulos para gerar o índice lateral.
+// Documento principal do projeto. É a página de entrada do leitor.
+// Para histórias, pode ser o prólogo; para RPGs, o corpo principal.
 const projectDocs = defineCollection({
   loader: glob({
     base: '../../content/projects',
@@ -64,8 +52,44 @@ const projectDocs = defineCollection({
     generateId: ({ entry }) => entry.replace(/\/document\.md$/, ''),
   }),
   schema: z.object({
-    title: z.string().default('Documentação'),
+    title: z.string().default('Documento principal'),
+    published: z.boolean().default(true),
   }),
 });
 
-export const collections = { posts, projects, projectDocs };
+// Capítulos são unidades publicáveis independentes. Um capítulo com
+// published: false permanece no repositório, mas não gera página pública.
+const projectChapters = defineCollection({
+  loader: glob({
+    base: '../../content/projects',
+    pattern: '**/chapters/**/*.md',
+    generateId: ({ entry }) => entry.replace(/\.md$/, ''),
+  }),
+  schema: z.object({
+    title: z.string(),
+    order: z.number().default(0),
+    published: z.boolean().default(true),
+  }),
+});
+
+// Complementos também têm URL própria e aparecem no mesmo sumário.
+const projectSupplements = defineCollection({
+  loader: glob({
+    base: '../../content/projects',
+    pattern: '**/supplements/**/*.md',
+    generateId: ({ entry }) => entry.replace(/\.md$/, ''),
+  }),
+  schema: z.object({
+    title: z.string(),
+    order: z.number().default(0),
+    published: z.boolean().default(true),
+  }),
+});
+
+export const collections = {
+  posts,
+  projects,
+  projectDocs,
+  projectChapters,
+  projectSupplements,
+};
