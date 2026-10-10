@@ -147,7 +147,7 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   .document-project-title { margin: var(--space-2) 0 0; color: var(--text-muted); }
   .project-doc-layout {
     display: grid; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
-    align-items: start; gap: clamp(var(--space-5), 4vw, var(--space-8));
+    align-items: start; gap: clamp(calc(var(--space-5) + 20px), 4vw, calc(var(--space-8) + 20px));
   }
   .document-toc {
     position: sticky; top: var(--space-4); max-height: calc(100vh - 2rem);
