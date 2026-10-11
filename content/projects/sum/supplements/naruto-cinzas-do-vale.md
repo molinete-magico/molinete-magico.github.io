@@ -75,3 +75,4 @@ Vai ser uma sessão bem curta, apenas definindo os equipamentos que vocês podem
 - Shuriken: 1 de dano base. Pode ser arremessada com destreza. Podem ser arremessadas até no máximo 3. (Limite de 10 por inventário).
 - Bomba de fumaça: Gera um círculo de 5 metros de diametro onde só é possível ver até 2 metros a frente. Quem está de fora não consegue enxergar o outro lado. Fica ativa por 1 rodada.
 - Tarja de explosão: Explode quando ativada por um pequeno fluxo de chakra ou por pressão. 8 de dano para quem está até 8 metros da explosão e 4 para quem está até 12. Teste de resistência com vigor reduz pela metade.
+- Roupa de proteção genin: Uma cota de malha flexível que proteje por baixo das roupas utilizadas pelo ninja. +3 de defesa (todos os personagens podem ter)

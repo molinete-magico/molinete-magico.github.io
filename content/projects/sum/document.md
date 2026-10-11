@@ -67,7 +67,7 @@ Para o **calculo de vida**: 8 + Vigor
 
 Para o **calculo de estado mental**: 8 + Mente
 
-Para o **calculo de defesa**: 7+destreza+equipamento+bonus
+Para o **calculo de defesa**: 8+destreza+equipamento+bonus
 
 ### Atributos
 
