@@ -84,9 +84,53 @@ Se o chakra não for suficiente, o jutsu não pode ser usado.
 
 Podemos ter até 3 poderes/jutsus por personagem (sem contar os jutsus que você ganhou por abdicar de aptidões).
 
-### Condições
+## Condições
 
-- **Queimando:** no início do próximo turno do alvo, ele sofre **1 de dano**. A condição então termina. Ela **não acumula**: ser atingido de novo enquanto queima não causa dano extra.
+Condições são efeitos que poderes, jutsus, armas ou o cenário aplicam em um personagem. Regras gerais:
+
+- **Não acumulam.** Receber a mesma condição de novo apenas renova a duração, sem aumentar o efeito.
+- **Quem aplica** diz qual teste o alvo faz para resistir. Efeitos do corpo (veneno, paralisia, sangramento) usam **Vigor**. Efeitos da mente (genjutsu, medo) usam **Mente**. O alvo precisa tirar **mais** que a rolagem do conjurador para resistir.
+- **Para remover:** o próprio alvo pode gastar uma ação para tentar se livrar, se a condição disser como. O poder **Vigoroso** remove uma condição por cena.
+- Condições que impedem a esquiva ativa: **atordoado, paralisado, preso, dormindo, incapacitado e morrendo**.
+
+### Condições de dano
+
+- **Queimando:** no início do próximo turno do alvo, ele sofre **1 de dano**. A condição então termina.
+- **Sangrando:** o alvo sofre **1 de dano** no início de cada turno, por **3 rodadas**. Termina antes se alguém gastar uma ação para estancar (teste de Medicina ou Controle). Só é aplicada por armas ou poderes de corte profundo, não por uma kunai comum.
+- **Envenenado:** o alvo rola **1 dado a menos** em testes de Vigor e sofre **1 de dano** no início de cada turno. No fim de cada um dos seus turnos ele faz um teste de Vigor contra a potência do veneno: se vencer, a condição termina.
+- **Eletrocutado:** o próximo teste de Destreza ou de ataque do alvo é feito com **1 dado a menos**. A condição termina depois desse teste.
+
+### Condições de controle
+
+- **Lento:** a movimentação do alvo cai pela metade e ele rola **1 dado a menos** na esquiva ativa. Dura 2 rodadas.
+- **Cego:** o alvo rola **1 dado a menos** em ataques e na esquiva e não vê além de si. Dura 2 rodadas, ou até ele limpar os olhos (uma ação).
+- **Restringido:** o alvo não pode se mover e rola **1 dado a menos** na esquiva ativa. Para se soltar, gasta uma ação e faz um teste de Força ou Destreza contra a rolagem de quem o prendeu.
+- **Preso:** o alvo não pode se mover nem esquivar, e só consegue agir contra quem está ao alcance. Para se soltar, funciona como restringido, mas o teste de quem o prendeu ganha **+1**.
+- **Atordoado:** o alvo **perde a ação do próximo turno** e não pode esquivar. A condição termina no fim desse turno.
+- **Paralisado:** o alvo não age, não se move e não esquiva. No início de cada turno dele, faz um teste de Vigor: se vencer, a condição termina.
+- **Ilusionado (genjutsu):** o alvo rola **1 dado a menos** em todos os testes e vê o que o conjurador determinar. Para quebrar, gasta uma ação e faz um teste de Mente contra o Controle de quem lançou. Receber dano de um aliado também quebra o efeito.
+- **Amedrontado:** o alvo rola **1 dado a menos** em ataques contra a fonte do medo e não pode se aproximar dela por vontade própria. Dura 2 rodadas, ou até o alvo vencer um teste de Mente.
+
+### Condições de estado
+
+- **Dormindo:** o alvo não age. Acorda ao sofrer dano ou com uma ação de outro personagem.
+- **Incapacitado:** o alvo não pode agir nem esquivar. É o estado de quem chegou a **0 de Vida** (desmaiado).
+- **Morrendo:** o personagem incapacitado em campanha de morte permanente, sem ajuda. No fim de cada rodada, faz um teste de Vigor contra **10**: com 3 falhas, morre; com 3 sucessos, ou se alguém o ajudar com Medicina, se estabiliza e para de morrer.
+- **Exausto:** quando o chakra chega a 0, o personagem rola **1 dado a menos** em testes de combate até descansar ou recuperar chakra. O mestre pode somar outros efeitos conforme a cena.
+
+### Como aplicar condições em jutsus e poderes novos
+
+Se quiserem criar jutsus com efeito, usem esta tabela como ponto de partida para o custo de chakra (a Bola de Fogo, com 4 de dano e queimando, custa 4):
+
+| O que o jutsu faz | Custo sugerido |
+| --- | --- |
+| Dano 3 + condição leve (queimando, eletrocutado, sangrando) | 3 |
+| Sem dano + lento, cego ou amedrontado | 3 |
+| Sem dano + restringido, atordoado ou ilusionado | 4 |
+| Sem dano + preso ou paralisado | 5 ou mais, ou exigir uma condição prévia no alvo |
+| Efeito em área (vários alvos) | +1 ao custo |
+
+O jutsu continua pedindo um ataque de Controle contra a defesa ou a esquiva do alvo, como já descrito acima. A condição só entra se o ataque acertar.
 
 ## Equipamentos
 
