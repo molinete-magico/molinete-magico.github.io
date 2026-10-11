@@ -30,6 +30,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Os banners ficam versionados junto ao Markdown em content/projects/<slug>/.
+      # O Astro só publica arquivos estáticos que estão em public/, então copiamos
+      # os banners antes do build para que também existam no artefato do GitHub Pages.
+      - name: Prepare project banners
+        run: |
+          for project_dir in content/projects/*; do
+            [ -d "$project_dir" ] || continue
+            slug="$(basename "$project_dir")"
+            for banner in "$project_dir"/banner.*; do
+              [ -f "$banner" ] || continue
+              mkdir -p "apps/blog/public/projects/$slug"
+              cp "$banner" "apps/blog/public/projects/$slug/$(basename "$banner")"
+            done
+          done
+
       - name: Build blog
         env:
           BASE_PATH: /blog
