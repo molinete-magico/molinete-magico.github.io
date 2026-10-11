@@ -63,6 +63,7 @@ export default defineConfig({
   },
 
   markdown: {
+    rehypePlugins: [wrapMarkdownTables],
     shikiConfig: {
       theme: 'github-dark',
     },

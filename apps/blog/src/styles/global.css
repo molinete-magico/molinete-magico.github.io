@@ -354,7 +354,7 @@ th {
 }
 
 .prose .markdown-table-scroll th {
-  white-space: normal;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
