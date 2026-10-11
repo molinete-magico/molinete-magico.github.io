@@ -82,7 +82,7 @@ Para rolagens de combate, utilizaremos vários dados de 20 lados (d20) exatament
 
 Se você tem 3 pontos em um atributo de combate e tem um poder que adiciona +2, você rolará 3d20+2.
 
-Quando a ação **não for um ataque** e houver alguma perícia relevante, pode ser colocado +2 na ação.
+Quando a ação **não for um ataque** e houver alguma perícia relevante, pode ser colocado +2 da perícia na ação.
 
 Em resumo:
 
