@@ -1,6 +1,6 @@
 ---
 title: 'Naruto: Cinzas do Vale 0.5'
-published: false
+published: true
 order: 0
 ---
 
