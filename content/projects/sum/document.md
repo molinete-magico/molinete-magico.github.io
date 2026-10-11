@@ -80,7 +80,7 @@ Os atributos são: Força, Destreza, Precisão, Vigor, Mente e Controle.
 
 **Destreza:** O quão rápido seu personagem é. Calcula a movimentação e a defesa (incluindo a esquiva ativa). Foca em testes relacionados com rapidez, reação e o quanto de controle seu personagem tem sobre o próprio corpo.
 
-**Precisão:** O quão bem seu personagem mira e acerta o que quer atingir. Usada para **ataques à distância com armas**, como arremessar kunais e shurikens, usar arcos, senbons ou fios.
+**Precisão:** O quão bem seu personagem mira e acerta o que quer atingir. Usada para **ataques à distância com armas**, como usar arcos, armas de fogo ou arremessáveis.
 
 **Vigor:** O quão resistente e tolerante seu personagem é. Calcula vida e foca em testes relacionados com resistir a efeitos e não ser dominado em combate.
 
@@ -96,7 +96,7 @@ Numa campanha de nível inicial, é recomendado que os personagens tenham 1 pont
 
 ### Ataque e Defesa
 
-**Fazer um ataque:** role o atributo do ataque (Força no corpo a corpo, Precisão à distância, Controle em habilidades e jutsus), fique com o maior resultado e some os modificadores. Perícias não contam em ataques.
+**Fazer um ataque:** role o atributo do ataque (Força no corpo a corpo, Precisão à distância, Controle em habilidades), fique com o maior resultado e some os modificadores. Perícias não contam em ataques.
 
 **Defesa fixa:** é o valor de Defesa da ficha. O ataque acerta se igualar ou superar esse valor.
 
@@ -108,8 +108,6 @@ Numa campanha de nível inicial, é recomendado que os personagens tenham 1 pont
 - Se o defensor esquivar, o valor da defesa fixa não é somado: ele usa uma coisa ou outra.
 - Não pode ser usada se o personagem estiver surpreendido, atordoado, preso ou incapacitado. Nesses casos, vale só a defesa fixa.
 - **Não funciona contra ataques em área** que pedem teste de resistência (explosões, por exemplo). Nesses casos o alvo faz o teste indicado, normalmente de Vigor.
-
-**Dica de mesa:** contra um ataque fraco, a defesa fixa costuma ser suficiente. Guarde a esquiva para o ataque mais perigoso da rodada.
 
 ## Ficha Social
 
