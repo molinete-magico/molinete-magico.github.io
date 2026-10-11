@@ -9,7 +9,7 @@ order: 0
 
 Naruto: Cinzas do Vale é um complemento do SUM focado em contar a história dos genins do vale abençoado.
 
-Todas as regras do SUM base se aplicam aqui, a única excessão sendo a troca do nome Estado Mental para Chakra por motivos de imersão.
+Todas as regras do SUM base se aplicam aqui, a única adição sendo a troca do nome Estado Mental para Chakra por motivos de imersão.
 
 Nessa versão 0.5 entraremos apenas no que diz respeito aos jogadores e focando em suas builds. Qualquer tipo de alterações que quiserem, podem entrar em contato comigo. Também vou tentar usar uma linguagem de fácil entendimento para que os players pouco acostumados com sistemas possam jogar melhor.
 
