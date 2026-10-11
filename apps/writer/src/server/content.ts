@@ -612,6 +612,35 @@ export async function saveProjectBanner(
   return `/projects/${slug}/${name}`;
 }
 
+export async function saveProjectDocumentImage(
+  projectId: string,
+  kind: ProjectDocumentKind,
+  id: string,
+  filename: string,
+  buffer: Buffer,
+): Promise<string> {
+  await projectFile(projectId);
+  const markdownPath = documentLocation(projectId, kind, id);
+  if (!(await exists(markdownPath))) throw new Error('Documento não encontrado.');
+  const extension = path.extname(filename).toLowerCase();
+  if (!['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'].includes(extension)) {
+    throw new Error('Formato inválido. Use JPG, PNG, WEBP, GIF ou AVIF.');
+  }
+  if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) {
+    throw new Error('A imagem deve ter até 15 MB.');
+  }
+  const stem = path.basename(filename, extension)
+    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')
+    .slice(0, 70) || 'imagem';
+  const folder = path.dirname(markdownPath);
+  let name = `${stem}${extension}`;
+  let suffix = 2;
+  while (await exists(path.join(folder, name))) name = `${stem}-${suffix++}${extension}`;
+  await fs.writeFile(path.join(folder, name), buffer);
+  return name;
+}
+
 export async function readProjectDocument(
   projectId: string,
   kind: ProjectDocumentKind,
