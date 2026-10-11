@@ -1,6 +1,6 @@
 ---
 title: Documento principal
-published: true
+published: false
 order: 0
 ---
 
