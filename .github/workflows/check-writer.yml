@@ -10,6 +10,7 @@ on:
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/check-writer.yml"
+      - ".github/workflows/deploy-blog.yml"
   push:
     branches: [feat/writer-projects]
     paths:
