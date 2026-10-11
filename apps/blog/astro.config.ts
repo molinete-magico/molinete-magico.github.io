@@ -11,39 +11,6 @@ const appRoot = fileURLToPath(new URL('.', import.meta.url));
 const repositoryRoot = fileURLToPath(new URL('../..', import.meta.url));
 const contentRoot = fileURLToPath(new URL('../../content', import.meta.url));
 
-// Envolve cada tabela Markdown para que tabelas largas possam rolar sem
-// comprimir as colunas nem afetar a largura do restante do documento.
-type MarkdownNode = {
-  type: string;
-  tagName?: string;
-  properties?: Record<string, unknown>;
-  children?: MarkdownNode[];
-};
-
-function wrapMarkdownTables() {
-  return (tree: MarkdownNode) => {
-    const visit = (node: MarkdownNode) => {
-      if (!node.children) return;
-      const children: MarkdownNode[] = [];
-      for (const child of node.children) {
-        if (child.type === 'element' && child.tagName === 'table') {
-          children.push({
-            type: 'element',
-            tagName: 'div',
-            properties: { className: ['markdown-table-scroll'], role: 'region', tabIndex: 0, 'aria-label': 'Tabela; role para rolar horizontalmente' },
-            children: [child],
-          });
-        } else {
-          visit(child);
-          children.push(child);
-        }
-      }
-      node.children = children;
-    };
-    visit(tree);
-  };
-}
-
 export default defineConfig({
   site: (process.env.SITE_URL ?? 'https://molinete-magico.github.io').replace(/\/$/, ''),
   base,
@@ -63,7 +30,6 @@ export default defineConfig({
   },
 
   markdown: {
-    rehypePlugins: [wrapMarkdownTables],
     shikiConfig: {
       theme: 'github-dark',
     },
