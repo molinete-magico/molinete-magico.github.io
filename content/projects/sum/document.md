@@ -16,6 +16,39 @@ Na ficha social, pense em como seu personagem interage com o mundo. Ele é caris
 
 Obviamente a rolagem dos dois é completamente diferente, mas isso será explicado no tópico de rolagens.
 
+## Rolagens
+
+As rolagens são separadas de acordo com a separação de fichas: Combate e Social
+
+### Rolagens de Combate
+
+Para rolagens de combate, utilizaremos vários dados de 20 lados (d20) exatamente como ordem paranormal ou qualquer outro sistema que utiliza uma “pool” de dados somando os modificadores (que se origina de poderes, habilidades ou outros).
+
+Se você tem 3 pontos em um atributo de combate e tem um poder que adiciona +2, você rolará 3d20+2.
+
+Quando a ação **não for um ataque** e houver alguma perícia relevante, pode ser colocado +2 da perícia na ação.
+
+Em resumo:
+
+```mathematica
+[pontos no atributo]d20 + modificadores + perícia(caso não seja um ataque)
+```
+
+### Rolagens Sociais
+
+Para rolagens sociais, usamos **2d6 + modificador de atributo+ 1 de perícia (se tiver)**. 
+
+Em rolagens sociais não há uma DT definida, em vez disso, usamos uma tabela que determina o resultado diretamente.
+
+| Resultado | Interpretação | Efeito Narrativo |
+| --- | --- | --- |
+| **≤ 6** | Fracasso | Falha. |
+| **7–8** | Resultado fraco | A ação não funciona, dependendo do teste pode precisar de algo para funcionar (seja um discurso bom, uma ótima desculpa, uma peça que tinha guardada em seu inventário ou perder um bônus de um sucesso forte referente a aquela ação). |
+| **9–11** | Sucesso limpo | A ação funciona. |
+| **12-13** | Sucesso forte | A ação funciona e você ganha um extra quando possível (consertar uma falha, muda o rumo de uma conversa que não está boa ou descobre mais uma pista). |
+| **14+** | Sucesso excepcional | Tem os mesmos efeitos do sucesso forte e são necessários dois resultados fracos para retirar. |
+
+Às vezes, dependendo das adversidades da cena ou de lore, uma cena pode começar com resultados fracos ou fortes, tudo depende de como o mundo se comporta.
 ## Ficha de Combate
 
 A ficha de combate consiste em medidores simples: Contadores e Atributos
@@ -71,40 +104,6 @@ A ficha social consiste apenas nos atributos: Intelecto, Contexto, Expressão, P
 **Compostura (Se manter):** Capacidade de permanecer integro sob pressão. Define o quão controlado seu personagem é em situações extremas. Usado para: Autocontrole, resistência a medo e impulsos e tomar decisões. “Eu não vou perder o controle.”d
 
 Para personagens de nível inicial, é recomendado que os personagens tenham 1 ponto em todos os atributos, podendo adicionar mais 4 pontos. Limite de atributo: 4
-
-## Rolagens
-
-As rolagens são separadas de acordo com a separação de fichas: Combate e Social
-
-### Rolagens de Combate
-
-Para rolagens de combate, utilizaremos vários dados de 20 lados (d20) exatamente como ordem paranormal ou qualquer outro sistema que utiliza uma “pool” de dados somando os modificadores (que se origina de poderes, habilidades ou outros).
-
-Se você tem 3 pontos em um atributo de combate e tem um poder que adiciona +2, você rolará 3d20+2.
-
-Quando a ação **não for um ataque** e houver alguma perícia relevante, pode ser colocado +2 da perícia na ação.
-
-Em resumo:
-
-```mathematica
-[pontos no atributo]d20 + modificadores + perícia(caso não seja um ataque)
-```
-
-### Rolagens Sociais
-
-Para rolagens sociais, usamos **2d6 + modificador de atributo+ 1 de perícia (se tiver)**. 
-
-Em rolagens sociais não há uma DT definida, em vez disso, usamos uma tabela que determina o resultado diretamente.
-
-| Resultado | Interpretação | Efeito Narrativo |
-| --- | --- | --- |
-| **≤ 6** | Fracasso | Falha. |
-| **7–8** | Resultado fraco | A ação não funciona, dependendo do teste pode precisar de algo para funcionar (seja um discurso bom, uma ótima desculpa, uma peça que tinha guardada em seu inventário ou perder um bônus de um sucesso forte referente a aquela ação). |
-| **9–11** | Sucesso limpo | A ação funciona. |
-| **12-13** | Sucesso forte | A ação funciona e você ganha um extra quando possível (consertar uma falha, muda o rumo de uma conversa que não está boa ou descobre mais uma pista). |
-| **14+** | Sucesso excepcional | Tem os mesmos efeitos do sucesso forte e são necessários dois resultados fracos para retirar. |
-
-Às vezes, dependendo das adversidades da cena ou de lore, uma cena pode começar com resultados fracos ou fortes, tudo depende de como o mundo se comporta.
 
 ## Perícias
 
