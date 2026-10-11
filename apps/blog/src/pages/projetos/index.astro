@@ -21,9 +21,15 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
     </header>
 
     {projects.length > 0 ? (
-      <ul class="project-grid">
+      <>
+      <div class="project-search">
+        <label for="project-search-input">Buscar projetos</label>
+        <input id="project-search-input" type="search" placeholder="Nome, descrição ou tipo..." autocomplete="off" />
+        <p id="project-search-count" class="post-meta" aria-live="polite">{projects.length} projetos</p>
+      </div>
+      <ul class="project-grid" id="project-grid">
         {projects.map((project) => (
-          <li class="project-card">
+          <li class="project-card" data-search={`${project.data.title} ${project.data.description ?? ''} ${project.data.type === 'rpg' ? 'sistema de rpg rpg' : 'história narrativa'}`}>
             <a
               class:list={['project-card-link', { 'project-card-link--banner': Boolean(project.data.cover) }]}
               href={withBase(`/projetos/${project.id}/`)}
@@ -39,6 +45,8 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
           </li>
         ))}
       </ul>
+      <p id="project-search-empty" class="projects-empty" hidden>Nenhum projeto corresponde à sua busca.</p>
+      </>
     ) : (
       <div class="projects-empty">
         <p class="empty-label">[ NENHUM PROJETO PUBLICADO ]</p>
@@ -48,10 +56,62 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
   </section>
 </BaseLayout>
 
+<script>
+  const searchInput = document.querySelector<HTMLInputElement>('#project-search-input');
+  const projectCards = Array.from(document.querySelectorAll<HTMLElement>('#project-grid .project-card'));
+  const count = document.querySelector<HTMLElement>('#project-search-count');
+  const empty = document.querySelector<HTMLElement>('#project-search-empty');
+
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('pt-BR');
+
+  searchInput?.addEventListener('input', () => {
+    const query = normalize(searchInput.value.trim());
+    let visible = 0;
+    for (const card of projectCards) {
+      const matches = normalize(card.dataset.search ?? '').includes(query);
+      card.hidden = !matches;
+      if (matches) visible++;
+    }
+    if (count) count.textContent = visible === 1 ? '1 projeto' : `${visible} projetos`;
+    if (empty) empty.hidden = visible !== 0;
+  });
+</script>
+
 <style>
   .projects-page {
     padding-bottom: var(--space-8);
   }
+
+  .project-search {
+    display: grid;
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+    max-width: 42rem;
+  }
+
+  .project-search label {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+
+  .project-search input {
+    width: 100%;
+    min-height: 2.8rem;
+    padding: var(--space-3);
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-rest);
+    border-radius: 0;
+    font: inherit;
+  }
+
+  .project-search input:focus-visible {
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  .project-search .post-meta { margin: 0; }
 
   .project-grid {
     display: grid;

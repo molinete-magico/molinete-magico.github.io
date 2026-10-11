@@ -411,7 +411,7 @@ function setProjectEditorVisibility(kind: 'project' | ProjectDocumentKind) {
   projectMetaPanel.hidden = kind !== 'project';
   projectDocMetaPanel.hidden = kind === 'project';
   bannerEditor.hidden = true;
-  $('#btn-image')!.toggleAttribute('hidden', true);
+  $('#btn-image')!.toggleAttribute('hidden', kind === 'project');
   projectActions.hidden = false;
 }
 
@@ -1130,12 +1130,27 @@ $('#btn-image')!.addEventListener('click', () => {
 });
 
 $('#file-image')!.addEventListener('change', async (e) => {
-  if (!state.current) return;
   const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch(`/api/post/${encodeURIComponent(state.current.id)}/image`, {
+  let endpoint: string;
+  if (state.projectMode) {
+    const doc = state.currentProjectDoc;
+    if (!doc) {
+      setSaved(false, 'Abra o documento de um projeto antes de adicionar imagens.');
+      (e.target as HTMLInputElement).value = '';
+      return;
+    }
+    form.append('projectId', doc.projectId);
+    form.append('kind', doc.kind);
+    form.append('id', doc.id);
+    endpoint = '/api/project-document/image';
+  } else {
+    if (!state.current) return;
+    endpoint = `/api/post/${encodeURIComponent(state.current.id)}/image`;
+  }
+  const res = await fetch(endpoint, {
     method: 'POST',
     body: form,
   });

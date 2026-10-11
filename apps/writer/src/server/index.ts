@@ -31,6 +31,7 @@ import {
   readProjectDocument,
   createProjectDocument,
   saveProjectDocument,
+  saveProjectDocumentImage,
 } from './content.ts';
 import { gitStatus, commit, push, canPush, pull } from './git.ts';
 import type { PostMeta, ProjectDocumentKind, ProjectMeta, ProjectDocumentMeta } from '../shared/types.ts';
@@ -257,6 +258,28 @@ app.post('/api/project-document', async (c) => {
       ),
       201,
     );
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
+app.post('/api/project-document/image', async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get('file');
+    const projectId = String(form.get('projectId') ?? '');
+    const kind = String(form.get('kind') ?? '');
+    const id = String(form.get('id') ?? '');
+    if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem.' }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (!projectId || !['document', 'chapter', 'supplement'].includes(kind) || !id) {
+      return c.json({ error: 'Projeto ou documento inválido.' }, 400);
+    }
+    const name = await saveProjectDocumentImage(
+      projectId, kind as ProjectDocumentKind, id, file.name,
+      Buffer.from(await file.arrayBuffer()),
+    );
+    return c.json({ name, alt: path.basename(name, path.extname(name)) }, 201);
   } catch (err) {
     return c.json({ error: (err as Error).message }, 400);
   }
