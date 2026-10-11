@@ -67,7 +67,7 @@ Para o **calculo de vida**: 8 + Vigor
 
 Para o **calculo de estado mental**: 8 + Mente
 
-Para o **calculo de defesa**: 8+destreza+equipamento+bonus
+Para o **calculo de defesa**: 8+destreza+equipamento+bonus (1 pode ser usada a defesa ativa como reação, na defesa ativa você faz um teste de Destreza e vai diretamente contra o ataque (não funciona para ataques em área).
 
 ### Atributos
 
