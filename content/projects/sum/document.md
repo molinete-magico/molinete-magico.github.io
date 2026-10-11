@@ -22,21 +22,23 @@ As rolagens são separadas de acordo com a separação de fichas: Combate e Soci
 
 ### Rolagens de Combate
 
-Para rolagens de combate, utilizaremos vários dados de 20 lados (d20) exatamente como ordem paranormal ou qualquer outro sistema que utiliza uma “pool” de dados somando os modificadores (que se origina de poderes, habilidades ou outros).
+Para rolagens de combate, utilizaremos vários dados de 20 lados (d20) exatamente como Ordem Paranormal ou qualquer outro sistema que utiliza uma “pool” de dados: você rola **todos os dados da pool, fica apenas com o MAIOR resultado** e soma os modificadores (que se originam de poderes, habilidades ou outros).
 
-Se você tem 3 pontos em um atributo de combate e tem um poder que adiciona +2, você rolará 3d20+2.
+Se você tem 3 pontos em um atributo de combate e tem um poder que adiciona +2, você rolará 3d20, ficará com o maior resultado e somará +2.
 
 Quando a ação **não for um ataque** e houver alguma perícia relevante, pode ser colocado +2 da perícia na ação.
 
 Em resumo:
 
 ```mathematica
-[pontos no atributo]d20 + modificadores + perícia(caso não seja um ataque)
+maior de [pontos no atributo]d20 + modificadores + perícia (caso não seja um ataque)
 ```
+
+Um atributo com 0 pontos rola 2d20 e fica com o **menor** resultado.
 
 ### Rolagens Sociais
 
-Para rolagens sociais, usamos **2d6 + modificador de atributo+ 1 de perícia (se tiver)**. 
+Para rolagens sociais, usamos **2d6 + modificador de atributo + 1 de perícia (se tiver)**.
 
 Em rolagens sociais não há uma DT definida, em vez disso, usamos uma tabela que determina o resultado diretamente.
 
@@ -49,6 +51,7 @@ Em rolagens sociais não há uma DT definida, em vez disso, usamos uma tabela qu
 | **14+** | Sucesso excepcional | Tem os mesmos efeitos do sucesso forte e são necessários dois resultados fracos para retirar. |
 
 Às vezes, dependendo das adversidades da cena ou de lore, uma cena pode começar com resultados fracos ou fortes, tudo depende de como o mundo se comporta.
+
 ## Ficha de Combate
 
 A ficha de combate consiste em medidores simples: Contadores e Atributos
@@ -61,21 +64,23 @@ Os contadores são três: Vida, Estado Mental e Defesa
 
 **Estado Mental:** Frequentemente abreviado como EM, é usado para definir determinação/saúde mental do personagem. Também é usado para medir cansaço e gasto em habilidades mentais. Se chegar a 0 (dependendo da situação, campanha e interpretação do mestre) o personagem pode ter vários efeitos, desde enlouquecer até simplesmente desmaiar de cansaço.
 
-**Defesa:** O quão difícil é acertar seu personagem. Quando um teste de ataque é realizado contra seu personagem, a rolagem precisa ultrapassar a defesa para acertar.
+**Defesa:** O quão difícil é acertar seu personagem. Quando um teste de ataque é realizado contra seu personagem, a rolagem precisa **igualar ou superar** a defesa para acertar. Veja o tópico *Ataque e Defesa* para a esquiva ativa.
 
-Para o **calculo de vida**: 8 + Vigor
+Para o **cálculo de vida**: 8 + Vigor
 
-Para o **calculo de estado mental**: 8 + Mente
+Para o **cálculo de estado mental**: 8 + Mente
 
-Para o **calculo de defesa**: 8+destreza+equipamento+bonus (1 pode ser usada a defesa ativa como reação, na defesa ativa você faz um teste de Destreza e vai diretamente contra o ataque (não funciona para ataques em área).
+Para o **cálculo de defesa**: 8 + Destreza + equipamento + bônus
 
 ### Atributos
 
-Os atributos são: Força, Destreza, Vigor, Mente e Controle.
+Os atributos são: Força, Destreza, Precisão, Vigor, Mente e Controle.
 
-**Força:** O quão forte fisicamente seu personagem é. Foca principalmente em testes relacionados com empurrar coisas, acertar seu inimigo e levantar coisas pesadas. Importante também para personagens corpo a corpo.
+**Força:** O quão forte fisicamente seu personagem é. Foca principalmente em testes relacionados com empurrar coisas, levantar coisas pesadas e **atacar corpo a corpo**.
 
-**Destreza:** O quão rápido seu personagem é. Calcula a movimentação e defesa. Foca em testes relacionados com rapidez, reação e o quanto de controle seu personagem tem sobre o próprio corpo.
+**Destreza:** O quão rápido seu personagem é. Calcula a movimentação e a defesa (incluindo a esquiva ativa). Foca em testes relacionados com rapidez, reação e o quanto de controle seu personagem tem sobre o próprio corpo.
+
+**Precisão:** O quão bem seu personagem mira e acerta o que quer atingir. Usada para **ataques à distância com armas**, como arremessar kunais e shurikens, usar arcos, senbons ou fios.
 
 **Vigor:** O quão resistente e tolerante seu personagem é. Calcula vida e foca em testes relacionados com resistir a efeitos e não ser dominado em combate.
 
@@ -83,17 +88,34 @@ Os atributos são: Força, Destreza, Vigor, Mente e Controle.
 
 **Controle:** O quão bem seu personagem percebe e controla seu externo. Foca em testes relacionados com utilizar habilidades, se concentrar em combate e percepção.
 
-Numa campanha de nível inicial, é recomendado que os personagens tenham 1 ponto em todos os atributos, podendo distribuir mais 3 livremente entre eles. Também se pode colocar um atributo em 0 para ganhar +1 ponto. 
+Para lembrar rápido: **Força bate, Precisão atira, Controle usa habilidade, Destreza desvia.**
+
+Numa campanha de nível inicial, é recomendado que os personagens tenham 1 ponto em todos os atributos, podendo distribuir mais **4** livremente entre eles. Também se pode colocar um atributo em 0 para ganhar +1 ponto.
 
 **Limite de atributo recomendado: 3**
 
+### Ataque e Defesa
+
+**Fazer um ataque:** role o atributo do ataque (Força no corpo a corpo, Precisão à distância, Controle em habilidades e jutsus), fique com o maior resultado e some os modificadores. Perícias não contam em ataques.
+
+**Defesa fixa:** é o valor de Defesa da ficha. O ataque acerta se igualar ou superar esse valor.
+
+**Esquiva ativa:** uma vez por rodada, como reação, o defensor pode **trocar a defesa fixa por uma rolagem de Destreza**. O resultado da Destreza vai diretamente contra o ataque: o atacante precisa **igualar ou superar** a rolagem do defensor. Regras da esquiva:
+
+- Só pode ser usada **1 vez por rodada**.
+- Deve ser declarada **antes** de o atacante rolar.
+- A rolagem é apenas Destreza (maior dado da pool), **sem perícia e sem bônus de equipamento**.
+- Se o defensor esquivar, o valor da defesa fixa não é somado: ele usa uma coisa ou outra.
+- Não pode ser usada se o personagem estiver surpreendido, atordoado, preso ou incapacitado. Nesses casos, vale só a defesa fixa.
+- **Não funciona contra ataques em área** que pedem teste de resistência (explosões, por exemplo). Nesses casos o alvo faz o teste indicado, normalmente de Vigor.
+
+**Dica de mesa:** contra um ataque fraco, a defesa fixa costuma ser suficiente. Guarde a esquiva para o ataque mais perigoso da rodada.
+
 ## Ficha Social
 
-A ficha social consiste apenas nos atributos: Intelecto, Contexto, Expressão, Persona e Compostura 
+A ficha social consiste apenas nos atributos: Intelecto, Contexto, Expressão, Persona e Compostura
 
- 
-
-**Intelecto (Entender):** Capacidade de pensar, aprender e resolver problemas. Define o quanto seu personagem é versado em conhecimentos específicos. Usado para: Raciocínio lógico, aprendizado rápido, analise e planejamento. “Entendo como isso funciona.”
+**Intelecto (Entender):** Capacidade de pensar, aprender e resolver problemas. Define o quanto seu personagem é versado em conhecimentos específicos. Usado para: Raciocínio lógico, aprendizado rápido, análise e planejamento. “Entendo como isso funciona.”
 
 **Contexto (Viver):** Experiência prática e noção de realidade. Define o quão bem atualizado e pé no chão é seu personagem. Usado para: Cultura, política, e noção do momento histórico. “Já vi isso acontecer antes.”
 
@@ -101,7 +123,7 @@ A ficha social consiste apenas nos atributos: Intelecto, Contexto, Expressão, P
 
 **Persona (Ser visto):** Gestão consciente da identidade social, própria e alheia. Define quão bem o personagem entende os outros e a si mesmo. Usado para: Moldar a própria imagem, ler pessoas, entender como atitudes são interpretadas e se adaptar a diferentes contextos sociais. “Eu vejo e sei como estou sendo visto.”
 
-**Compostura (Se manter):** Capacidade de permanecer integro sob pressão. Define o quão controlado seu personagem é em situações extremas. Usado para: Autocontrole, resistência a medo e impulsos e tomar decisões. “Eu não vou perder o controle.”d
+**Compostura (Se manter):** Capacidade de permanecer íntegro sob pressão. Define o quão controlado seu personagem é em situações extremas. Usado para: Autocontrole, resistência a medo e impulsos e tomar decisões. “Eu não vou perder o controle.”
 
 Para personagens de nível inicial, é recomendado que os personagens tenham 1 ponto em todos os atributos, podendo adicionar mais 4 pontos. Limite de atributo: 4
 
@@ -127,7 +149,6 @@ Não há uma lista definitiva de perícias, apenas sugestões, porém, as sugeri
 - Fortitude
 - Furtividade
 - História
-
 - Iniciativa
 - Intimidação
 - Intuição
@@ -145,8 +166,8 @@ Não há uma lista definitiva de perícias, apenas sugestões, porém, as sugeri
 - Tecnologia
 - Vontade
 
-Como já dito anteriormente, perícias não contam para testes de ataque que causam dano, então luta e pontaria seriam para qualquer outro tipo de teste MENOS ataque.
+Como já dito anteriormente, perícias não contam para testes de ataque que causam dano, então Luta e Pontaria seriam para qualquer outro tipo de teste MENOS ataque. Perícias também **não entram na esquiva ativa**.
 
-Todos os personagens tem 5+mente de perícias (**NÃO AUMENTA SE O PONTO EM MENTE VIER DE EQUIPAMENTOS**).
+Todos os personagens tem 5 + Mente de perícias (**NÃO AUMENTA SE O PONTO EM MENTE VIER DE EQUIPAMENTOS**).
 
 Perícias treinadas dão +2 em testes de combate e +1 em testes sociais.
