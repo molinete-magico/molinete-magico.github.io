@@ -2,7 +2,7 @@
 title: SUM
 type: rpg
 description: Sistema Universal Modular para qualquer narrativa de RPG com abordagem padrão.
-published: false
+published: true
 showHomepage: true
 order: 0
 ---
