@@ -64,6 +64,9 @@ Lembre-se que, para utilizar jutsus elementais, é necessário ter a aptidão da
 - Controle mental Yamanaka: Permite que o alvo seja controlado pelo Yamanaka capaz de utiilizar esse jutsu. É necessário o alvo estar restringido, preso, dormindo, atordoado, incapacitado, morrendo ou qualquer outra condição incapacitante. É necessário realizar um teste de resistência contra o alvo para dominar(Controle + 2 para quem utilizou o Jutsu e Mental - 1 para o alvo).
 - Vigoroso: Permite (uma vez por cena) retirar um efeito/condição de sí mesmo.
 
+
+Podemos ter até 3 poderes/jutsus por personagem (sem contar os jutsus que você ganhou por abdicar de aptidões).
+
 ## Equipamentos
 
 Vai ser uma sessão bem curta, apenas definindo os equipamentos que vocês podem usar.
