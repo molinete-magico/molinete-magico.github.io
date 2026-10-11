@@ -18,7 +18,7 @@ Tenham em mente que apenas estou adaptando o naruto Shinobi no Sho (sistema que 
 ## Clãs
 
 - Uchiha: Recebe gratuitamente o Jutsu Bola de Fogo e tem a capacidade de usar o Sharingan (Mais explicações no tópico de Jutsus/Poderes)
-- Yamanaka: Tem a possibilidade de usar o controle mental quando o alvo está restringido, preso, dormindo, atordoado, incapacitado ou morrendo(Mais detalhes no.
+- Yamanaka: Tem a possibilidade de usar o controle mental quando o alvo está restringido, preso, dormindo, atordoado, incapacitado ou morrendo (Mais detalhes no tópico de Jutsus/Poderes).
 - ______ (clã do natsu): + 10 pontos de chakra e o poder Vigoroso
 
 ## Aptidões
@@ -32,6 +32,7 @@ Algumas ideias de aptidões para caso queiram renovar suas fichas:
 - Poder utilizar mais um jutsu com chakra zerado.
 - Conseguir se esconder melhor à noite.
 - Saber ler línguas antigas.
+- Utilizar técnicas médicas/Curar (boa natsu)
 
 As aptidões realmente simbolizam sistematicamente o que seu personagem pode fazer que o diferencia dos outros.
 
@@ -52,9 +53,22 @@ Aqui seguimos a mesma lógica dos poderes, é possível criar alguns a partir de
 
 Lembre-se que, para utilizar jutsus elementais, é necessário ter a aptidão daquele elemento, ou seja, para ter um jutsu de água, precisaremos da aptidão Suiton.
 
+*Obs: As fraquezas são aplicadas aqui, ou seja, se o utilizar bola de fogo em um personagem que está diretamente utilizando um jutsu de suiton como defesa, a bola de fogo é anulada.*
+
 ![elementos](elementos.webp)
 
 ### Poderes/Jutsus citados no sistema
 
-#### Sharingan
-O Sharingan
+- Sharingan: Permite um bônus de +1 em rolagens referentes a leitura de inimigos e permite desviar de ataques inimigos utilizando controle (teste de Controle + Reflexos).
+- Jutsu Bola de Fogo: Uma bola de fogo em um cone de até 8 metros. 4 de dano em contato direto (resistência é vigor e reduz o dano para 2), aplica o efeito **queimando**.
+- Controle mental Yamanaka: Permite que o alvo seja controlado pelo Yamanaka capaz de utiilizar esse jutsu. É necessário o alvo estar restringido, preso, dormindo, atordoado, incapacitado, morrendo ou qualquer outra condição incapacitante. É necessário realizar um teste de resistência contra o alvo para dominar(Controle + 2 para quem utilizou o Jutsu e Mental - 1 para o alvo).
+- Vigoroso: Permite (uma vez por cena) retirar um efeito/condição de sí mesmo.
+
+## Equipamentos
+
+Vai ser uma sessão bem curta, apenas definindo os equipamentos que vocês podem usar.
+
+- Kunai: 2 de dano base. Pode ser arremessada com destreza ou usada como arma corpo a corpo.
+- Shuriken: 1 de dano base. Pode ser arremessada com destreza. Podem ser arremessadas até no máximo 3. (Limite de 10 por inventário).
+- Bomba de fumaça: Gera um círculo de 5 metros de diametro onde só é possível ver até 2 metros a frente. Quem está de fora não consegue enxergar o outro lado. Fica ativa por 1 rodada.
+- Tarja de explosão: Explode quando ativada por um pequeno fluxo de chakra ou por pressão. 8 de dano para quem está até 8 metros da explosão e 4 para quem está até 12. Teste de resistência com vigor reduz pela metade.
