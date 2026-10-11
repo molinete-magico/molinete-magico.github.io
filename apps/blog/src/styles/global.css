@@ -320,6 +320,49 @@ th {
 }
 
 
+/* Tabelas Markdown: preservar palavras e rolar apenas quando necessário. */
+.prose .markdown-table-scroll {
+  width: 100%;
+  max-width: 100%;
+  margin-block: var(--space-4);
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: var(--border-width) solid var(--border-rest);
+}
+
+.prose .markdown-table-scroll:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+
+.prose .markdown-table-scroll table {
+  width: 100%;
+  min-width: 32rem;
+  margin: 0;
+  table-layout: auto;
+  border: 0;
+}
+
+.prose .markdown-table-scroll th,
+.prose .markdown-table-scroll td {
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  vertical-align: top;
+  padding: var(--space-3) var(--space-3);
+  line-height: 1.6;
+}
+
+.prose .markdown-table-scroll th {
+  white-space: normal;
+}
+
+@media (max-width: 640px) {
+  .prose .markdown-table-scroll table {
+    min-width: 34rem;
+  }
+}
+
 /* ================================================================
    8. IMAGENS DENTRO DO CONTEÚDO
 ================================================================ */
