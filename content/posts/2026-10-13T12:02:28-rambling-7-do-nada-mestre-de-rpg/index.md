@@ -7,7 +7,7 @@ tags:
   - RPG
 draft: false
 updatedDate: '2026-10-13'
-bannerPosition: 39%
+bannerPosition: 37%
 ---
 
 Hypei demais um dos meus projetos que tinha como inspiração harry potter e acabei já tendo 3 players pra jogar sendo que nem fiz a primeira sessão ainda LKAJSDLA.
