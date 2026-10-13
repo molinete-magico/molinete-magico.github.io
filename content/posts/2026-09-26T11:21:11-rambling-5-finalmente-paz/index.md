@@ -2,8 +2,10 @@
 title: 'Rambling #5 - Finalmente paz'
 description: Sei nem mais oq é descansar
 pubDate: '2026-09-26'
+tags:
+  - rambling
 draft: false
-updatedDate: '2026-09-26'
+updatedDate: '2026-10-13'
 ---
 
 Depois de uma semana cheia de baixos e mais alguns outros baixos, finalmente passei da prova de PAA e posso descansar.
