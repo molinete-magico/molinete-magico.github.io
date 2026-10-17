@@ -2,7 +2,7 @@
 title: Fluxo RPG
 type: rpg
 description: Fluxo é um RPG experimental que utiliza baralho (ou outros jogos) como rolagem.
-published: false
+published: true
 showHomepage: true
 order: 0
 ---
