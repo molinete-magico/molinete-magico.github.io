@@ -17,3 +17,31 @@ Para decidir se você conseguirá fazer a magia, o mestre vai definir uma mão d
 Ao terminar o teste de magia, descarte as cartas puxadas ou utilizadas da mão.
 
 ## Ficha
+
+Cada jogador monta a ficha do seu bruxo, ou seja, do portador e do cubo. As duas metades têm campos separados, porque cada uma tem sua própria história. Majoritariamente todo jogador controla o portador, os cubos dependem da personalidade/proposta do personagem.
+
+**Nome:**
+**Idade:**
+**Gênero:**
+
+### Portador
+
+**Aparência:**
+**Personalidade:**
+**Lore:**
+
+### Cubo
+
+**Aparência:**
+**Personalidade:**
+**Lore** *(caso não seja um mistério)*:
+
+### Usos de magia
+
+Escolha 3 usos gerais com o mestre. Cada um tem uma mão de dificuldade.
+
+- Uso (dificuldade da mão)
+- Uso (dificuldade da mão)
+- Uso (dificuldade da mão)
+
+*Exemplo:* mudar a temperatura de objetos (Par).
