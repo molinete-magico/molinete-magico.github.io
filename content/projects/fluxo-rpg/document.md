@@ -50,3 +50,11 @@ Embora a maioria dos primeiros contatos não ocorram dessa maneira, é muito dif
 As criaturas de bruxaria variam conforme o local, clima e situação geográfica do local.
 
 Especificamente no Brasil, a maioria do folclore se desenvolveu justamente pelo avistamento de criaturas bruxas ou por contatos com as mesmas.
+
+## O Fluxo
+
+Depois de anos de disputas baseadas em poder mágico e usabilidade de poderes, gerando incontáveis mortes e criando um sistema que beneficia aqueles que utilizam suas magias para brutalidade, os maiores bruxos do mundo decidiram que, para parar isso, deveria se criar um método democrático de resolução de problemas.
+
+Com isso nasceu o **Fluxo**, um jogo de cartas baseado em blefe, domínio intelectual e superioridade mental.
+
+Junto disso, também ocorreu o banimento de diversas magias de agressão direta, sendo um tabu para qualquer bruxo utilizar isso.
