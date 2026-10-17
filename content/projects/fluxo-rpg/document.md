@@ -10,7 +10,7 @@ Nesse documento serão abordados temas básicos do universo, principalmente refe
 
 ## O que é um bruxo?
 
-A definição de bruxo de universo é um pouco diferente. Um bruxo tem duas partes, seu **portador** e seu **cubo**. O portador é aquele que tem o principal fluxo de magia, enquanto o cubo é o que consegue utilizar a mana para fazer o que chamamos de magia.
+A definição de bruxo de universo é um pouco diferente. Um bruxo tem duas partes, seu **portador** e seu **cubo**. O portador é aquele que tem o principal fluxo de mana, enquanto o cubo é o que consegue utilizar a mana para fazer o que chamamos de magia.
 
 Chamar apenas o portador de bruxo é visto como algo leigo e preconceituosa por cubos que tem consciência. Pessoas leigas ou não-bruxos frequentemente cometem esse erro, embora alguns bruxos ainda tenham visões divergentes da maioria.
 
