@@ -38,10 +38,8 @@ Cada jogador monta a ficha do seu bruxo, ou seja, do portador e do cubo. As duas
 
 ### Usos de magia
 
-Escolha 3 usos gerais com o mestre. Cada um tem uma mão de dificuldade.
+Escolha 3 usos gerais com o mestre. Cada um tem uma mão de dificuldade do teste.
 
-- Uso (dificuldade da mão)
-- Uso (dificuldade da mão)
-- Uso (dificuldade da mão)
-
-*Exemplo:* mudar a temperatura de objetos (Par).
+- Uso
+- Uso
+- Uso
