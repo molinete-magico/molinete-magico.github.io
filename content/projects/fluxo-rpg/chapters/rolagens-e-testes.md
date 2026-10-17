@@ -22,10 +22,11 @@ Cada jogador monta a ficha do seu bruxo, ou seja, do portador e do cubo. As duas
 
 **Nome:**
 **Idade:**
-**Gênero:**
+
 
 ### Portador
 
+**Gênero:**
 **Aparência:**
 **Personalidade:**
 **Lore:**
