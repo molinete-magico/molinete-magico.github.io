@@ -19,6 +19,8 @@ Quando se diz "um bruxo", você está se referindo a um portador e a um cubo.
 
 Cubos são seres em diferentes formatos e tamanhos (em média 15 centímetros de altura, largura e comprimento, mas muitos chegam a variar) que se afiliam a portadores por uma conexão desconhecida a um portador.
 
+Cubos podem ter ou não uma personalidade e consciência. Alguns até tem brigas ferrenhas com seus portadores.
+
 Até hoje, não se sabe como ocorre uma conexão, porém, depois que ela acontece, o bruxo não pode ter suas partes separadas por muito tempo, chegando a adquirir algumas enfermidades em ambas as partes caso isso ocorra.
 
 ### Como funcionam as magias de um bruxo?
