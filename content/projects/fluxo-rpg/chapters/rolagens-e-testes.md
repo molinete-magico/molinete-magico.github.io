@@ -1,0 +1,19 @@
+---
+title: Testes, Magias e Ficha
+published: true
+order: 0
+---
+
+## Testes
+
+No início da sessão cada jogador puxa 5 cartas, podendo eliminar uma carta caso queira. Quando o mestre pedir um teste, você irá escolher uma das 5 cartas e jogar na mesa, esse será o seu "resultado da ação". Caso o resultado da ação seja maior ou igual a DT sugerida pelo mestre, você passa e consegue realizar a ação com sucesso.
+
+## Magias
+
+Mestre e jogador irão criar 3 usos gerais para sua magia (por exemplo, mudar a temperatura de objetos, fazer ilusões e criar luz), esses 3 usos podem ser especializados de acordo com a cena.
+
+Para decidir se você conseguirá fazer a magia, o mestre vai definir uma mão de dificuldade. Uma mão de dificuldade é a mão que você precisa tirar puxando 5 cartas do baralho ou do seu baralho. Se não tiver a mão necessária, a magia não é executada ou executada de maneira errada.
+
+Ao terminar o teste de magia, descarte as cartas puxadas ou utilizadas da mão.
+
+## Ficha
