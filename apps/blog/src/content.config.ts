@@ -21,6 +21,7 @@ const posts = defineCollection({
     draft: z.boolean().default(false),
     updatedDate: z.coerce.date().optional(),
     bannerPosition: z.string().optional(),
+    bannerFit: z.enum(['cover', 'fill']).optional(),
     // Slug do projeto ao qual o post pertence.
     project: z.string().optional(),
   }),

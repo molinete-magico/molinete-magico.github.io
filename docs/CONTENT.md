@@ -51,6 +51,8 @@ draft: false
 | `pubDate` | date | Sim | Data de publicação |
 | `tags` | array | Não | Tags para categorização |
 | `draft` | boolean | Não | Se `true`, não é publicado |
+| `bannerPosition` | string | Não | Posição vertical do recorte do banner, como `35%` |
+| `bannerFit` | string | Não | `fill` estica o banner inteiro; omitido usa o recorte padrão |
 
 ## Tags
 
@@ -82,6 +84,8 @@ O Writer mostra claramente se um documento é rascunho ou publicado.
 4. Para uma imagem de capa automática, use o nome `banner.webp`, `banner.png`, `banner.jpg` ou `banner.jpeg`
 5. O banner é detectado automaticamente e aparece no topo do post; não é necessário referenciá-lo no Markdown
 6. Para imagens comuns do conteúdo, referencie com caminho relativo: `![alt](imagem.png)`
+
+No Writer, cada post pode usar **Cortar** (preenche o espaço, podendo cortar as bordas) ou **Achatar** (mostra a imagem toda, alterando as proporções se necessário).
 
 ### Exemplo
 

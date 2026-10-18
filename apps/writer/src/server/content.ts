@@ -136,6 +136,7 @@ function serializeMeta(meta: PostMeta): string {
     draft: meta.draft,
     ...(meta.updatedDate ? { updatedDate: meta.updatedDate } : {}),
     ...(meta.bannerPosition ? { bannerPosition: meta.bannerPosition } : {}),
+    ...(meta.bannerFit === 'fill' ? { bannerFit: 'fill' } : {}),
   };
   return yaml.dump(clean, { lineWidth: 90 }).trimEnd();
 }
@@ -201,6 +202,7 @@ async function readPostFile(id: string): Promise<{ body: string; meta: PostMeta 
     ...(data.bannerPosition
       ? { bannerPosition: String(data.bannerPosition) }
       : {}),
+    ...(data.bannerFit === 'fill' ? { bannerFit: 'fill' as const } : {}),
   };
 
   return { body: parsed.content.trim(), meta };

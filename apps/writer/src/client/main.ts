@@ -181,13 +181,22 @@ app.innerHTML = `
             <strong>Banner</strong>
             <span id="banner-status" class="pane-hint">arraste a imagem para escolher o enquadramento</span>
           </div>
-          <output id="banner-position-value">50%</output>
+          <div class="banner-fit-controls">
+            <label class="banner-fit-control">Exibição
+              <select id="field-banner-fit" aria-label="Exibição do banner">
+                <option value="cover">Cortar</option>
+                <option value="fill">Achatar</option>
+              </select>
+            </label>
+            <output id="banner-position-value">50%</output>
+          </div>
         </div>
         <div id="banner-crop" class="banner-crop" tabindex="0" aria-label="Enquadramento do banner">
           <img id="banner-crop-image" class="banner-crop-image" alt="" draggable="false" />
           <div class="banner-crop-fade" aria-hidden="true"></div>
         </div>
         <input id="field-banner-position" type="range" min="0" max="100" value="50" step="1" aria-label="Posição vertical do banner" />
+        <p class="banner-fit-hint pane-hint">Cortar preenche o espaço e pode cortar as bordas. Achatar mostra a imagem inteira, mas pode alterar suas proporções.</p>
       </section>
 
       <div class="split">
@@ -320,6 +329,7 @@ const bannerEditor = $('#banner-editor')!;
 const bannerCrop = $('#banner-crop')!;
 const bannerCropImage = $('#banner-crop-image')!;
 const bannerPosition = $('#field-banner-position') as HTMLInputElement;
+const bannerFitField = $('#field-banner-fit') as HTMLSelectElement;
 const bannerPositionValue = $('#banner-position-value')!;
 const bannerStatus = $('#banner-status')!;
 const fieldTags = $('#field-tags') as HTMLInputElement;
@@ -549,6 +559,7 @@ async function openPost(id: string) {
   fieldDate.value = p.file.pubDate.slice(0, 10);
   fieldDraft.checked = p.file.draft;
   fieldDescription.value = p.file.description;
+  setBannerFit(p.file.bannerFit ?? 'cover');
   setBannerPosition(p.file.bannerPosition ?? '50%');
   await loadBannerPreview(p.id);
   tags = p.file.tags ?? [];
@@ -571,14 +582,29 @@ async function openPost(id: string) {
   fieldTitle.focus();
 }
 
+let bannerFitMode: 'cover' | 'fill' = 'cover';
+
+function setBannerFit(value: string) {
+  bannerFitMode = value === 'fill' ? 'fill' : 'cover';
+  bannerFitField.value = bannerFitMode;
+  const isFill = bannerFitMode === 'fill';
+  bannerCrop.classList.toggle('banner-crop--fill', isFill);
+  bannerPosition.disabled = isFill;
+  bannerStatus.textContent = isFill
+    ? 'a imagem inteira será esticada para preencher o banner'
+    : 'arraste a imagem ou use a barra para escolher o enquadramento';
+  setBannerPosition(bannerPosition.value || '50%');
+}
+
 function setBannerPosition(value: string) {
   const numeric = Math.max(0, Math.min(100, Number.parseFloat(value) || 50));
   bannerPosition.value = String(Math.round(numeric));
-  bannerPositionValue.textContent = String(Math.round(numeric)) + '%';
+  bannerPositionValue.textContent = bannerFitMode === 'fill'
+    ? 'imagem inteira'
+    : String(Math.round(numeric)) + '%';
 
-  // O enquadramento do banner é vertical: 0% = topo, 50% = centro,
-  // 100% = base. Mantemos a imagem inteira na largura do preview e
-  // usamos o excesso vertical para calcular o deslocamento.
+  // Mantém o recorte igual ao `background-size: cover` do card,
+  // centralizando a sobra horizontal e respeitando a posição vertical.
   const image = bannerCropImage as HTMLImageElement;
   const cropWidth = bannerCrop.clientWidth;
   const cropHeight = bannerCrop.clientHeight;
@@ -586,18 +612,31 @@ function setBannerPosition(value: string) {
   if (!image.naturalWidth || !image.naturalHeight || !cropWidth || !cropHeight) {
     image.style.width = '';
     image.style.height = '';
+    image.style.left = '0px';
     image.style.transform = 'translate3d(0, 0, 0)';
     return;
   }
 
-  const scale = cropWidth / image.naturalWidth;
-  const renderedWidth = cropWidth;
+  if (bannerFitMode === 'fill') {
+    image.style.width = cropWidth + 'px';
+    image.style.height = cropHeight + 'px';
+    image.style.left = '0px';
+    image.style.transform = 'translate3d(0, 0, 0)';
+    return;
+  }
+
+  const scale = Math.max(
+    cropWidth / image.naturalWidth,
+    cropHeight / image.naturalHeight,
+  );
+  const renderedWidth = image.naturalWidth * scale;
   const renderedHeight = image.naturalHeight * scale;
   const overflowY = Math.max(0, renderedHeight - cropHeight);
   const offsetY = overflowY * (numeric / 100);
 
   image.style.width = renderedWidth + 'px';
   image.style.height = renderedHeight + 'px';
+  image.style.left = (cropWidth - renderedWidth) / 2 + 'px';
   image.style.transform = 'translate3d(0, ' + (-offsetY) + 'px, 0)';
 }
 async function loadBannerPreview(id: string) {
@@ -632,6 +671,7 @@ async function loadBannerPreview(id: string) {
     state.bannerAvailable = true;
     bannerEditor.hidden = false;
     bannerStatus.textContent = 'arraste a imagem ou use a barra para escolher o enquadramento';
+    setBannerFit(state.current?.file.bannerFit ?? 'cover');
     setBannerPosition(state.current?.file.bannerPosition ?? '50%');
   } catch {
     bannerStatus.textContent = 'não foi possível carregar o banner';
@@ -656,7 +696,7 @@ function finishBannerDrag(event?: PointerEvent) {
 }
 
 bannerCrop.addEventListener('pointerdown', (event) => {
-  if (bannerEditor.hidden || event.button !== 0) return;
+  if (bannerEditor.hidden || bannerFitMode === 'fill' || event.button !== 0) return;
   event.preventDefault();
   bannerDragging = true;
   bannerDragMoved = false;
@@ -694,7 +734,7 @@ bannerCrop.addEventListener('lostpointercapture', () => {
 
 // Um clique simples também posiciona o foco, sem exigir arrastar.
 bannerCrop.addEventListener('click', (event) => {
-  if (bannerDragging || bannerDragMoved) return;
+  if (bannerFitMode === 'fill' || bannerDragging || bannerDragMoved) return;
   const rect = bannerCrop.getBoundingClientRect();
   if (!rect.height) return;
   const position = ((event.clientY - rect.top) / rect.height) * 100;
@@ -706,6 +746,13 @@ bannerCrop.addEventListener('click', (event) => {
 
 bannerPosition.addEventListener('input', () => {
   setBannerPosition(bannerPosition.value);
+  state.dirty.meta = true;
+  scheduleAutosave();
+  setSaved(false, 'Alterações não salvas');
+});
+
+bannerFitField.addEventListener('change', () => {
+  setBannerFit(bannerFitField.value);
   state.dirty.meta = true;
   scheduleAutosave();
   setSaved(false, 'Alterações não salvas');
@@ -725,7 +772,10 @@ function currentMeta(): PostMeta {
     tags: tags,
     draft: fieldDraft.checked,
     ...(state.bannerAvailable
-      ? { bannerPosition: `${Math.round(Number(bannerPosition.value))}%` }
+      ? {
+          bannerPosition: `${Math.round(Number(bannerPosition.value))}%`,
+          ...(bannerFitMode === 'fill' ? { bannerFit: 'fill' as const } : {}),
+        }
       : {}),
   };
 }
@@ -1364,6 +1414,7 @@ function writeAutosave() {
         tags,
         body: currentBody(),
         bannerPosition: state.bannerAvailable ? `${Math.round(Number(bannerPosition.value))}%` : undefined,
+        bannerFit: state.bannerAvailable ? bannerFitMode : undefined,
         updatedAt: Date.now(),
       }),
     );
@@ -1452,6 +1503,9 @@ function restoreAutosave() {
         renderPreview();
         if (typeof s.bannerPosition === 'string' && state.bannerAvailable) {
           setBannerPosition(s.bannerPosition);
+        }
+        if (typeof s.bannerFit === 'string' && state.bannerAvailable) {
+          setBannerFit(s.bannerFit);
         }
         state.dirty = { title: true, body: true, meta: true };
         state.tagsDirty = true;

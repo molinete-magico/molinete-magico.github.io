@@ -577,6 +577,34 @@ button:disabled {
   font-size: 12px;
 }
 
+.banner-fit-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.banner-editor-head > .banner-fit-controls {
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.banner-fit-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.banner-fit-control select {
+  max-width: 8rem;
+  padding: 4px 6px;
+  color: var(--text-primary);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  font: inherit;
+}
+
 .banner-crop {
   position: relative;
   height: 150px;
@@ -590,6 +618,11 @@ button:disabled {
 
 .banner-crop.dragging {
   cursor: grabbing;
+}
+
+.banner-crop--fill,
+.banner-crop--fill.dragging {
+  cursor: default;
 }
 
 .banner-crop-image {
@@ -624,6 +657,15 @@ button:disabled {
   width: 100%;
   margin-top: 10px;
   accent-color: var(--accent);
+}
+
+#field-banner-position:disabled {
+  opacity: 0.45;
+}
+
+.banner-fit-hint {
+  display: block;
+  margin: 8px 0 0;
 }
 
 .split {

@@ -12,6 +12,8 @@ export interface PostMeta {
   updatedDate?: string;
   /** Posição vertical do enquadramento do banner: 0% topo, 50% centro, 100% base. */
   bannerPosition?: string;
+  /** cover recorta o banner; fill estica para mostrar a imagem inteira. */
+  bannerFit?: 'cover' | 'fill';
 }
 
 // Representação completa de um post como visto pelo editor.
