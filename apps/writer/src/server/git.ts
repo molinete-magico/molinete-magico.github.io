@@ -6,11 +6,49 @@
 // Assim, o Writer nunca vê nem guarda tokens.
 
 import { execFile } from 'node:child_process';
+import os from 'node:os';
+import path from 'node:path';
+import { existsSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { repoRoot } from './fs.ts';
 import type { GitStatus } from '../shared/types.ts';
 
 const execFileP = promisify(execFile);
+
+function findGitExecutable(): string {
+  const configured = process.env.GIT_EXECUTABLE;
+  if (configured) return configured;
+  if (process.platform !== 'win32') return 'git';
+
+  const candidates = [
+    process.env.ProgramFiles
+      ? path.join(process.env.ProgramFiles, 'Git', 'cmd', 'git.exe')
+      : null,
+    process.env['ProgramFiles(x86)']
+      ? path.join(process.env['ProgramFiles(x86)']!, 'Git', 'cmd', 'git.exe')
+      : null,
+    process.env.LOCALAPPDATA
+      ? path.join(process.env.LOCALAPPDATA, 'Programs', 'Git', 'cmd', 'git.exe')
+      : null,
+    path.join(
+      os.homedir(),
+      '.cache',
+      'codex-runtimes',
+      'codex-primary-runtime',
+      'dependencies',
+      'native',
+      'git',
+      'cmd',
+      'git.exe',
+    ),
+  ];
+
+  return candidates.find(
+    (candidate): candidate is string => candidate !== null && existsSync(candidate),
+  ) ?? 'git';
+}
+
+const gitExecutable = findGitExecutable();
 
 // Executa um comando git na raiz do repositório e devolve o stdout
 // em texto puro. Erros do Git (autenticação, conflitos...) viram
@@ -27,7 +65,7 @@ function errorWithStderr(err: unknown, cmd: string, stderr: string): Error {
 async function git(...args: string[]): Promise<string> {
   let result;
   try {
-    result = await execFileP('git', args, {
+    result = await execFileP(gitExecutable, args, {
       cwd: repoRoot(),
       maxBuffer: 10 * 1024 * 1024,
     });

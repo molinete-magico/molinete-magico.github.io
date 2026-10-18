@@ -57,8 +57,8 @@ export function todayStamp(): string {
   return `${d.getFullYear()}-${mm}-${dd}T${hh}:${min}:${ss}Z`;
 }
 
-// Gera a data/hora atual no formato ISO local (YYYY-MM-DDTHH:mm:ss).
-// Usado apenas para gerar slugs únicos de novos posts.
+// Gera um timestamp local seguro para nomes de diretório no Windows.
+// Usado apenas nos slugs únicos de novos posts.
 export function today(): string {
   const d = new Date();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -66,7 +66,7 @@ export function today(): string {
   const hh = String(d.getHours()).padStart(2, '0');
   const min = String(d.getMinutes()).padStart(2, '0');
   const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}T${hh}:${min}:${ss}`;
+  return `${d.getFullYear()}-${mm}-${dd}T${hh}-${min}-${ss}`;
 }
 
 // Um post pode existir de duas formas:
