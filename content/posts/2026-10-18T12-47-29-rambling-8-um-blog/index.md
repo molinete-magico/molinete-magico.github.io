@@ -7,7 +7,8 @@ tags:
   - blog
 draft: false
 updatedDate: '2026-10-18'
-bannerPosition: 27%
+bannerPosition: 50%
+bannerFit: fill
 ---
 
 Iria fazer um rambling sobre meu novo rpg e como eu estou ansioso pra terminar o cinzas do vale mas percebi que fazia em torno de um mês que o blog foi criado.
