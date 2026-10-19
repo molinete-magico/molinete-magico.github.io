@@ -97,13 +97,6 @@ function escapeHtml(s: string) {
 // Renderização da interface (DOM puro)
 // ------------------------------------------------------------------
 const app = $('#app')!;
-
-blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
-  updateCanonicalBody(markdown);
-  renderPreviewDebounced();
-});
-
-editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
 app.innerHTML = `
   <header class="topbar">
     <div class="brand">
@@ -237,15 +230,24 @@ app.innerHTML = `
   </main>
 `;
 
+splitEditor = $('#editor-view .split') as HTMLElement;
+visualEditorShell = $('#visual-editor-shell') as HTMLElement;
+editorModeButton = $('#btn-editor-mode') as HTMLButtonElement;
+blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
+  updateCanonicalBody(markdown);
+  renderPreviewDebounced();
+});
+editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
+
 // ---------------------------------------------------------------
 // CodeMirror: editor Markdown
 // ---------------------------------------------------------------
 let cmView: EditorView | null = null;
 let visualMode = false;
 let blockEditor: BlockEditor | null = null;
-const splitEditor = $('#editor-view .split') as HTMLElement;
-const visualEditorShell = $('#visual-editor-shell') as HTMLElement;
-const editorModeButton = $('#btn-editor-mode') as HTMLButtonElement;
+let splitEditor: HTMLElement;
+let visualEditorShell: HTMLElement;
+let editorModeButton: HTMLButtonElement;
 
 function setEditorMode(useVisual: boolean) {
   visualMode = useVisual;
