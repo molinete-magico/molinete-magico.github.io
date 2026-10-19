@@ -111,6 +111,7 @@ function setEditorMode(useVisual: boolean) {
   editorModeButton.setAttribute('aria-pressed', String(visualMode));
   editorModeButton.textContent = visualMode ? 'Voltar ao Markdown' : 'Usar editor visual';
   if (visualMode) blockEditor?.focus();
+  else cmView?.requestMeasure();
 }
 
 const app = $('#app')!;
