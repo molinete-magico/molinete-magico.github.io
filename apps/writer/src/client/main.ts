@@ -96,6 +96,23 @@ function escapeHtml(s: string) {
 // ------------------------------------------------------------------
 // Renderização da interface (DOM puro)
 // ------------------------------------------------------------------
+let cmView: EditorView | null = null;
+let visualMode = false;
+let blockEditor: BlockEditor | null = null;
+let splitEditor: HTMLElement;
+let visualEditorShell: HTMLElement;
+let editorModeButton: HTMLButtonElement;
+
+function setEditorMode(useVisual: boolean) {
+  visualMode = useVisual;
+  if (visualMode) blockEditor?.setMarkdown(currentBody());
+  splitEditor.hidden = visualMode;
+  visualEditorShell.hidden = !visualMode;
+  editorModeButton.setAttribute('aria-pressed', String(visualMode));
+  editorModeButton.textContent = visualMode ? 'Voltar ao Markdown' : 'Usar editor visual';
+  if (visualMode) blockEditor?.focus();
+}
+
 const app = $('#app')!;
 app.innerHTML = `
   <header class="topbar">
@@ -242,23 +259,6 @@ editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
 // ---------------------------------------------------------------
 // CodeMirror: editor Markdown
 // ---------------------------------------------------------------
-let cmView: EditorView | null = null;
-let visualMode = false;
-let blockEditor: BlockEditor | null = null;
-let splitEditor: HTMLElement;
-let visualEditorShell: HTMLElement;
-let editorModeButton: HTMLButtonElement;
-
-function setEditorMode(useVisual: boolean) {
-  visualMode = useVisual;
-  if (visualMode) blockEditor?.setMarkdown(currentBody());
-  splitEditor.hidden = visualMode;
-  visualEditorShell.hidden = !visualMode;
-  editorModeButton.setAttribute('aria-pressed', String(visualMode));
-  editorModeButton.textContent = visualMode ? 'Voltar ao Markdown' : 'Usar editor visual';
-  if (visualMode) blockEditor?.focus();
-}
-
 const editorTheme = EditorView.theme(
   {
     '&': { height: '100%' },
