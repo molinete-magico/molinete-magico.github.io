@@ -47,6 +47,40 @@ function inlineMarkdown(node: Node): string {
   }
 }
 
+function listMarkdown(list: HTMLElement, depth = 0): string {
+  const ordered = list.tagName === 'OL';
+  return Array.from(list.children)
+    .filter((child) => child.tagName === 'LI')
+    .map((li, index) => {
+      const content = Array.from(li.childNodes)
+        .filter((child) => !(child instanceof HTMLElement && ['UL', 'OL'].includes(child.tagName)))
+        .map(inlineMarkdown)
+        .join('')
+        .trim();
+      const marker = ordered ? `${index + 1}.` : '-';
+      const nested = Array.from(li.children)
+        .filter((child) => child.tagName === 'UL' || child.tagName === 'OL')
+        .map((child) => listMarkdown(child as HTMLElement, depth + 1))
+        .join('\n');
+      return `${'  '.repeat(depth)}${marker} ${content}${nested ? `\n${nested}` : ''}`;
+    })
+    .join('\n');
+}
+
+function tableMarkdown(table: HTMLElement): string {
+  const rows = Array.from(table.querySelectorAll('tr')).map((row) =>
+    Array.from(row.children)
+      .filter((cell) => cell.tagName === 'TH' || cell.tagName === 'TD')
+      .map((cell) => inlineMarkdown(cell).replace(/\|/g, '\\|').replace(/\s*\n\s*/g, ' ').trim()),
+  ).filter((row) => row.length > 0);
+  if (rows.length === 0) return '';
+  const width = Math.max(...rows.map((row) => row.length));
+  const normalized = rows.map((row) => Array.from({ length: width }, (_, index) => row[index] ?? ''));
+  const lines = normalized.map((row) => `| ${row.join(' | ')} |`);
+  const separator = `| ${Array.from({ length: width }, () => '---').join(' | ')} |`;
+  return [lines[0], separator, ...lines.slice(1)].join('\n');
+}
+
 function blockMarkdown(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? '').trim();
   if (!(node instanceof HTMLElement)) return '';
@@ -60,14 +94,9 @@ function blockMarkdown(node: Node): string {
     case 'P':
     case 'DIV': return inline;
     case 'UL':
-    case 'OL': {
-      const ordered = node.tagName === 'OL';
-      return Array.from(node.children).filter((child) => child.tagName === 'LI').map((li, index) => {
-        const text = Array.from(li.childNodes).map(inlineMarkdown).join('').trim();
-        return `${ordered ? `${index + 1}.` : '-'} ${text}`;
-      }).join('\n');
-    }
+    case 'OL': return listMarkdown(node);
     case 'LI': return `- ${inline}`;
+    case 'TABLE': return tableMarkdown(node);
     case 'BLOCKQUOTE': return children.join('\n\n').split('\n').map((line) => `> ${line}`).join('\n');
     case 'PRE': {
       const code = node.querySelector('code');
