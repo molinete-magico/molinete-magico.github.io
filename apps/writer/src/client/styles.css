@@ -1784,3 +1784,9 @@ button.primary:hover:not(:disabled) {
   .block-editor-toolbar { position: static; }
   .block-editor-canvas h1 { font-size: 1.8rem; }
 }
+
+/* The split editor uses display:flex/grid; ensure the hidden attribute wins. */
+.split[hidden],
+.visual-editor-shell[hidden] {
+  display: none !important;
+}
