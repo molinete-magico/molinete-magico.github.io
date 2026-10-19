@@ -72,7 +72,7 @@ function blockMarkdown(node: Node): string {
     case 'PRE': {
       const code = node.querySelector('code');
       const language = code?.className.match(/language-([\w+-]+)/)?.[1] ?? '';
-      return ```${language}\n${(code?.textContent ?? node.textContent ?? '').replace(/\n+$/, '')}\n````;
+      return '\u0060\u0060\u0060' + language + '\n' + (code?.textContent ?? node.textContent ?? '').replace(/\n+$/, '') + '\n' + '\u0060\u0060\u0060';
     }
     case 'HR': return '---';
     case 'IMG': return inlineMarkdown(node);
