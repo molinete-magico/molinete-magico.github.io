@@ -6,6 +6,7 @@
 // que escreve os arquivos Markdown e executa o Git.
 
 import './styles.css';
+import { BlockEditor } from './block-editor';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState, Prec } from '@codemirror/state';
 import { markdown, markdownKeymap } from '@codemirror/lang-markdown';
@@ -96,6 +97,13 @@ function escapeHtml(s: string) {
 // Renderização da interface (DOM puro)
 // ------------------------------------------------------------------
 const app = $('#app')!;
+
+blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
+  updateCanonicalBody(markdown);
+  renderPreviewDebounced();
+});
+
+editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
 app.innerHTML = `
   <header class="topbar">
     <div class="brand">
@@ -199,6 +207,14 @@ app.innerHTML = `
         <p class="banner-fit-hint pane-hint">Cortar preenche o espaço e pode cortar as bordas. Achatar mostra a imagem inteira, mas pode alterar suas proporções.</p>
       </section>
 
+      <div class="editor-mode-bar">
+        <button id="btn-editor-mode" class="ghost tiny" type="button" aria-pressed="false">Usar editor visual</button>
+        <span class="pane-hint">Experimento: documento visual com Markdown preservado</span>
+      </div>
+      <section id="visual-editor-shell" class="visual-editor-shell" hidden aria-label="Editor visual">
+        <div id="block-editor-host"></div>
+      </section>
+
       <div class="split">
         <div class="pane">
           <div class="pane-label">
@@ -225,6 +241,21 @@ app.innerHTML = `
 // CodeMirror: editor Markdown
 // ---------------------------------------------------------------
 let cmView: EditorView | null = null;
+let visualMode = false;
+let blockEditor: BlockEditor | null = null;
+const splitEditor = $('#editor-view .split') as HTMLElement;
+const visualEditorShell = $('#visual-editor-shell') as HTMLElement;
+const editorModeButton = $('#btn-editor-mode') as HTMLButtonElement;
+
+function setEditorMode(useVisual: boolean) {
+  visualMode = useVisual;
+  if (visualMode) blockEditor?.setMarkdown(currentBody());
+  splitEditor.hidden = visualMode;
+  visualEditorShell.hidden = !visualMode;
+  editorModeButton.setAttribute('aria-pressed', String(visualMode));
+  editorModeButton.textContent = visualMode ? 'Voltar ao Markdown' : 'Usar editor visual';
+  if (visualMode) blockEditor?.focus();
+}
 
 const editorTheme = EditorView.theme(
   {
@@ -241,6 +272,15 @@ const editorTheme = EditorView.theme(
 
 function currentBody(): string {
   return cmView?.state.doc.toString() ?? '';
+}
+
+function updateCanonicalBody(markdown: string) {
+  if (!cmView) return;
+  const current = cmView.state.doc.toString();
+  if (current === markdown) return;
+  cmView.dispatch({
+    changes: { from: 0, to: cmView.state.doc.length, insert: markdown },
+  });
 }
 
 function createEditor(initialDoc: string, onChange: (doc: string) => void) {
@@ -281,6 +321,7 @@ function createEditor(initialDoc: string, onChange: (doc: string) => void) {
     }),
     parent: $('#cm-host')!,
   });
+  if (visualMode) blockEditor?.setMarkdown(initialDoc);
   return cm;
 }
 
