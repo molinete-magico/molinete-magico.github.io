@@ -71,6 +71,20 @@ function persistRecovery() {
   };
   try { localStorage.setItem('writer-v2-recovery', JSON.stringify(snapshot)); } catch { /* storage can be unavailable */ }
 }
+async function restoreRecoveryIfMatches() {
+  const raw = localStorage.getItem('writer-v2-recovery');
+  if (!raw || !state.kind) return;
+  try {
+    const recovery = JSON.parse(raw) as {id?: string; kind?: string; body?: string; title?: string; timestamp?: number};
+    if (recovery.id !== activeId() || recovery.kind !== state.kind) return;
+    const when = recovery.timestamp ? new Date(recovery.timestamp).toLocaleString('pt-BR') : 'recentemente';
+    if (window.confirm('Encontramos uma recuperação local de ' + when + '. Restaurar o texto que ainda não havia sido salvo?')) {
+      ($('#doc-title') as HTMLInputElement).value = recovery.title ?? activeTitle();
+      state.editor?.setMarkdown(recovery.body ?? '');
+      markDirty();
+    } else localStorage.removeItem('writer-v2-recovery');
+  } catch { localStorage.removeItem('writer-v2-recovery'); }
+}
 function clearRecovery() {
   const raw = localStorage.getItem('writer-v2-recovery');
   if (!raw) return;
@@ -227,13 +241,13 @@ async function openPost(id: string) {
   state.currentPost = await api<Post>('GET', '/api/post/' + encodeURIComponent(id));
   state.currentProject = null; state.currentDoc = null; state.kind = 'post'; state.preview = false;
   renderWorkspace(); $('#crumb-parent')!.textContent = 'POST'; $('#crumb-title')!.textContent = state.currentPost.file.title;
-  state.editor?.setMarkdown(state.currentPost.body); await loadGitStatus();
+  state.editor?.setMarkdown(state.currentPost.body); await loadGitStatus(); await restoreRecoveryIfMatches();
 }
 async function openProject(id: string) {
   state.currentProject = await api<Project>('GET', '/api/project/' + encodeURIComponent(id));
   state.currentPost = null; state.currentDoc = null; state.kind = 'project'; state.preview = false;
   renderWorkspace(); $('#crumb-parent')!.textContent = 'PROJETO'; $('#crumb-title')!.textContent = state.currentProject.file.title;
-  state.editor?.setMarkdown(state.currentProject.body); await loadGitStatus();
+  state.editor?.setMarkdown(state.currentProject.body); await loadGitStatus(); await restoreRecoveryIfMatches();
 }
 async function openProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
   const query = new URLSearchParams({ project: projectId, kind, id });
@@ -241,7 +255,7 @@ async function openProjectDocument(projectId: string, kind: ProjectDocumentKind,
   state.currentDoc = await api<ProjectDocument>('GET', '/api/project-document?' + query.toString());
   state.currentPost = null; state.kind = kind; state.preview = false;
   renderWorkspace(); $('#crumb-parent')!.textContent = state.currentProject.file.title; $('#crumb-title')!.textContent = state.currentDoc.file.title;
-  state.editor?.setMarkdown(state.currentDoc.body); await loadGitStatus();
+  state.editor?.setMarkdown(state.currentDoc.body); await loadGitStatus(); await restoreRecoveryIfMatches();
 }
 function renderDocumentTree() {
   const tree = $('#document-tree')!;
@@ -255,8 +269,8 @@ function renderDocumentTree() {
   }
   if (!state.currentProject) return;
   tree.innerHTML = '<button class="tree-item ' + (state.kind === 'project' ? 'selected' : '') + '" data-open-project="' + esc(state.currentProject.id) + '"><span>▣</span><span>' + esc(state.currentProject.file.title) + '</span></button>' +
-    state.currentProject.documents.map((d) => '<button class="tree-item ' + (state.currentDoc?.id === d.id && state.currentDoc.kind === d.kind ? 'selected' : '') + '" data-doc-kind="' + d.kind + '" data-doc-id="' + esc(d.id) + '"><span>' + (d.kind === 'chapter' ? '§' : d.kind === 'supplement' ? '＋' : '≡') + '</span><span>' + esc(d.title) + '</span></button>').join('');
-  actions.innerHTML = '<button class="text-button" data-create-doc="chapter">+ Novo capítulo</button><button class="text-button" data-create-doc="supplement">+ Novo suplemento</button><button class="text-button" data-create-doc="document">+ Documento principal</button>';
+    state.currentProject.documents.map((d) => '<button class="tree-item ' + (state.currentDoc?.id === d.id && state.currentDoc?.kind === d.kind ? 'selected' : '') + '" data-doc-kind="' + d.kind + '" data-doc-id="' + esc(d.id) + '"><span>' + (d.kind === 'chapter' ? '§' : d.kind === 'supplement' ? '＋' : '≡') + '</span><span>' + esc(d.title) + '</span></button>').join('');
+  actions.innerHTML = '<button class="text-button" data-create-doc="chapter">+ Novo capítulo</button><button class="text-button" data-create-doc="supplement">+ Novo suplemento</button>';
 }
 async function handleTreeClick(event: Event) {
   const target = event.target as HTMLElement;
@@ -273,15 +287,10 @@ async function handleTreeClick(event: Event) {
 async function handleDocumentAction(event: Event) {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-create-doc]');
   if (!button || !state.currentProject) return;
-  const kind = button.dataset.createDoc as ProjectDocumentKind;
-  const title = window.prompt(kind === 'chapter' ? 'Título do novo capítulo:' : kind === 'supplement' ? 'Título do suplemento:' : 'Título do documento principal:', kind === 'document' ? 'Documento' : '');
+  const kind = button.dataset.createDoc as 'chapter' | 'supplement';
+  const title = window.prompt(kind === 'chapter' ? 'Título do novo capítulo:' : 'Título do suplemento:', '');
   if (!title?.trim()) return;
   try {
-    if (kind === 'document') {
-      await api<Project>('POST', '/api/project/save', { id: state.currentProject.id, file: state.currentProject.file, body: state.currentProject.body });
-      status('O projeto já possui seu documento principal; edite-o diretamente.', 'warn');
-      return;
-    }
     const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: state.currentProject.id, kind, title: title.trim() });
     await loadCatalog();
     await openProjectDocument(state.currentProject.id, doc.kind, doc.id);
@@ -356,7 +365,9 @@ async function publishCurrent() {
   try {
     if (state.kind === 'post' && state.currentPost) {
       const file = { ...currentPostMeta(), draft: false };
+      ($('#meta-draft') as HTMLInputElement).checked = false;
       await api('POST', '/api/publish', { id: state.currentPost.id, file, body: bodyNow(), changeDate: file.pubDate !== state.currentPost.file.pubDate });
+      state.currentPost.file = { ...state.currentPost.file, ...file };
     } else {
       const label = state.kind === 'project' ? 'project: ' + activeTitle() : 'project document: ' + activeTitle();
       await api('POST', '/api/git/commit', { message: label });
@@ -382,8 +393,23 @@ async function createNewProject() {
     await loadCatalog(); await openProject(project.id);
   } catch (err) { status((err as Error).message, 'error'); }
 }
+async function prepareImageForUpload(file: File): Promise<File> {
+  if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) return file;
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) throw new Error('Formato não suportado. Use JPG, PNG, WebP, AVIF ou GIF.');
+  let bitmap: ImageBitmap;
+  try { bitmap = await createImageBitmap(file); } catch { throw new Error('Não foi possível abrir a imagem para conversão WebP.'); }
+  try {
+    const canvas = document.createElement('canvas'); canvas.width = bitmap.width; canvas.height = bitmap.height;
+    const context = canvas.getContext('2d'); if (!context) throw new Error('Não foi possível preparar a imagem.');
+    context.drawImage(bitmap, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((result) => result ? resolve(result) : reject(new Error('Falha na conversão WebP.')), 'image/webp', .82));
+    const base = file.name.replace(/\.[^.]+$/, '').normalize('NFC') || 'imagem';
+    return new File([blob], base + '.webp', { type: 'image/webp', lastModified: Date.now() });
+  } finally { bitmap.close(); }
+}
 async function uploadInlineImage(file: File) {
-  const form = new FormData(); form.append('file', file);
+  const prepared = await prepareImageForUpload(file);
+  const form = new FormData(); form.append('file', prepared);
   if (state.kind === 'post' && state.currentPost) {
     const image = await api<{name: string; alt: string}>('POST', '/api/post/' + encodeURIComponent(state.currentPost.id) + '/image', form);
     return image;
