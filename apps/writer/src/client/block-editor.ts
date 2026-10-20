@@ -322,7 +322,6 @@ export class BlockEditor {
     if (!match) return;
 
     const marker = bold ? match[1] : '*';
-    const value = bold ? match[2] : match[1];
     const start = offset - match[0].length;
     const contentStart = start + marker.length;
     const contentEnd = offset - marker.length;
