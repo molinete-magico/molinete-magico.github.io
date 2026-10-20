@@ -60,8 +60,13 @@ async function checkReference(value, sourceFile, sourceUrl, label) {
   }
 
   relative = relative.replace(/^\/+/, '');
-  let target = path.resolve(dist, relative || 'index.html');
-  if (pathname.endsWith('/') || !path.extname(target)) target = path.join(target, 'index.html');
+  let target;
+  if (!relative) {
+    target = path.join(dist, 'index.html');
+  } else {
+    target = path.resolve(dist, relative);
+    if (pathname.endsWith('/') || !path.extname(target)) target = path.join(target, 'index.html');
+  }
   const relativeTarget = path.relative(dist, target);
   if (relativeTarget.startsWith('..') || path.isAbsolute(relativeTarget)) {
     errors.push(`${path.relative(root, sourceFile)}: caminho sai do diretório de build: ${value}`);
