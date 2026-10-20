@@ -119,6 +119,17 @@ function setEditorMode(useVisual: boolean) {
 }
 
 const app = $('#app')!;
+function showLibraryHome() {
+  app.classList.add('library-mode'); $('#library-home')!.hidden = false;
+  $('#btn-library')!.hidden = true; $('#btn-mode')!.hidden = true; $('#btn-new')!.hidden = true;
+  $('#btn-save')!.hidden = true; $('#btn-publish')!.hidden = true; $('#save-state')!.hidden = true; $('#git-badge')!.hidden = true;
+  emptyState.hidden = true; editorView.hidden = true; renderLibraryHome();
+}
+function showEditorWorkspace() {
+  app.classList.remove('library-mode'); $('#library-home')!.hidden = true;
+  $('#btn-library')!.hidden = false; $('#btn-mode')!.hidden = false; $('#btn-new')!.hidden = false;
+  $('#btn-save')!.hidden = false; $('#btn-publish')!.hidden = false; $('#save-state')!.hidden = false; $('#git-badge')!.hidden = false;
+}
 app.innerHTML = `
   <header class="topbar">
     <div class="brand">
@@ -126,6 +137,7 @@ app.innerHTML = `
       <span class="git-badge" id="git-badge">…</span>
     </div>
     <div class="actions">
+      <button id="btn-library" class="ghost" hidden>← Biblioteca</button>
       <button id="btn-mode" class="ghost" aria-pressed="false">Projetos</button>
       <button id="btn-new" class="ghost">+ Novo post</button>
       <span id="save-state" class="save-state" role="status"></span>
@@ -152,6 +164,14 @@ app.innerHTML = `
   </aside>
 
   <main id="editor" class="editor">
+    <section id="library-home" class="library-home" aria-labelledby="library-title">
+      <div class="library-heading"><div><p class="library-kicker">ARQUIVO PESSOAL / WRITER</p><h1 id="library-title">Sua biblioteca</h1><p class="library-intro">Posts, rascunhos e projetos em um só lugar.</p></div><div class="library-create"><button id="home-new-post" class="primary" type="button">+ Novo post</button><button id="home-new-project" class="ghost" type="button">+ Novo projeto</button></div></div>
+      <label class="library-search-wrap"><span>Pesquisar no arquivo</span><input id="library-search" type="search" placeholder="Título, tag ou projeto..." aria-label="Pesquisar na biblioteca" /></label>
+      <div class="library-summary"><div class="library-stat"><span>Posts</span><strong id="library-post-count">0</strong></div><div class="library-stat"><span>Rascunhos</span><strong id="library-draft-count">0</strong></div><div class="library-stat"><span>Projetos</span><strong id="library-project-count">0</strong></div></div>
+      <section class="library-section"><div class="library-section-heading"><h2>Posts</h2><div class="library-filter" role="group" aria-label="Filtrar posts"><button type="button" data-library-filter="all" class="active" aria-pressed="true">Todos</button><button type="button" data-library-filter="draft" aria-pressed="false">Rascunhos</button><button type="button" data-library-filter="published" aria-pressed="false">Publicados</button></div></div><ul id="library-posts" class="library-items"></ul></section>
+      <section class="library-section"><div class="library-section-heading"><h2>Projetos</h2><span class="library-section-note">RPG · histórias · documentação</span></div><ul id="library-projects" class="library-items"></ul></section>
+      <p class="library-footnote">Markdown continua sendo a fonte da verdade. Salvar não publica automaticamente.</p>
+    </section>
     <div class="empty" id="empty-state">
       <p>Selecione um post na lista ou crie um novo.</p>
     </div>
@@ -468,6 +488,16 @@ const editorView = $('#editor-view')!;
 const tagChips = $('#tag-chips')!;
 const saveState = $('#save-state')!;
 
+function renderLibraryHome() {
+  const q = ($('#library-search') as HTMLInputElement).value.trim().toLowerCase();
+  const posts = state.posts.filter((p) => (state.postFilter === 'all' || (state.postFilter === 'draft' ? p.draft : !p.draft)) && (!q || [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q)));
+  const projects = state.projects.filter((p) => !q || [p.title, p.id, p.description, ...p.documents.map((d) => d.title)].join(' ').toLowerCase().includes(q));
+  $('#library-post-count')!.textContent = String(state.posts.length);
+  $('#library-draft-count')!.textContent = String(state.posts.filter((p) => p.draft).length);
+  $('#library-project-count')!.textContent = String(state.projects.length);
+  $('#library-posts')!.innerHTML = posts.length ? posts.slice(0, 12).map((p) => '<li class="library-item"><button type="button" class="library-item-main" data-open-post="' + escapeHtml(p.id) + '"><span class="library-item-mark ' + (p.draft ? 'draft' : 'published') + '"></span><span class="library-item-copy"><strong>' + escapeHtml(p.title || p.id) + '</strong><span>' + (p.draft ? 'Rascunho' : 'Publicado') + ((p.tags?.length) ? ' · ' + p.tags.map(escapeHtml).join(', ') : '') + '</span></span><time>' + formatDate(p.pubDate) + '</time><span class="library-open-indicator">→</span></button></li>').join('') : '<li class="library-empty">Nenhum post corresponde à busca.</li>';
+  $('#library-projects')!.innerHTML = projects.length ? projects.map((p) => '<li class="library-item"><button type="button" class="library-item-main" data-open-project="' + escapeHtml(p.id) + '"><span class="library-item-mark ' + (p.published ? 'published' : 'draft') + '"></span><span class="library-item-copy"><strong>' + escapeHtml(p.title || p.id) + '</strong><span>' + (p.type === 'rpg' ? 'Sistema de RPG' : 'História') + ' · ' + p.documents.length + ' documentos · ' + (p.published ? 'Publicado' : 'Rascunho') + '</span></span><span class="library-open-indicator">→</span></button></li>').join('') : '<li class="library-empty">Nenhum projeto corresponde à busca.</li>';
+}
 function renderList() {
   const q = state.filter.trim().toLowerCase();
   const items = state.posts.filter((p) => {
@@ -504,6 +534,7 @@ async function loadList() {
     state.posts = [];
   }
   renderList();
+  renderLibraryHome();
 }
 
 
@@ -563,6 +594,7 @@ function setProjectEditorVisibility(kind: 'project' | ProjectDocumentKind) {
 }
 
 async function openProject(id: string) {
+  showEditorWorkspace();
   const project = await api<Project>('GET', `/api/project/${encodeURIComponent(id)}`);
   state.currentProject = project;
   state.currentProjectDoc = null;
@@ -589,6 +621,7 @@ async function openProject(id: string) {
 }
 
 async function openProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
+  showEditorWorkspace();
   let project = state.currentProject;
   if (!project || project.id !== projectId) {
     project = await api<Project>('GET', `/api/project/${encodeURIComponent(projectId)}`);
@@ -697,6 +730,7 @@ async function publishProjectCurrent() {
 }
 
 async function openPost(id: string) {
+  showEditorWorkspace();
   state.current = await api<Post>('GET', `/api/post/${encodeURIComponent(id)}`);
   postMeta.hidden = false;
   postBannerActions.hidden = false;
@@ -1092,6 +1126,44 @@ function modal(title: string, body: string) {
   if (firstInput instanceof HTMLElement) setTimeout(() => firstInput.focus(), 0);
   return { root, close };
 }
+
+// ------------------------------------------------------------------
+// Biblioteca inicial
+// ------------------------------------------------------------------
+$('#btn-library')!.addEventListener('click', async () => { if (await confirmNavigation()) showLibraryHome(); });
+$('#home-new-post')!.addEventListener('click', () => ($('#btn-new') as HTMLButtonElement).click());
+$('#home-new-project')!.addEventListener('click', async () => {
+  const title = window.prompt('Nome do novo projeto:')?.trim(); if (!title) return;
+  const typeInput = window.prompt('Tipo do projeto: digite "rpg" ou "story".', 'story')?.trim().toLowerCase();
+  try {
+    state.projectMode = true;
+    const project = await api<Project>('POST', '/api/project', { title, type: typeInput === 'rpg' ? 'rpg' : 'story' });
+    await loadProjects(); postList.hidden = true; projectList.hidden = false; $('#post-filters')!.hidden = true;
+    ($('#btn-mode') as HTMLButtonElement).textContent = 'Posts'; ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo projeto';
+    search.placeholder = 'Pesquisar projetos e documentos...'; await openProject(project.id);
+  } catch (err) { setSaved(false, (err as Error).message); }
+});
+$('#library-search')!.addEventListener('input', renderLibraryHome);
+$('#library-posts')!.addEventListener('click', async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-open-post]');
+  if (!button || !(await confirmNavigation())) return;
+  state.projectMode = false; postList.hidden = false; projectList.hidden = true; $('#post-filters')!.hidden = false;
+  ($('#btn-mode') as HTMLButtonElement).textContent = 'Projetos'; ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo post';
+  await openPost(button.dataset.openPost!);
+});
+$('#library-projects')!.addEventListener('click', async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-open-project]');
+  if (!button || !(await confirmNavigation())) return;
+  state.projectMode = true; postList.hidden = true; projectList.hidden = false; $('#post-filters')!.hidden = true;
+  ($('#btn-mode') as HTMLButtonElement).textContent = 'Posts'; ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo projeto';
+  search.placeholder = 'Pesquisar projetos e documentos...'; await openProject(button.dataset.openProject!);
+});
+$('#library-home')!.addEventListener('click', (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-library-filter]');
+  if (!button) return; state.postFilter = button.dataset.libraryFilter as typeof state.postFilter;
+  $('#library-home')!.querySelectorAll<HTMLButtonElement>('[data-library-filter]').forEach((item) => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', String(active)); });
+  renderLibraryHome();
+});
 
 // ------------------------------------------------------------------
 // Botões principais
@@ -1797,7 +1869,8 @@ async function openSettings() {
 // ------------------------------------------------------------------
 async function resume() {
   state.tagsDirty = false;
-  await Promise.all([loadList(), refreshGit()]);
+  await Promise.all([loadList(), loadProjects(), refreshGit()]);
+  showLibraryHome();
   restoreAutosave();
 }
 
