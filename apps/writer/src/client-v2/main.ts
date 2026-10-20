@@ -154,9 +154,9 @@ function renderLibraryResults() {
   const postRows = state.posts.filter((p) => {
     const matches = !q || [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q);
     return matches && (filter === 'all' || (filter === 'draft' ? p.draft : filter === 'published' ? !p.draft : false));
-  }).map((p) => ({ type: 'post' as const, id: p.id, title: p.title || p.id, detail: (p.draft ? 'RASCUNHO' : 'PUBLICADO') + ' · ' + (p.tags ?? []).join(', '), date: p.updatedDate || p.pubDate, sortDate: (p.updatedDate || p.pubDate), draft: p.draft }));
+  }).map((p) => ({ type: 'post' as const, id: p.id, title: p.title || p.id, detail: (p.draft ? 'RASCUNHO' : 'PUBLICADO') + ' · ' + (p.tags ?? []).join(', '), date: p.pubDate, sortDate: p.updatedDate || p.pubDate, draft: p.draft }));
   const projectRows = filter === 'draft' || filter === 'published' ? [] : state.projects.filter((p) => !q || [p.title, p.id, p.description, ...p.documents.map((d) => d.title)].join(' ').toLowerCase().includes(q)).map((p) => ({ type: 'project' as const, id: p.id, title: p.title, detail: (p.type === 'rpg' ? 'SISTEMA DE RPG' : 'HISTÓRIA') + ' · ' + p.documents.length + ' DOCUMENTOS · ' + (p.published ? 'PUBLICADO' : 'RASCUNHO'), date: '', sortDate: '', draft: !p.published }));
-  const rows = [...postRows, ...projectRows].sort((a, b) => sort === 'title' ? a.title.localeCompare(b.title, 'pt-BR') : sort === 'date' ? b.sortDate.localeCompare(a.sortDate) : b.sortDate.localeCompare(a.sortDate));
+  const rows = [...postRows, ...projectRows].sort((a, b) => sort === 'title' ? a.title.localeCompare(b.title, 'pt-BR') : sort === 'date' ? b.date.localeCompare(a.date) : b.sortDate.localeCompare(a.sortDate));
   const target = $('#library-results')!;
   if (!rows.length) {
     target.innerHTML = '<div class="empty-state"><span class="empty-glyph">∅</span><h3>Nada por aqui ainda</h3><p>Tente outro termo ou crie um novo conteúdo.</p><button class="button button-primary" id="empty-create">Criar post</button></div>';
@@ -381,7 +381,7 @@ async function saveCurrent(): Promise<boolean> {
       state.currentPost = await api<Post>('POST', '/api/post/save', { id: state.currentPost.id, file, body, changeDate: file.pubDate !== state.currentPost.file.pubDate });
     } else if (state.kind === 'project' && state.currentProject) {
       const old = state.currentProject.file;
-      const file: ProjectMeta = { ...old, title, description: ($('#project-description') as HTMLInputElement).value.trim(), type: ($('#project-type') as HTMLSelectElement).value === 'rpg' ? 'rpg' : 'story', order: Number(($('#project-order') as HTMLInputElement).value) || 0, published: ($('#project-published') as HTMLInputElement).checked, showHomepage: ($('#project-homepage') as HTMLInputElement).checked, cover: ($('#project-cover') as HTMLInputElement).value.trim() || undefined, bannerPosition: String(($('#project-banner-position') as HTMLInputElement).value) + '%' };
+      const file: ProjectMeta = { ...old, title, description: ($('#project-description') as HTMLInputElement).value.trim(), type: ($('#project-type') as HTMLSelectElement).value === 'rpg' ? 'rpg' : 'story', order: Number(($('#project-order') as HTMLInputElement).value) || 0, published: ($('#project-published') as HTMLInputElement).checked, showHomepage: ($('#project-homepage') as HTMLInputElement).checked, cover: ($('#project-cover') as HTMLInputElement).value.trim() || undefined, ...((($('#project-cover') as HTMLInputElement).value.trim()) ? { bannerPosition: String(($('#project-banner-position') as HTMLInputElement).value) + '%' } : {}) };
       state.currentProject = await api<Project>('POST', '/api/project/save', { id: state.currentProject.id, file, body });
     } else if (state.currentDoc && state.currentProject) {
       const file: ProjectDocumentMeta = { ...state.currentDoc.file, title, order: Number(($('#document-order') as HTMLInputElement).value) || 0, published: ($('#document-published') as HTMLInputElement).checked };
@@ -508,9 +508,19 @@ function showPostMenu(id: string) {
   if (choice === 'duplicar') void (async () => { try { const p = await api<Post>('POST', '/api/post/duplicate', { id }); await loadCatalog(); await openPost(p.id); } catch (e) { status((e as Error).message, 'error'); } })();
   if (choice === 'excluir' && window.confirm('Excluir este post e enviar a alteração ao GitHub?')) void (async () => { try { await api('POST', '/api/post/delete', { id }); await loadCatalog(); showLibrary(); } catch (e) { status((e as Error).message, 'error'); } })();
 }
-function showProjectMenu(id: string) {
-  const choice = window.prompt('Ações do projeto: "abrir". Para criar capítulos ou suplementos, abra o projeto.');
-  if (choice === 'abrir') void openProject(id);
+async function showProjectMenu(id: string) {
+  const choice = window.prompt('Ações do projeto: digite "abrir", "capítulo" ou "suplemento".');
+  if (choice === 'abrir') { await openProject(id); return; }
+  if (choice !== 'capítulo' && choice !== 'suplemento') return;
+  try {
+    const project = await api<Project>('GET', '/api/project/' + encodeURIComponent(id));
+    const kind = choice === 'capítulo' ? 'chapter' : 'supplement';
+    const title = window.prompt(kind === 'chapter' ? 'Título do capítulo:' : 'Título do suplemento:');
+    if (!title?.trim()) return;
+    const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: id, kind, title: title.trim() });
+    await loadCatalog();
+    await openProjectDocument(project.id, doc.kind, doc.id);
+  } catch (err) { status((err as Error).message, 'error'); }
 }
 function toggleFocus() {
   state.focus = !state.focus;
