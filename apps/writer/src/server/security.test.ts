@@ -43,19 +43,19 @@ test('Writer rejects a post symlink that resolves outside the posts directory', 
 
 
 test('Writer parses YAML front matter and preserves the Markdown body', () => {
-  const parsed = parseFrontmatter('---\\ntitle: Cinzas do Vale\\ntags:\\n  - rpg\\n  - sum\\npublished: true\\n---\\n\\n# Capítulo\\n');
+  const parsed = parseFrontmatter('---\ntitle: Cinzas do Vale\ntags:\n  - rpg\n  - sum\npublished: true\n---\n\n# Capítulo\n');
   assert.equal(parsed.data.title, 'Cinzas do Vale');
   assert.deepEqual(parsed.data.tags, ['rpg', 'sum']);
   assert.equal(parsed.data.published, true);
-  assert.equal(parsed.content, '\\n# Capítulo\\n');
+  assert.equal(parsed.content, '\n# Capítulo\n');
 });
 
 test('Writer leaves Markdown without front matter untouched', () => {
-  const parsed = parseFrontmatter('# Apenas Markdown\\n\\nTexto.');
+  const parsed = parseFrontmatter('# Apenas Markdown\n\nTexto.');
   assert.deepEqual(parsed.data, {});
-  assert.equal(parsed.content, '# Apenas Markdown\\n\\nTexto.');
+  assert.equal(parsed.content, '# Apenas Markdown\n\nTexto.');
 });
 
 test('Writer rejects malformed YAML front matter instead of silently discarding it', () => {
-  assert.throws(() => parseFrontmatter('---\\ntitle: [sem fechamento\\n---\\nCorpo'), /unexpected|flow sequence|expected/i);
+  assert.throws(() => parseFrontmatter('---\ntitle: [sem fechamento\n---\nCorpo'), /unexpected|flow collection|expected/i);
 });
