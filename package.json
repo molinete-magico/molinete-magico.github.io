@@ -10,6 +10,7 @@
     "writer": "npm run dev --workspace=apps/writer",
     "check": "npm run check --workspace=apps/blog",
     "check:writer": "npm run check --workspace=apps/writer",
-    "test:writer": "npm run test --workspace=apps/writer"
+    "test:writer": "npm run test --workspace=apps/writer",
+    "check:site": "BASE_PATH=/blog node scripts/check-built-site.mjs"
   }
 }
