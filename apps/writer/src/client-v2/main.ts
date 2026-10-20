@@ -247,6 +247,35 @@ function renderLibraryResults() {
     else showProjectMenu(button.dataset.id!);
   }));
 }
+function bindBannerFraming(previewId: string, sliderId: string) {
+  const preview = $('#' + previewId) as HTMLImageElement | null;
+  const slider = $('#' + sliderId) as HTMLInputElement | null;
+  if (!preview || !slider) return;
+  let dragging = false;
+  const update = (event: PointerEvent) => {
+    const rect = preview.getBoundingClientRect();
+    if (!rect.height) return;
+    const percent = Math.max(0, Math.min(100, Math.round(((event.clientY - rect.top) / rect.height) * 100)));
+    slider.value = String(percent);
+    preview.style.objectPosition = 'center ' + percent + '%';
+  };
+  preview.addEventListener('pointerdown', (event) => {
+    if (preview.hidden) return;
+    dragging = true;
+    preview.setPointerCapture(event.pointerId);
+    update(event);
+    event.preventDefault();
+  });
+  preview.addEventListener('pointermove', (event) => { if (dragging) update(event); });
+  const finish = (event: PointerEvent) => {
+    if (!dragging) return;
+    dragging = false;
+    update(event);
+    markDirty();
+  };
+  preview.addEventListener('pointerup', finish);
+  preview.addEventListener('pointercancel', finish);
+}
 function renderWorkspace() {
   document.documentElement.dataset.writerPalette = state.palette;
   $('#focus-toggle')!.removeAttribute('disabled');
@@ -271,6 +300,8 @@ function renderWorkspace() {
   });
   $('#post-banner-file')!.addEventListener('change', (event) => void uploadBanner(event));
   $('#project-cover-file')!.addEventListener('change', (event) => void uploadProjectCover(event));
+  bindBannerFraming('post-banner-preview', 'banner-position');
+  bindBannerFraming('project-banner-preview', 'project-banner-position');
   $('#document-actions')!.addEventListener('click', (event) => void handleDocumentAction(event));
   $('#document-tree')!.addEventListener('click', (event) => void handleTreeClick(event));
   $('#slash-menu')!.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => {
