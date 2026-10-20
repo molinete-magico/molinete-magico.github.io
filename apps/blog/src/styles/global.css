@@ -1302,6 +1302,12 @@ html[data-theme="dark"] {
   --secondary: var(--border-strong);
 }
 
+html[data-theme="graphite-dark"] {
+  --border: var(--border-rest);
+  --primary: var(--accent);
+  --secondary: var(--border-strong);
+}
+
 /* ================================================================
    PALETAS DO SELETOR DE TEMAS
    Os temas reutilizam os mesmos tokens semânticos do site, então
