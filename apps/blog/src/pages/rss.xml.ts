@@ -14,7 +14,7 @@ export const GET = async (context: APIContext) => {
   // subcaminho onde o site vive, injetado pelo Astro no build.
   const BASE = import.meta.env.BASE_URL;
   // O canal do feed e os links dos itens vivem sob o subcaminho do
-  // site (ex.: https://abms-ns.github.io/blog/).
+  // site (ex.: https://molinete-magico.github.io/blog/).
   const siteUrl = context.site ?? 'https://abms-ns.github.io';
   return rss({
     title: 'arquivo pessoal',
