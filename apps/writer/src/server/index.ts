@@ -9,7 +9,6 @@
 // credential helper...). O Writer nunca armazena tokens de terceiros.
 
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import path from 'node:path';
 import { readFileSync, existsSync, readFile } from 'node:fs';
@@ -55,7 +54,34 @@ function clientAsset(filename: string, contentType: string) {
 }
 
 const app = new Hono();
-app.use('*', cors());
+
+// The Writer is a local desktop tool with filesystem and Git privileges.
+// Never enable wildcard CORS here. Reject browser requests whose Origin is
+// not the same loopback origin as the request Host (including simple form posts).
+app.use('/api/*', async (c, next) => {
+  const origin = c.req.header('origin');
+  if (!origin) return next();
+
+  let parsedOrigin: URL;
+  try {
+    parsedOrigin = new URL(origin);
+  } catch {
+    return c.json({ error: 'Origem da requisição inválida.' }, 403);
+  }
+
+  const host = c.req.header('host') ?? new URL(c.req.url).host;
+  const originHostname = parsedOrigin.hostname.replace(/^\\[|\\]$/g, '').toLowerCase();
+  const isLoopback = originHostname === 'localhost' ||
+    originHostname === '127.0.0.1' ||
+    originHostname === '::1';
+  const sameHost = parsedOrigin.host.toLowerCase() === host.toLowerCase();
+  const isHttp = parsedOrigin.protocol === 'http:';
+
+  if (!isLoopback || !sameHost || !isHttp) {
+    return c.json({ error: 'Origem não autorizada para o Writer local.' }, 403);
+  }
+  await next();
+});
 
 // --- Página e estáticos -------------------------------------------------
 
@@ -522,7 +548,7 @@ export async function startWriterServer(
 ) {
   if (opts.repoRoot) setRepoRoot(opts.repoRoot);
   const port = opts.port ?? PORT;
-  const server = serve({ fetch: app.fetch, port }, (info) => {
+  const server = serve({ fetch: app.fetch, port, hostname: '127.0.0.1' }, (info) => {
     console.log(`\n  ✍  Writer rodando em http://localhost:${info.port}`);
     console.log(`  Conteúdo: ${contentRoot()}\n`);
   });
