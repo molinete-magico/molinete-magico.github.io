@@ -31,7 +31,7 @@ function slugDate(value: string): string {
 }
 function formatError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error ?? 'Erro desconhecido.');
-  const message = raw.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();
+  const message = raw.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   if (/failed to fetch|networkerror|fetch failed|econnrefused|socket hang up/i.test(message)) {
     return 'Não foi possível conectar ao Writer. Verifique se o servidor continua aberto e tente novamente.';
   }
@@ -73,7 +73,7 @@ async function api<T>(method: string, url: string, body?: unknown): Promise<T> {
   if (!response.ok) {
     const detail = typeof result === 'object' && result !== null && 'error' in result
       ? String(result.error)
-      : typeof result === 'string' ? result.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim() : '';
+      : typeof result === 'string' ? result.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
     const fallback = detail || response.statusText || 'Erro na requisição.';
     throw new Error(formatError(response.status >= 500 ? fallback : (detail || `Falha ${method} ${url} (HTTP ${response.status}).`)));
   }
