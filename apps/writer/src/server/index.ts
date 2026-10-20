@@ -113,6 +113,7 @@ function shellHtml(): string {
         '<button type="button" data-md="code" title="Código">&lt;/&gt;</button>',
         '<span class="toolbar-spacer"></span>',
         '<span class="toolbar-hint">Ctrl+S salva</span>',
+        '<a href="/v2" class="writer-v2-entry" style="margin-left:12px;padding:4px 8px;border:1px solid var(--green-500);color:var(--green-300);text-decoration:none;font:12px var(--font-mono)">Testar novo Writer ↗</a>',
       ].join('');
 
       const paneLabel = document.querySelector('.pane-label');
@@ -162,6 +163,30 @@ app.get('/client.css', (c) => {
   } catch (err) {
     return c.text((err as Error).message, 500);
   }
+});
+
+// Nova interface em paralelo: o Writer legado continua disponível em /.
+app.get('/v2', (c) => c.html(`<!doctype html>
+<html lang="pt-BR" data-writer-palette="site">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Writer · Biblioteca e editor</title>
+  <link rel="stylesheet" href="/v2/client.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/v2/client.js"></script>
+</body>
+</html>`));
+app.get('/v2/client.js', (c) => {
+  try { return clientAsset('v2/main.js', 'text/javascript'); }
+  catch (err) { return c.text((err as Error).message, 500); }
+});
+app.get('/v2/client.css', (c) => {
+  try { return clientAsset('v2/main.css', 'text/css'); }
+  catch (err) { return c.text((err as Error).message, 500); }
 });
 
 // --- Configuração -------------------------------------------------------
