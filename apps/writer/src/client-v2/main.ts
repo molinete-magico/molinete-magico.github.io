@@ -95,7 +95,12 @@ function clearRecovery() {
 }
 function confirmLeave(): boolean {
   if (!state.dirty) return true;
-  return window.confirm('Há alterações não salvas. Sair deste documento e descartar as alterações feitas desde o último salvamento?');
+  const leave = window.confirm('Há alterações não salvas. Sair deste documento e descartar as alterações feitas desde o último salvamento?');
+  if (leave) {
+    state.dirty = false;
+    localStorage.removeItem('writer-v2-recovery');
+  }
+  return leave;
 }
 function renderShell() {
   app.innerHTML = '<header class="v2-topbar"><a class="brand" href="/v2" id="brand-home" aria-label="Voltar à biblioteca"><span class="brand-mark">M.</span><span>WRITER<span class="brand-sub"> / ATELIÊ DE ESCRITA</span></span></a><div class="topbar-tools"><span id="status-line" role="status" aria-live="polite">Conectando ao arquivo…</span><button class="icon-button" id="palette-toggle" type="button" title="Alternar paleta de escrita" aria-label="Alternar paleta de escrita">◐</button><button class="icon-button" id="focus-toggle" type="button" title="Modo foco" aria-label="Modo foco">⤢</button><button class="icon-button" id="settings-toggle" type="button" title="Configurações do Writer" aria-label="Configurações">⚙</button></div></header><main id="v2-main"></main><div id="dialog-root"></div>';
@@ -194,7 +199,10 @@ function renderWorkspace() {
   $('#project-cover-file')!.addEventListener('change', (event) => void uploadProjectCover(event));
   $('#document-actions')!.addEventListener('click', (event) => void handleDocumentAction(event));
   $('#document-tree')!.addEventListener('click', (event) => void handleTreeClick(event));
-  $('#slash-menu')!.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => button.addEventListener('click', () => insertBlock(button.dataset.insertBlock!)));
+  $('#slash-menu')!.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => insertBlock(button.dataset.insertBlock!));
+  });
   const host = $('#block-host')!;
   state.editor = new BlockEditor(host, () => markDirty(), uploadInlineImage, resolveImageUrl);
   $('#block-host .block-editor-toolbar')?.classList.add('v2-block-toolbar');
@@ -324,6 +332,15 @@ function bindSlashMenu() {
 function insertBlock(kind: string) {
   const canvas = $('#block-host .block-editor-canvas');
   if (!canvas) return;
+  const selection = window.getSelection();
+  if (selection?.isCollapsed && selection.anchorNode?.nodeType === Node.TEXT_NODE) {
+    const node = selection.anchorNode as Text;
+    const offset = selection.anchorOffset;
+    if (node.data.slice(0, offset).endsWith('/')) {
+      node.deleteData(offset - 1, 1);
+      selection.collapse(node, offset - 1);
+    }
+  }
   canvas.focus();
   const commands: Record<string, string> = { h1: 'formatBlock', h2: 'formatBlock', h3: 'formatBlock', blockquote: 'formatBlock', pre: 'formatBlock', ul: 'insertUnorderedList' };
   if (kind === 'hr') document.execCommand('insertHTML', false, '<hr><p><br></p>');
@@ -451,8 +468,8 @@ function resolveImageUrl(src: string) {
 }
 async function uploadBanner(event: Event) {
   const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (!file || !state.currentPost) return;
-  const form = new FormData(); form.append('file', await prepareImageForUpload(file));
   try {
+    const form = new FormData(); form.append('file', await prepareImageForUpload(file));
     await api('POST', '/api/post/' + encodeURIComponent(state.currentPost.id) + '/banner', form);
     state.bannerAvailable = true;
     const preview = $('#post-banner-preview') as HTMLImageElement;
@@ -464,8 +481,8 @@ async function uploadBanner(event: Event) {
 }
 async function uploadProjectCover(event: Event) {
   const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (!file || !state.currentProject) return;
-  const form = new FormData(); form.append('file', await prepareImageForUpload(file));
   try {
+    const form = new FormData(); form.append('file', await prepareImageForUpload(file));
     const result = await api<{cover: string}>('POST', '/api/project/' + encodeURIComponent(state.currentProject.id) + '/banner', form);
     ($('#project-cover') as HTMLInputElement).value = result.cover;
     const preview = $('#project-banner-preview') as HTMLImageElement;
