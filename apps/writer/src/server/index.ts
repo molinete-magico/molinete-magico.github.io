@@ -23,11 +23,15 @@ import {
   deletePost,
   duplicatePost,
   saveImage,
+  readPostImage,
+  readProjectImage,
+  readProjectDocumentImage,
   listProjects,
   readProject,
   createProject,
   saveProject,
   saveProjectBanner,
+  saveProjectImage,
   readProjectDocument,
   createProjectDocument,
   saveProjectDocument,
@@ -163,6 +167,29 @@ app.post('/api/workspace', async (c) => {
 
 app.get('/api/posts', async (c) => c.json(await listPosts()));
 
+app.get('/api/post-image', async (c) => {
+  try {
+    const image = await readPostImage(c.req.query('post') ?? '', c.req.query('name') ?? '');
+    return new Response(new Uint8Array(image.buffer), { status: 200, headers: { 'Content-Type': image.contentType, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+  } catch (err) { return c.json({ error: (err as Error).message }, 404); }
+});
+
+app.get('/api/project-image', async (c) => {
+  try {
+    const image = await readProjectImage(c.req.query('project') ?? '', c.req.query('name') ?? '');
+    return new Response(new Uint8Array(image.buffer), { status: 200, headers: { 'Content-Type': image.contentType, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+  } catch (err) { return c.json({ error: (err as Error).message }, 404); }
+});
+
+app.get('/api/project-document/image-file', async (c) => {
+  const kind = c.req.query('kind') ?? '';
+  if (!['document', 'chapter', 'supplement'].includes(kind)) return c.json({ error: 'Tipo de documento inválido.' }, 400);
+  try {
+    const image = await readProjectDocumentImage(c.req.query('project') ?? '', kind as ProjectDocumentKind, c.req.query('id') ?? '', c.req.query('name') ?? '');
+    return new Response(new Uint8Array(image.buffer), { status: 200, headers: { 'Content-Type': image.contentType, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
+  } catch (err) { return c.json({ error: (err as Error).message }, 404); }
+});
+
 // --- Projetos ------------------------------------------------------------
 
 app.get('/api/projects', async (c) => {
@@ -189,6 +216,18 @@ app.post('/api/project', async (c) => {
   } catch (err) {
     return c.json({ error: (err as Error).message }, 400);
   }
+});
+
+app.post('/api/project/:id/image', async (c) => {
+  try {
+    const form = await c.req.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem.' }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (file.size === 0 || file.size > 15 * 1024 * 1024) return c.json({ error: 'A imagem deve ter até 15 MB.' }, 400);
+    const name = await saveProjectImage(c.req.param('id'), file.name, Buffer.from(await file.arrayBuffer()));
+    return c.json({ name, alt: path.basename(name, path.extname(name)) }, 201);
+  } catch (err) { return c.json({ error: (err as Error).message }, 400); }
 });
 
 app.post('/api/project/:id/banner', async (c) => {
@@ -272,6 +311,7 @@ app.post('/api/project-document/image', async (c) => {
     const id = String(form.get('id') ?? '');
     if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem.' }, 400);
     if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (file.size === 0 || file.size > 15 * 1024 * 1024) return c.json({ error: 'A imagem deve ter até 15 MB.' }, 400);
     if (!projectId || !['document', 'chapter', 'supplement'].includes(kind) || !id) {
       return c.json({ error: 'Projeto ou documento inválido.' }, 400);
     }
@@ -403,15 +443,15 @@ app.post('/api/post/:id/banner', async (c) => {
 });
 
 app.post('/api/post/:id/image', async (c) => {
-  const form = await c.req.formData();
-  const file = form.get('file');
-  if (!(file instanceof File)) return c.json({ error: 'Nenhuma imagem enviada' }, 400);
-  const name = await saveImage(
-    c.req.param('id'),
-    file.name,
-    Buffer.from(await file.arrayBuffer()),
-  );
-  return c.json({ name, alt: path.basename(name, path.extname(name)) }, 201);
+  try {
+    const form = await c.req.formData();
+    const file = form.get('file');
+    if (!(file instanceof File)) return c.json({ error: 'Escolha uma imagem.' }, 400);
+    if (!file.type.startsWith('image/')) return c.json({ error: 'O arquivo precisa ser uma imagem.' }, 400);
+    if (file.size === 0 || file.size > 15 * 1024 * 1024) return c.json({ error: 'A imagem deve ter até 15 MB.' }, 400);
+    const name = await saveImage(c.req.param('id'), file.name, Buffer.from(await file.arrayBuffer()));
+    return c.json({ name, alt: path.basename(name, path.extname(name)) }, 201);
+  } catch (err) { return c.json({ error: (err as Error).message }, 400); }
 });
 
 // --- Git ------------------------------------------------------------------
