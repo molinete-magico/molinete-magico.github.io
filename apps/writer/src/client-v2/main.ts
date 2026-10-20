@@ -582,13 +582,27 @@ async function saveCurrent(): Promise<boolean> {
     } else if (state.currentDoc && state.currentProject) {
       const file: ProjectDocumentMeta = { ...state.currentDoc.file, title, order: Number(($('#document-order') as HTMLInputElement).value) || 0, published: ($('#document-published') as HTMLInputElement).checked };
       state.currentDoc = await api<ProjectDocument>('POST', '/api/project-document/save', { projectId: state.currentDoc.projectId, kind: state.currentDoc.kind, id: state.currentDoc.id, file, body });
+    } else {
+      throw new Error('Não foi possível identificar o documento atual para salvar.');
     }
-    state.dirty = false; clearRecovery(); await loadCatalog(); renderDocumentTree();
-    if ($('#crumb-title')) $('#crumb-title')!.textContent = activeTitle();
+    state.dirty = false;
+    clearRecovery();
+  } catch (err) {
+    status(formatError(err), 'error');
+    return false;
+  } finally {
+    state.saving = false;
+  }
+
+  if ($('#crumb-title')) $('#crumb-title')!.textContent = activeTitle();
+  try {
+    await loadCatalog();
+    renderDocumentTree();
     status('Salvo com sucesso');
-    return true;
-  } catch (err) { status(formatError(err), 'error'); return false; }
-  finally { state.saving = false; }
+  } catch (err) {
+    status('Conteúdo salvo, mas a biblioteca não pôde ser atualizada: ' + formatError(err), 'warn');
+  }
+  return true;
 }
 async function publishCurrent() {
   if (!(await saveCurrent())) return;
