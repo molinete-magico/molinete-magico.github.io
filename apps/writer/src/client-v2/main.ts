@@ -49,8 +49,9 @@ function status(message: string, mode: 'ok' | 'warn' | 'error' = 'ok') {
 function askText(title: string, label: string, initial = '', placeholder = ''): Promise<string | null> {
   return new Promise((resolve) => {
     const root = $('#dialog-root')!;
-    root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="action-dialog-title"><div class="dialog-heading"><h2 id="action-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-dialog-cancel aria-label="Fechar">×</button></div><form id="text-dialog-form"><label>' + esc(label) + '<input id="text-dialog-value" value="' + esc(initial) + '" placeholder="' + esc(placeholder) + '" autocomplete="off" required></label><div class="settings-actions"><button type="button" class="button" data-dialog-cancel>Cancelar</button><button type="submit" class="button button-primary">Continuar</button></div></form></section></div>';
-    const finish = (value: string | null) => { root.replaceChildren(); resolve(value); };
+    root.insertAdjacentHTML('beforeend', '<div class="dialog-backdrop action-dialog-overlay"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="action-dialog-title"><div class="dialog-heading"><h2 id="action-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-dialog-cancel aria-label="Fechar">×</button></div><form id="text-dialog-form"><label>' + esc(label) + '<input id="text-dialog-value" value="' + esc(initial) + '" placeholder="' + esc(placeholder) + '" autocomplete="off" required></label><div class="settings-actions"><button type="button" class="button" data-dialog-cancel>Cancelar</button><button type="submit" class="button button-primary">Continuar</button></div></form></section></div>');
+    const overlay = root.lastElementChild as HTMLElement;
+    const finish = (value: string | null) => { overlay.remove(); resolve(value); };
     root.querySelectorAll('[data-dialog-cancel]').forEach((button) => button.addEventListener('click', () => finish(null)));
     $('#text-dialog-form')!.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -63,8 +64,9 @@ function askText(title: string, label: string, initial = '', placeholder = ''): 
 function askChoice<T extends string>(title: string, label: string, options: Array<{value:T; label:string}>): Promise<T | null> {
   return new Promise((resolve) => {
     const root = $('#dialog-root')!;
-    root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="choice-dialog-title"><div class="dialog-heading"><h2 id="choice-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-dialog-cancel aria-label="Fechar">×</button></div><form id="choice-dialog-form"><label>' + esc(label) + '<select id="choice-dialog-value">' + options.map((option) => '<option value="' + esc(option.value) + '">' + esc(option.label) + '</option>').join('') + '</select></label><div class="settings-actions"><button type="button" class="button" data-dialog-cancel>Cancelar</button><button type="submit" class="button button-primary">Continuar</button></div></form></section></div>';
-    const finish = (value: T | null) => { root.replaceChildren(); resolve(value); };
+    root.insertAdjacentHTML('beforeend', '<div class="dialog-backdrop action-dialog-overlay"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="choice-dialog-title"><div class="dialog-heading"><h2 id="choice-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-dialog-cancel aria-label="Fechar">×</button></div><form id="choice-dialog-form"><label>' + esc(label) + '<select id="choice-dialog-value">' + options.map((option) => '<option value="' + esc(option.value) + '">' + esc(option.label) + '</option>').join('') + '</select></label><div class="settings-actions"><button type="button" class="button" data-dialog-cancel>Cancelar</button><button type="submit" class="button button-primary">Continuar</button></div></form></section></div>');
+    const overlay = root.lastElementChild as HTMLElement;
+    const finish = (value: T | null) => { overlay.remove(); resolve(value); };
     root.querySelectorAll('[data-dialog-cancel]').forEach((button) => button.addEventListener('click', () => finish(null)));
     $('#choice-dialog-form')!.addEventListener('submit', (event) => {
       event.preventDefault();
