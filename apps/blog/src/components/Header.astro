@@ -2,11 +2,17 @@
 import ThemeToggle from './ThemeToggle.astro';
 import { withBase } from '../lib/paths';
 
-const pathname = Astro.url.pathname;
+const basePath = import.meta.env.BASE_URL;
 
-// O site vive sob um subcaminho (base path); removemos esse prefixo
-// do pathname para comparar com os links da navegação.
-const currentPath = pathname.replace(import.meta.env.BASE_URL, '');
+function normalizePath(pathname: string) {
+  const withoutBase = pathname.startsWith(basePath)
+    ? pathname.slice(basePath.length)
+    : pathname;
+  const normalized = `/${withoutBase}`.replace(/\\/{2,}/g, '/').replace(/\\/$/, '');
+  return normalized || '/';
+}
+
+const currentPath = normalizePath(Astro.url.pathname);
 
 const links = [
   { href: withBase('/'), label: 'Início' },
@@ -16,9 +22,9 @@ const links = [
 ];
 
 function isCurrent(link: string) {
-  const target = link.replace(import.meta.env.BASE_URL, '');
+  const target = normalizePath(link);
   if (target === '/') return currentPath === '/';
-  return currentPath.startsWith(target);
+  return currentPath === target || currentPath.startsWith(`${target}/`);
 }
 ---
 
