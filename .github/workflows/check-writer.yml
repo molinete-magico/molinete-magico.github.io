@@ -58,3 +58,8 @@ jobs:
           BASE_PATH: /blog
           SITE_URL: https://molinete-magico.github.io
         run: npm run build --workspace=apps/blog
+
+      - name: Check generated links and assets
+        env:
+          BASE_PATH: /blog
+        run: node scripts/check-built-site.mjs
