@@ -651,7 +651,7 @@ async function saveProjectCurrent(): Promise<boolean> {
 
 async function publishProjectCurrent() {
   // Salva exatamente o estado escolhido no editor, inclusive published=false.
-  if (!(await saveProjectCurrent())) return;
+  if (!(await saveCurrent())) return;
   const revision = editRevision;
   setSaving('Publicando alterações do projeto...');
   try {
@@ -921,7 +921,29 @@ function todayClient() {
   return `${d.getFullYear()}-${m}-${dd}`;
 }
 
+let saveInFlight: Promise<boolean> | null = null;
+
 async function saveCurrent(): Promise<boolean> {
+  if (saveInFlight) {
+    const pending = saveInFlight;
+    const completed = await pending;
+    if (saveInFlight === pending) saveInFlight = null;
+    if (!completed) return false;
+    // If the user edited during the previous request, serialize a second save
+    // after it finishes instead of allowing two writes to race on disk.
+    return hasUnsavedChanges() ? saveCurrent() : true;
+  }
+
+  const task = performSaveCurrent();
+  saveInFlight = task;
+  try {
+    return await task;
+  } finally {
+    if (saveInFlight === task) saveInFlight = null;
+  }
+}
+
+async function performSaveCurrent(): Promise<boolean> {
   if (state.projectMode) return saveProjectCurrent();
   if (!state.current) return false;
   const revision = editRevision;
@@ -959,7 +981,7 @@ async function saveCurrent(): Promise<boolean> {
 // ------------------------------------------------------------------
 async function publishCurrent() {
   if (state.projectMode) return publishProjectCurrent();
-  if (!state.current) return;
+  if (!state.current || !(await saveCurrent())) return;
   const revision = editRevision;
   const meta = { ...currentMeta(), draft: false };
   const body = currentBody();
