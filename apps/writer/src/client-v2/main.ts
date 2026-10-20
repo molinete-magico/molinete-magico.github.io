@@ -13,11 +13,12 @@ const state: {
   currentProject: Project | null; currentDoc: ProjectDocument | null;
   kind: OpenItem | null; editor: BlockEditor | null; dirty: boolean; saving: boolean;
   palette: Palette; focus: boolean; preview: boolean; git: GitStatus | null; tags: string[];
+  bannerAvailable: boolean;
 } = {
   posts: [], projects: [], currentPost: null, currentProject: null, currentDoc: null,
   kind: null, editor: null, dirty: false, saving: false,
   palette: (localStorage.getItem('writer-v2-palette') as Palette) || 'site',
-  focus: false, preview: false, git: null, tags: [],
+  focus: false, preview: false, git: null, tags: [], bannerAvailable: false,
 };
 
 function esc(value: unknown): string {
