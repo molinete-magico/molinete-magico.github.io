@@ -6,21 +6,9 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import matter from 'gray-matter';
 import yaml from 'js-yaml';
 import { contentRoot, postsRoot, projectsRoot, repoRoot } from './fs.ts';
 import type { Post, PostListItem, PostMeta } from '../shared/types.ts';
-
-// O gray-matter traz um parse YAML baseado em `safeLoad` (removido no
-// js-yaml 4+). Passamos nossos próprios engines para usar `load`/`dump`.
-const MATTER_OPTIONS = {
-  engines: {
-    yaml: {
-      parse: (input: string) => (yaml.load(input) as object) ?? {},
-      stringify: (data: object) => yaml.dump(data),
-    },
-  },
-};
 
 // Converte um título em um slug seguro para nome de arquivo/pasta.
 // Ex.: "Como comecei meu arquivo pessoal" -> "como-comecei-meu-arquivo-pessoal"
@@ -252,9 +240,8 @@ async function readPostFile(id: string): Promise<{ body: string; meta: PostMeta 
   const filePath = await resolvePostFile(id);
   const text = await fs.readFile(filePath, 'utf-8');
 
-  // `gray-matter` separa o frontmatter (bloco --- ---) do conteúdo.
-  const parsed = matter(text, MATTER_OPTIONS);
-  const data = parsed.data as Record<string, unknown>;
+  const parsed = parseFrontmatter(text);
+  const data = parsed.data;
 
   const meta: PostMeta = {
     title: stringOr(data.title, 'Sem título'),
@@ -502,9 +489,28 @@ async function projectFile(id: string): Promise<string> {
   return file;
 }
 
+function parseFrontmatter(text: string): { content: string; data: Record<string, unknown> } {
+  // Front matter in this repository is YAML delimited by standalone --- lines.
+  // Parse it directly with js-yaml v4, avoiding the legacy gray-matter/js-yaml v3 chain.
+  const source = text.startsWith("\uFEFF") ? text.slice(1) : text;
+  const opening = /^---[ \t]*\r?\n/.exec(source);
+  if (!opening) return { content: source, data: {} };
+
+  const closingPattern = /^(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/gm;
+  closingPattern.lastIndex = opening[0].length;
+  const closing = closingPattern.exec(source);
+  if (!closing) return { content: source, data: {} };
+
+  const parsed = yaml.load(source.slice(opening[0].length, closing.index));
+  const data = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? parsed as Record<string, unknown>
+    : {};
+  return { content: source.slice(closing.index + closing[0].length), data };
+}
+
 function parseMarkdownFile(text: string): { body: string; data: Record<string, unknown> } {
-  const parsed = matter(text, MATTER_OPTIONS);
-  return { body: parsed.content.trim(), data: parsed.data as Record<string, unknown> };
+  const parsed = parseFrontmatter(text);
+  return { body: parsed.content.trim(), data: parsed.data };
 }
 
 function renderContentFile(meta: Record<string, unknown>, body: string): string {
