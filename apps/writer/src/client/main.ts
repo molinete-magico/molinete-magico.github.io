@@ -652,6 +652,7 @@ async function saveProjectCurrent(): Promise<boolean> {
 async function publishProjectCurrent() {
   // Salva exatamente o estado escolhido no editor, inclusive published=false.
   if (!(await saveProjectCurrent())) return;
+  const revision = editRevision;
   setSaving('Publicando alterações do projeto...');
   try {
     const currentId = state.currentProject?.id;
@@ -666,6 +667,11 @@ async function publishProjectCurrent() {
     await api('POST', '/api/git/push');
     await loadProjects();
     await refreshGit();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'Projeto publicado, mas há edições mais recentes que ainda não foram salvas.');
+      return;
+    }
     setSaved(true, `${isPublished ? 'Publicado' : 'Ocultado'} ✓ ${label}`);
   } catch (err) {
     setSaved(false, (err as Error).message);
