@@ -40,6 +40,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Generate a compatible, audit-fixed lockfile in CI; the resulting
+      # artifact is reviewed and committed separately after the build passes.
+      - name: Apply compatible dependency security updates
+        run: npm audit fix --package-lock-only
+
+      - name: Install audited lockfile
+        run: npm ci
+
+      - name: Upload audited package lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: writer-audit-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+
       - name: Type-check Writer
         run: npm run check --workspace=apps/writer
 
