@@ -219,15 +219,15 @@ async function restoreRecoveryIfMatches() {
       state.editor?.setMarkdown(recovery.body ?? '');
       markDirty();
     } else storageRemove('writer-v2-recovery');
-  } catch { localStorage.removeItem('writer-v2-recovery'); }
+  } catch { storageRemove('writer-v2-recovery'); }
 }
 function clearRecovery() {
-  const raw = localStorage.getItem('writer-v2-recovery');
+  const raw = storageGet('writer-v2-recovery');
   if (!raw) return;
   try {
     const recovery = JSON.parse(raw);
     const projectId = state.currentDoc?.projectId ?? state.currentProject?.id ?? '';
-    if (recovery.id === activeId() && recovery.kind === state.kind && (recovery.projectId ?? '') === projectId) localStorage.removeItem('writer-v2-recovery');
+    if (recovery.id === activeId() && recovery.kind === state.kind && (recovery.projectId ?? '') === projectId) storageRemove('writer-v2-recovery');
   } catch { localStorage.removeItem('writer-v2-recovery'); }
 }
 function confirmLeave(): boolean {
@@ -235,7 +235,7 @@ function confirmLeave(): boolean {
   const leave = window.confirm('Há alterações não salvas. Sair deste documento e descartar as alterações feitas desde o último salvamento?');
   if (leave) {
     state.dirty = false;
-    localStorage.removeItem('writer-v2-recovery');
+    storageRemove('writer-v2-recovery');
   }
   return leave;
 }
