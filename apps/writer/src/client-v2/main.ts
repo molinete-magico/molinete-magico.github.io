@@ -63,19 +63,41 @@ async function api<T>(method: string, url: string, body?: unknown): Promise<T> {
   } catch (error) {
     throw new Error(formatError(error));
   }
+
   const contentType = response.headers.get('content-type') || '';
+  const isJson = contentType.includes('application/json');
   let result: unknown = '';
   try {
-    result = contentType.includes('application/json') ? await response.json() : await response.text();
+    result = isJson ? await response.json() : await response.text();
   } catch {
     result = '';
   }
   if (!response.ok) {
-    const detail = typeof result === 'object' && result !== null && 'error' in result
-      ? String(result.error)
-      : typeof result === 'string' ? result.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : '';
-    const fallback = detail || response.statusText || 'Erro na requisição.';
-    throw new Error(formatError(response.status >= 500 ? fallback : (detail || `Falha ${method} ${url} (HTTP ${response.status}).`)));
+    const jsonError = typeof result === 'object' && result !== null && 'error' in result
+      ? String(result.error).trim()
+      : '';
+    const textError = !isJson && contentType.includes('text/plain') && typeof result === 'string'
+      ? result.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim()
+      : '';
+    const detail = jsonError || textError;
+
+    if (response.status >= 500 && !jsonError) {
+      throw new Error('O servidor encontrou um erro ao processar a solicitação. Suas alterações não foram descartadas; tente novamente e confira o terminal do Writer se o problema persistir.');
+    }
+    if (detail) throw new Error(formatError(detail));
+
+    const knownStatus: Record<number, string> = {
+      400: 'A solicitação contém dados inválidos. Confira os campos e tente novamente.',
+      401: 'A sessão não foi autorizada. Confira a configuração e tente novamente.',
+      403: 'A operação foi bloqueada por falta de autorização.',
+      404: 'O conteúdo ou recurso solicitado não foi encontrado. Atualize a biblioteca e tente novamente.',
+      409: 'A operação entrou em conflito com o estado atual do conteúdo. Atualize os dados antes de tentar novamente.',
+      413: 'O arquivo é grande demais para ser enviado.',
+      415: 'O formato do arquivo não é aceito.',
+      422: 'Alguns dados não passaram pela validação. Confira os campos e tente novamente.',
+      429: 'Muitas solicitações em pouco tempo. Aguarde um instante e tente novamente.',
+    };
+    throw new Error(knownStatus[response.status] || `Falha na solicitação (HTTP ${response.status}).`);
   }
   return result as T;
 }
@@ -707,12 +729,21 @@ function toggleFocus() {
   $('#focus-toggle')?.classList.toggle('is-active', state.focus);
   status(state.focus ? 'Modo foco ativado · Esc para sair' : 'Modo foco desativado');
 }
-async function loadGitStatus() {
+async function loadGitStatus(quiet = false) {
   try {
     state.git = await api<GitStatus>('GET', '/api/git/status');
     const node = $('#status-line');
-    if (node && !state.dirty) node.textContent = 'Git · ' + state.git.branch + ' · ' + (state.git.dirty.length ? state.git.dirty.length + ' arquivo(s) alterado(s)' : 'limpo');
-  } catch { /* Git status is supplemental */ }
+    if (node && !state.dirty) {
+      node.textContent = 'Git · ' + state.git.branch + ' · ' + (state.git.dirty.length ? state.git.dirty.length + ' arquivo(s) alterado(s)' : 'limpo');
+      node.dataset.state = 'ok';
+    }
+  } catch (err) {
+    if (quiet) return;
+    const message = 'Não foi possível consultar o estado do Git: ' + formatError(err);
+    const settingsStatus = $('#settings-status');
+    if (settingsStatus) settingsStatus.textContent = message;
+    else if (!state.dirty) status(message, 'error');
+  }
 }
 function showSettings() {
   const root = $('#dialog-root')!;
@@ -729,7 +760,12 @@ function showSettings() {
   void api<{workspace:{root:string}}>('GET', '/api/settings').then((settings) => {
     const input = $('#workspace-path') as HTMLInputElement | null;
     if (input && settings.workspace?.root) input.value = settings.workspace.root;
-  }).catch(() => undefined);
+  }).catch((err) => {
+    const message = 'Não foi possível carregar as configurações: ' + formatError(err);
+    const settingsStatus = $('#settings-status');
+    if (settingsStatus) settingsStatus.textContent = message;
+    else status(message, 'error');
+  });
   $('#set-workspace')!.addEventListener('click', async () => {
     const path = ($('#workspace-path') as HTMLInputElement).value.trim();
     if (state.dirty && !(await saveCurrent())) return;
@@ -787,6 +823,6 @@ window.addEventListener('unhandledrejection', (event) => {
 window.addEventListener('error', (event) => {
   status(formatError(event.error ?? event.message), 'error');
 });
-window.setInterval(() => { if (state.kind) void loadGitStatus(); }, 20000);
+window.setInterval(() => { if (state.kind) void loadGitStatus(true); }, 20000);
 renderShell();
 showLibrary();
