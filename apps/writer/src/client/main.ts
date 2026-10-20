@@ -1121,6 +1121,7 @@ $('#btn-mode')!.addEventListener('click', async () => {
   ($('#btn-new') as HTMLButtonElement).textContent = state.projectMode ? '+ Novo projeto' : '+ Novo post';
   postList.hidden = state.projectMode;
   projectList.hidden = !state.projectMode;
+  $('#post-filters')!.toggleAttribute('hidden', state.projectMode);
   projectActions.hidden = !state.projectMode;
   search.placeholder = state.projectMode ? 'Pesquisar projetos e documentos...' : 'Pesquisar posts...';
   search.value = '';
