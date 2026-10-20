@@ -1,6 +1,6 @@
 ---
 title: Grande Engenho
-published: false
+published: true
 order: 0
 ---
 
@@ -15,13 +15,5 @@ Todos os anos, a academia recebe cerca de 300 estudantes, que inicialmente são 
 ## Mapa interativo
 
 Explore a ilha, aproxime os detalhes e selecione os pontos numerados para consultar os principais locais do Grande Engenho.
-
-<iframe
-  src="/blog/projects/fluxo-rpg/grande-engenho/index.html"
-  title="Mapa interativo do Grande Engenho"
-  loading="lazy"
-  style="display:block;width:100%;height:min(86vh,900px);min-height:660px;border:1px solid #d8d8c9;border-radius:4px;background:#f5f2e8"
-  allowfullscreen
-></iframe>
 
 ## Costumes e
