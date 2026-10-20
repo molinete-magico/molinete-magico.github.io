@@ -139,3 +139,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 .action-dialog-overlay { z-index: 60; }
 .action-dialog-overlay .settings-dialog { z-index: 61; }
+
+.banner-preview { cursor: ns-resize; touch-action: none; }
+.banner-preview:active { border-color: var(--accent); }
