@@ -128,3 +128,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 .banner-preview { grid-column: 1 / -1; display: block; width: 100%; max-height: 190px; object-fit: cover; object-position: center; border: 1px solid var(--border-rest); background: var(--bg-soft); }
 .banner-preview[hidden] { display: none; }
+
+.action-dialog { max-height: min(85vh, 720px); overflow-y: auto; }
+.action-dialog form label { display: grid; gap: .45rem; margin: 1.1rem 0; color: var(--text-muted); font-size: .8rem; }
+.action-dialog input, .action-dialog select { width: 100%; padding: .65rem; border: 1px solid var(--border-rest); border-radius: 0; background: var(--bg); color: var(--text-primary); }
+.action-menu-list { display: grid; gap: .3rem; margin-top: 1rem; }
+.action-menu-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .8rem; border: 1px solid var(--border-rest); background: var(--bg); color: var(--text-primary); text-align: left; }
+.action-menu-item:hover { border-color: var(--accent); background: var(--green-950); }
+.action-menu-item.danger-text { color: #d66; }
