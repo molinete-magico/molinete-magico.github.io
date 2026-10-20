@@ -142,3 +142,16 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 .banner-preview { cursor: ns-resize; touch-action: none; }
 .banner-preview:active { border-color: var(--accent); }
+
+/* Keep the writing canvas primary; navigation and metadata are opt-in panels. */
+.workspace-layout { grid-template-columns: minmax(0, 1fr); }
+.document-sidebar { display: none; }
+.workspace-layout.with-outline { grid-template-columns: 245px minmax(0, 1fr); }
+.workspace-layout.with-outline .document-sidebar { display: block; }
+.document-meta .metadata-grid { display: none; }
+.document-meta.metadata-open .metadata-grid:not([hidden]) { display: grid; }
+.workspace-actions .is-active { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 760px) {
+  .workspace-layout.with-outline { grid-template-columns: minmax(0, 1fr); }
+  .workspace-layout.with-outline .document-sidebar { display: block; }
+}
