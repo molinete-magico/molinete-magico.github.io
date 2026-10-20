@@ -47,7 +47,6 @@ jobs:
         run: npm run test --workspace=apps/writer
 
       - name: Audit dependency advisories
-        continue-on-error: true
         run: npm audit --audit-level=high
 
       - name: Smoke test Astro dev server
