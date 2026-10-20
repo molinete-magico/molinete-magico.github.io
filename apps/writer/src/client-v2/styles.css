@@ -1,8 +1,8 @@
 :root {
   --bg: #050708; --bg-elevated: #0a0e10; --bg-soft: #0e1417;
   --green-950: #051a13; --green-900: #072a1f; --green-800: #0d3f2e;
-  --green-700: #155a41; --green-600: #1c7a58; --green-500: #22a06e;
-  --green-400: #3ecf8e; --green-300: #7ff4b8; --green-200: #b6ffda;
+  --green-700: #155a41; --green-600: #1c7a58; --green-500: #287a5b;
+  --green-400: #3a9872; --green-300: #75b89a; --green-200: #b2d5c2;
   --gray-400: #93a1a1; --text-primary: #e8fbf1; --text-secondary: var(--green-500);
   --text-muted: var(--gray-400); --border-rest: var(--green-800);
   --border-strong: var(--green-700); --accent: var(--green-400);
@@ -170,4 +170,60 @@ button:disabled{opacity:.45;cursor:not-allowed}
 :root[data-writer-palette="mono"] .button-primary,
 :root[data-writer-palette="graphite"] .button-primary {
   color: var(--text-primary); background: var(--bg-soft);
+}
+
+
+/* Matte interface: restrained interaction states, no neon glow or oversized hover controls. */
+:root {
+  --glow-soft: transparent;
+  --glow-strong: transparent;
+}
+.icon-button:hover,
+.icon-button.is-active {
+  margin: 0;
+  padding: .25rem .45rem;
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  text-shadow: none;
+  box-shadow: none;
+}
+.button:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+  text-shadow: none;
+  box-shadow: none;
+  font-weight: inherit;
+}
+.brand-mark,
+.library-intro h1,
+.section-heading h2,
+.library-stats strong,
+.block-editor-canvas h1,
+.block-editor-canvas h2,
+.block-editor-canvas h3,
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.dialog-heading h2 {
+  text-shadow: none;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-color: var(--border-strong);
+  box-shadow: none;
+}
+:root[data-writer-palette="mono"] ::selection {
+  background: #555;
+  color: #fff;
+}
+:root[data-writer-palette="graphite"] ::selection {
+  background: #55565b;
+  color: #fff;
+}
+:root[data-writer-palette="paper"] ::selection {
+  background: #c7d8cc;
+  color: #202721;
 }
