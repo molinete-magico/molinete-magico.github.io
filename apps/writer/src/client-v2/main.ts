@@ -605,12 +605,15 @@ async function loadGitStatus() {
 }
 function showSettings() {
   const root = $('#dialog-root')!;
-  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">Configurações do Writer</h2><button id="close-settings" class="icon-button" aria-label="Fechar">×</button></div><p>Estas ações operam no repositório local configurado para o Writer.</p><label>Diretório do repositório<input id="workspace-path" placeholder="/caminho/para/molinete-magico.github.io"></label><div class="settings-actions"><button class="button" id="set-workspace">Usar diretório</button><button class="button" id="git-pull">Atualizar do Git</button><button class="button" id="git-push">Enviar commits</button></div><p id="settings-status" role="status"></p></section></div>';
+  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">Configurações do Writer</h2><button id="close-settings" class="icon-button" aria-label="Fechar">×</button></div><p>Estas ações operam no repositório local configurado para o Writer.</p><label>Diretório do repositório<input id="workspace-path" placeholder="Deixe vazio para abrir o seletor de pasta"></label><div class="settings-actions"><button class="button" id="set-workspace">Selecionar workspace</button><button class="button" id="git-pull">Atualizar do Git</button><button class="button" id="git-push">Enviar commits</button></div><p id="settings-status" role="status"></p></section></div>';
   $('#close-settings')!.addEventListener('click', () => root.replaceChildren());
+  void api<{workspace:{root:string}}>('GET', '/api/settings').then((settings) => {
+    const input = $('#workspace-path') as HTMLInputElement | null;
+    if (input && settings.workspace?.root) input.value = settings.workspace.root;
+  }).catch(() => undefined);
   $('#set-workspace')!.addEventListener('click', async () => {
     const path = ($('#workspace-path') as HTMLInputElement).value.trim();
-    if (!path) return;
-    try { const result = await api<{root: string}>('POST', '/api/workspace', { path }); ($('#settings-status')!).textContent = 'Workspace: ' + result.root; await loadCatalog(); }
+    try { const result = await api<{root: string}>('POST', '/api/workspace', path ? { path } : {}); ($('#settings-status')!).textContent = 'Workspace: ' + result.root; await loadCatalog(); }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
   const commitButton = document.createElement('button');
