@@ -265,9 +265,14 @@ export class BlockEditor {
         event.preventDefault();
         const paragraph = document.createElement('p');
         paragraph.append(document.createElement('br'));
-        const hasEarlierQuoteContent = Array.from(quote.childNodes).some((node) =>
-          node !== currentBlock && ((node.textContent ?? '').trim().length > 0),
-        );
+        const hasEarlierQuoteContent = Array.from(quote.childNodes).some((node) => {
+          if (node === currentBlock) return false;
+          if ((node.textContent ?? '').trim().length > 0) return true;
+          // Empty-text elements can still contain meaningful content, such as images.
+          return node instanceof HTMLElement &&
+            (node.matches('img, table, pre, ul, ol, hr') ||
+              Boolean(node.querySelector('img, table, pre, ul, ol, hr')));
+        });
         if (hasEarlierQuoteContent) {
           currentBlock.remove();
           quote.after(paragraph);
