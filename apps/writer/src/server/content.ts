@@ -138,6 +138,7 @@ export async function readPostBanner(id: string): Promise<{
             ? 'image/png'
             : 'image/jpeg';
 
+      await assertPathWithin(folder, filePath);
       return {
         buffer: await fs.readFile(filePath),
         contentType,
