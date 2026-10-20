@@ -164,6 +164,30 @@ app.get('/client.css', (c) => {
   }
 });
 
+// Nova interface em paralelo: o Writer legado continua disponível em /.
+app.get('/v2', (c) => c.html(`<!doctype html>
+<html lang="pt-BR" data-writer-palette="site">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Writer · Biblioteca e editor</title>
+  <link rel="stylesheet" href="/v2/client.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/v2/client.js"></script>
+</body>
+</html>`));
+app.get('/v2/client.js', (c) => {
+  try { return clientAsset('v2/main.js', 'text/javascript'); }
+  catch (err) { return c.text((err as Error).message, 500); }
+});
+app.get('/v2/client.css', (c) => {
+  try { return clientAsset('v2/main.css', 'text/css'); }
+  catch (err) { return c.text((err as Error).message, 500); }
+});
+
 // --- Configuração -------------------------------------------------------
 
 app.get('/api/settings', (c) =>
