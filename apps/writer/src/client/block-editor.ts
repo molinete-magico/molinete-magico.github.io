@@ -147,6 +147,7 @@ export class BlockEditor {
     this.canvas.addEventListener('input', () => {
       if (!this.composing) this.emitChange();
     });
+    this.canvas.addEventListener('keydown', (event) => this.handleMarkdownShortcut(event));
     this.root.querySelectorAll<HTMLButtonElement>('[data-command]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => {
@@ -208,6 +209,71 @@ export class BlockEditor {
 
   focus(): void {
     this.canvas.focus();
+  }
+
+  private handleMarkdownShortcut(event: KeyboardEvent): void {
+    if (this.composing || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key !== ' ' && event.key !== 'Enter') return;
+
+    const selection = window.getSelection();
+    if (!selection?.isCollapsed || !selection.anchorNode) return;
+    const anchor = selection.anchorNode;
+    const block = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)
+      ?.closest('p, div, h1, h2, h3, h4');
+    if (!block || !this.canvas.contains(block)) return;
+
+    // Only convert a command when the caret is at the end of a plain, otherwise empty block.
+    const text = block.textContent ?? '';
+    const atEnd = anchor.nodeType === Node.TEXT_NODE
+      ? selection.anchorOffset === (anchor.textContent ?? '').length
+      : selection.anchorOffset === anchor.childNodes.length;
+    if (!atEnd || text !== text.trim()) return;
+
+    const heading = /^(#{1,3})$/.exec(text);
+    const unordered = /^[-+*]$/.test(text);
+    const ordered = /^1\\.$/.test(text);
+    const quote = text === '>';
+    const codeFence = text === '```';
+
+    if (event.key === ' ' && !heading && !unordered && !ordered && !quote) return;
+    if (event.key === 'Enter' && !codeFence) return;
+    if (event.key === ' ' && codeFence) return;
+
+    event.preventDefault();
+    let target: HTMLElement;
+
+    if (heading) {
+      target = document.createElement(`h${heading[1].length}`);
+      block.replaceWith(target);
+    } else if (unordered || ordered) {
+      const list = document.createElement(ordered ? 'ol' : 'ul');
+      const item = document.createElement('li');
+      item.append(document.createElement('br'));
+      list.append(item);
+      block.replaceWith(list);
+      target = item;
+    } else if (quote) {
+      const quoteBlock = document.createElement('blockquote');
+      const paragraph = document.createElement('p');
+      paragraph.append(document.createElement('br'));
+      quoteBlock.append(paragraph);
+      block.replaceWith(quoteBlock);
+      target = paragraph;
+    } else {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.append(document.createElement('br'));
+      pre.append(code);
+      block.replaceWith(pre);
+      target = code;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(target);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    this.emitChange();
   }
 
   private emitChange(): void {
