@@ -7,6 +7,15 @@ import type { Post, PostListItem, PostMeta, Project, ProjectListItem, ProjectDoc
 type OpenItem = 'post' | 'project' | ProjectDocumentKind;
 type Palette = 'site' | 'paper' | 'mono' | 'graphite';
 const $ = <T extends HTMLElement>(selector: string, root: ParentNode = document) => root.querySelector<T>(selector);
+function storageGet(key: string): string | null {
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+function storageSet(key: string, value: string): void {
+  try { localStorage.setItem(key, value); } catch { /* persistent storage can be unavailable */ }
+}
+function storageRemove(key: string): void {
+  try { localStorage.removeItem(key); } catch { /* persistent storage can be unavailable */ }
+}
 const app = $('#app')!;
 const state: {
   posts: PostListItem[]; projects: ProjectListItem[]; currentPost: Post | null;
@@ -17,7 +26,7 @@ const state: {
 } = {
   posts: [], projects: [], currentPost: null, currentProject: null, currentDoc: null,
   kind: null, editor: null, dirty: false, saving: false,
-  palette: (['site', 'paper', 'mono', 'graphite'] as Palette[]).includes(localStorage.getItem('writer-v2-palette') as Palette) ? localStorage.getItem('writer-v2-palette') as Palette : 'site',
+  palette: (['site', 'paper', 'mono', 'graphite'] as Palette[]).includes(storageGet('writer-v2-palette') as Palette) ? storageGet('writer-v2-palette') as Palette : 'site',
   focus: false, preview: false, git: null, tags: [], bannerAvailable: false,
 };
 
@@ -190,7 +199,7 @@ function persistRecovery() {
   try { localStorage.setItem('writer-v2-recovery', JSON.stringify(snapshot)); } catch { /* storage can be unavailable */ }
 }
 async function restoreRecoveryIfMatches() {
-  const raw = localStorage.getItem('writer-v2-recovery');
+  const raw = storageGet('writer-v2-recovery');
   if (!raw || !state.kind) return;
   try {
     const recovery = JSON.parse(raw) as {id?: string; kind?: string; projectId?: string; body?: string; title?: string; timestamp?: number; meta?: Record<string, unknown>};
@@ -209,7 +218,7 @@ async function restoreRecoveryIfMatches() {
       }
       state.editor?.setMarkdown(recovery.body ?? '');
       markDirty();
-    } else localStorage.removeItem('writer-v2-recovery');
+    } else storageRemove('writer-v2-recovery');
   } catch { localStorage.removeItem('writer-v2-recovery'); }
 }
 function clearRecovery() {
@@ -235,7 +244,7 @@ function paletteLabel(palette: Palette): string {
 }
 function applyPalette(palette: Palette) {
   state.palette = palette;
-  localStorage.setItem('writer-v2-palette', palette);
+  storageSet('writer-v2-palette', palette);
   document.documentElement.dataset.writerPalette = palette;
   const selector = $('#settings-palette') as HTMLSelectElement | null;
   if (selector) selector.value = palette;
