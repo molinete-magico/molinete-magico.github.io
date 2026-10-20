@@ -38,7 +38,7 @@ function inlineMarkdown(node: Node): string {
       return href ? `[${children}](${href.replace(/\)/g, '%29')})` : children;
     }
     case 'IMG': {
-      const src = node.getAttribute('src') ?? '';
+      const src = node.getAttribute('data-markdown-src') ?? node.getAttribute('src') ?? '';
       const alt = (node.getAttribute('alt') ?? '').replace(/\]/g, '\\]');
       return src ? `![${alt}](${src.replace(/\)/g, '%29')})` : '';
     }
@@ -109,15 +109,25 @@ function blockMarkdown(node: Node): string {
   }
 }
 
+export interface UploadedImage {
+  name: string;
+  alt: string;
+}
+
 export class BlockEditor {
   private readonly root: HTMLElement;
   private readonly canvas: HTMLDivElement;
   private readonly onChange: (markdown: string) => void;
+  private readonly onUploadImage?: (file: File) => Promise<UploadedImage | null>;
+  private readonly resolveImageUrl?: (src: string) => string;
+  private imageRange: Range | null = null;
   private composing = false;
 
-  constructor(host: HTMLElement, onChange: (markdown: string) => void) {
+  constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
     this.root = host;
     this.onChange = onChange;
+    this.onUploadImage = onUploadImage;
+    this.resolveImageUrl = resolveImageUrl;
     this.root.innerHTML = `
       <div class="block-editor-toolbar" role="toolbar" aria-label="Formatação do documento">
         <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><strong>B</strong></button>
@@ -133,7 +143,9 @@ export class BlockEditor {
         <button type="button" data-command="insertUnorderedList" title="Lista com marcadores">• Lista</button>
         <button type="button" data-command="insertOrderedList" title="Lista numerada">1. Lista</button>
         <button type="button" data-action="link" title="Inserir link">Link</button>
-        <button type="button" data-action="image" title="Inserir imagem por URL">Imagem</button>
+        <button type="button" data-action="image" title="Inserir imagem por URL">URL</button>
+        <button type="button" data-action="upload-image" title="Enviar imagem do computador">+ Imagem</button>
+        <input type="file" data-image-file accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden />
         <button type="button" data-action="hr" title="Inserir divisor">Divisor</button>
       </div>
       <div class="block-editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Documento" spellcheck="true"></div>
@@ -193,6 +205,26 @@ export class BlockEditor {
       document.execCommand('insertHTML', false, `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`);
       this.emitChange();
     });
+    const imageUploadButton = this.root.querySelector<HTMLButtonElement>('[data-action="upload-image"]')!;
+    const imageFileInput = this.root.querySelector<HTMLInputElement>('[data-image-file]')!;
+    imageUploadButton.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+      const selection = window.getSelection();
+      this.imageRange = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    });
+    imageUploadButton.addEventListener('click', () => imageFileInput.click());
+    imageFileInput.addEventListener('change', async () => {
+      const file = imageFileInput.files?.[0];
+      imageFileInput.value = '';
+      if (!file || !this.onUploadImage) return;
+      if (!file.type.startsWith('image/') || file.size === 0 || file.size > 15 * 1024 * 1024) return;
+      try {
+        const uploaded = await this.onUploadImage(file);
+        if (uploaded) this.insertUploadedImage(uploaded);
+      } catch {
+        // O callback do Writer comunica erros na barra de estado.
+      }
+    });
     this.root.querySelector('[data-action="hr"]')!.addEventListener('mousedown', (event) => event.preventDefault());
     this.root.querySelector('[data-action="hr"]')!.addEventListener('click', () => {
       this.canvas.focus();
@@ -205,6 +237,11 @@ export class BlockEditor {
     const html = marked.parse(markdown || '', { async: false });
     const sanitized = DOMPurify.sanitize(typeof html === 'string' ? html : String(html));
     this.canvas.innerHTML = sanitized || '<p><br></p>';
+    this.canvas.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+      const markdownSrc = image.getAttribute('src') ?? '';
+      image.dataset.markdownSrc = markdownSrc;
+      if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
+    });
   }
 
   getMarkdown(): string {
@@ -305,6 +342,39 @@ export class BlockEditor {
     range.collapse(true);
     selection.removeAllRanges();
     selection.addRange(range);
+    this.emitChange();
+  }
+
+  private insertUploadedImage(uploaded: UploadedImage): void {
+    const image = document.createElement('img');
+    image.dataset.markdownSrc = uploaded.name;
+    image.src = this.resolveImageUrl ? this.resolveImageUrl(uploaded.name) : uploaded.name;
+    image.alt = uploaded.alt || '';
+    image.loading = 'lazy';
+    const selection = window.getSelection();
+    let range = this.imageRange;
+    if (!range || !this.canvas.contains(range.commonAncestorContainer)) {
+      range = document.createRange();
+      range.selectNodeContents(this.canvas);
+      range.collapse(false);
+    }
+    this.canvas.focus();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    range.deleteContents();
+    if (range.startContainer === this.canvas) {
+      const paragraph = document.createElement('p');
+      paragraph.append(image);
+      range.insertNode(paragraph);
+      range.setStartAfter(paragraph);
+    } else {
+      range.insertNode(image);
+      range.setStartAfter(image);
+    }
+    range.collapse(true);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    this.imageRange = null;
     this.emitChange();
   }
 
