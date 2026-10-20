@@ -100,3 +100,41 @@ jobs:
         env:
           BASE_PATH: /blog
         run: node scripts/check-built-site.mjs
+
+  # One-time lockfile repair for this audit branch only. This job is removed
+  # after the compatible npm updates have been committed.
+  persist-audited-lock:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'fix/site-audit-security-integrity' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout audit branch
+        uses: actions/checkout@v7
+        with:
+          ref: fix/site-audit-security-integrity
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply compatible dependency updates
+        run: npm audit fix --package-lock-only || true
+
+      - name: Commit audited lockfile if changed
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "fix(deps): apply compatible npm audit updates"
+            git push origin HEAD:fix/site-audit-security-integrity
+          else
+            echo "No compatible lockfile updates to commit."
+          fi
