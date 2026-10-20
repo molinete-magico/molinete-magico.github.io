@@ -672,6 +672,7 @@ function showSettings() {
     try {
       const result = await api<{root: string}>('POST', '/api/workspace', path ? { path } : {});
       showLibrary();
+      ($('#workspace-path') as HTMLInputElement).value = result.root;
       ($('#settings-status')!).textContent = 'Workspace: ' + result.root;
     }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
