@@ -7,8 +7,10 @@ on:
       - "apps/writer/**"
       - "apps/blog/**"
       - "content/projects/**"
+      - "content/posts/**"
       - "package.json"
       - "package-lock.json"
+      - "scripts/**"
       - ".github/workflows/check-writer.yml"
       - ".github/workflows/deploy-blog.yml"
   push:
@@ -17,8 +19,10 @@ on:
       - "apps/writer/**"
       - "apps/blog/**"
       - "content/projects/**"
+      - "content/posts/**"
       - "package.json"
       - "package-lock.json"
+      - "scripts/**"
       - ".github/workflows/check-writer.yml"
 
 permissions:
@@ -43,6 +47,33 @@ jobs:
       - name: Type-check Writer
         run: npm run check --workspace=apps/writer
 
+      - name: Test Writer security guards
+        run: npm run test --workspace=apps/writer
+
+      - name: Audit dependency advisories
+        run: npm audit --audit-level=low
+
+      - name: Smoke test Astro dev server
+        shell: bash
+        run: |
+          npm run dev --workspace=apps/blog -- --host 127.0.0.1 > /tmp/blog-dev.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:4321/blog/ >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/blog-dev.log
+            exit 1
+          fi
+          curl --fail --silent http://127.0.0.1:4321/blog/perfil.png >/dev/null
+          curl --fail --silent http://127.0.0.1:4321/blog/projetos/sum/ >/dev/null
+
       - name: Build Writer
         run: npm run build --workspace=apps/writer
 
@@ -51,3 +82,9 @@ jobs:
           BASE_PATH: /blog
           SITE_URL: https://molinete-magico.github.io
         run: npm run build --workspace=apps/blog
+
+      - name: Check generated links and assets
+        env:
+          BASE_PATH: /blog
+        run: node scripts/check-built-site.mjs
+

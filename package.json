@@ -8,6 +8,9 @@
     "dev": "npm run dev --workspace=apps/blog",
     "build": "npm run build --workspace=apps/blog",
     "writer": "npm run dev --workspace=apps/writer",
-    "check": "npm run check --workspace=apps/blog"
+    "check": "npm run check --workspace=apps/blog",
+    "check:writer": "npm run check --workspace=apps/writer",
+    "test:writer": "npm run test --workspace=apps/writer",
+    "check:site": "node scripts/check-built-site.mjs"
   }
 }

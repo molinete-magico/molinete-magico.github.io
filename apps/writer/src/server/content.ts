@@ -6,21 +6,9 @@
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import matter from 'gray-matter';
 import yaml from 'js-yaml';
 import { contentRoot, postsRoot, projectsRoot, repoRoot } from './fs.ts';
 import type { Post, PostListItem, PostMeta } from '../shared/types.ts';
-
-// O gray-matter traz um parse YAML baseado em `safeLoad` (removido no
-// js-yaml 4+). Passamos nossos próprios engines para usar `load`/`dump`.
-const MATTER_OPTIONS = {
-  engines: {
-    yaml: {
-      parse: (input: string) => (yaml.load(input) as object) ?? {},
-      stringify: (data: object) => yaml.dump(data),
-    },
-  },
-};
 
 // Converte um título em um slug seguro para nome de arquivo/pasta.
 // Ex.: "Como comecei meu arquivo pessoal" -> "como-comecei-meu-arquivo-pessoal"
@@ -73,11 +61,45 @@ export function today(): string {
 //   content/posts/<slug>.md                (sem imagens)
 //   content/posts/<slug>/index.md          (post-pasta, com imagens junto)
 // Esta função resolve qual dos dois caminhos existe (ou lança erro).
+async function assertPathWithin(root: string, candidate: string): Promise<void> {
+  const [realRoot, realCandidate] = await Promise.all([
+    fs.realpath(root),
+    fs.realpath(candidate),
+  ]);
+  const relative = path.relative(realRoot, realCandidate);
+  if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error('O caminho solicitado está fora da pasta de conteúdo permitida.');
+  }
+}
+
+// Post IDs are single path segments, not arbitrary relative paths. Keep
+// legacy filenames/slugs (including dots and spaces), but reject traversal.
 export async function resolvePostFile(id: string): Promise<string> {
-  const asFile = path.join(postsRoot(), `${id}.md`);
-  const asFolder = path.join(postsRoot(), id, 'index.md');
-  if (await exists(asFile)) return asFile;
-  if (await exists(asFolder)) return asFolder;
+  if (
+    typeof id !== 'string' ||
+    !id ||
+    id.trim() !== id ||
+    id === '.' ||
+    id === '..' ||
+    id.includes('/') ||
+    id.includes('\\') ||
+    id.includes('\0') ||
+    path.isAbsolute(id)
+  ) {
+    throw new Error('Identificador de post inválido.');
+  }
+
+  const root = postsRoot();
+  const asFile = path.join(root, `${id}.md`);
+  const asFolder = path.join(root, id, 'index.md');
+  if (await exists(asFile)) {
+    await assertPathWithin(root, asFile);
+    return asFile;
+  }
+  if (await exists(asFolder)) {
+    await assertPathWithin(root, asFolder);
+    return asFolder;
+  }
   throw new Error(`Post não encontrado: ${id}`);
 }
 
@@ -104,6 +126,7 @@ export async function readPostBanner(id: string): Promise<{
             ? 'image/png'
             : 'image/jpeg';
 
+      await assertPathWithin(folder, filePath);
       return {
         buffer: await fs.readFile(filePath),
         contentType,
@@ -123,28 +146,32 @@ function imageContentType(filename: string): string {
   return type;
 }
 
-async function readImageFromFolder(folder: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
+async function readImageFromFolder(folder: string, filename: string, allowedRoot: string): Promise<{ buffer: Buffer; contentType: string }> {
   if (!filename || filename !== path.basename(filename) || filename === '.' || filename === '..') throw new Error('Nome de imagem inválido.');
   const contentType = imageContentType(filename);
   const imagePath = path.join(folder, filename);
   if (!(await exists(imagePath))) throw new Error('Imagem não encontrada.');
+  // Validate against the trusted content root, not only the candidate folder:
+  // the folder itself could be a symlink pointing outside the repository.
+  await assertPathWithin(allowedRoot, folder);
+  await assertPathWithin(allowedRoot, imagePath);
   return { buffer: await fs.readFile(imagePath), contentType };
 }
 
 export async function readPostImage(postId: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
   const postFile = await resolvePostFile(postId);
   const folder = path.dirname(postFile) === postsRoot() ? path.join(postsRoot(), postId) : path.dirname(postFile);
-  return readImageFromFolder(folder, filename);
+  return readImageFromFolder(folder, filename, postsRoot());
 }
 
 export async function readProjectImage(projectId: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
   const file = await projectFile(projectId);
-  return readImageFromFolder(path.dirname(file), filename);
+  return readImageFromFolder(path.dirname(file), filename, projectsRoot());
 }
 
 export async function readProjectDocumentImage(projectId: string, kind: ProjectDocumentKind, id: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
   await projectFile(projectId);
-  return readImageFromFolder(path.dirname(documentLocation(projectId, kind, id)), filename);
+  return readImageFromFolder(path.dirname(documentLocation(projectId, kind, id)), filename, projectsRoot());
 }
 
 async function exists(p: string): Promise<boolean> {
@@ -216,9 +243,8 @@ async function readPostFile(id: string): Promise<{ body: string; meta: PostMeta 
   const filePath = await resolvePostFile(id);
   const text = await fs.readFile(filePath, 'utf-8');
 
-  // `gray-matter` separa o frontmatter (bloco --- ---) do conteúdo.
-  const parsed = matter(text, MATTER_OPTIONS);
-  const data = parsed.data as Record<string, unknown>;
+  const parsed = parseFrontmatter(text);
+  const data = parsed.data;
 
   const meta: PostMeta = {
     title: stringOr(data.title, 'Sem título'),
@@ -350,10 +376,12 @@ export async function savePostBanner(postId: string, filename: string, buffer: B
   if (path.dirname(postFile) === postsRoot()) {
     folder = path.join(postsRoot(), postId);
     await fs.mkdir(folder, { recursive: true });
+    await assertPathWithin(postsRoot(), folder);
     const destination = path.join(folder, 'index.md');
     if (await exists(destination)) throw new Error('Já existe uma pasta para este post; resolva o conflito antes de adicionar o banner.');
     await fs.rename(postFile, destination);
   }
+  await assertPathWithin(postsRoot(), folder);
 
   for (const oldName of ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg', 'banner.avif']) {
     await fs.rm(path.join(folder, oldName), { force: true });
@@ -374,10 +402,12 @@ export async function saveImage(postId: string, filename: string, buffer: Buffer
   if (folder === postsRoot()) {
     folder = path.join(postsRoot(), postId);
     await fs.mkdir(folder, { recursive: true });
+    await assertPathWithin(postsRoot(), folder);
     const destination = path.join(folder, 'index.md');
     if (await exists(destination)) throw new Error('Já existe uma pasta para este post; resolva o conflito antes de adicionar imagens.');
     await fs.rename(postFile, destination);
   }
+  await assertPathWithin(postsRoot(), folder);
   let safe = stem + extension;
   let suffix = 2;
   while (await exists(path.join(folder, safe))) safe = stem + '-' + suffix++ + extension;
@@ -462,12 +492,32 @@ async function projectFile(id: string): Promise<string> {
   const slug = safeSegment(id, 'projeto');
   const file = path.join(projectsRoot(), slug, 'project.md');
   if (!(await exists(file))) throw new Error(`Projeto não encontrado: ${slug}`);
+  await assertPathWithin(projectsRoot(), file);
   return file;
 }
 
+export function parseFrontmatter(text: string): { content: string; data: Record<string, unknown> } {
+  // Front matter in this repository is YAML delimited by standalone --- lines.
+  // Parse it directly with js-yaml v4, avoiding the legacy gray-matter/js-yaml v3 chain.
+  const source = text.startsWith("\uFEFF") ? text.slice(1) : text;
+  const opening = /^---[ \t]*\r?\n/.exec(source);
+  if (!opening) return { content: source, data: {} };
+
+  const closingPattern = /^(?:---|\.\.\.)[ \t]*(?:\r?\n|$)/gm;
+  closingPattern.lastIndex = opening[0].length;
+  const closing = closingPattern.exec(source);
+  if (!closing) return { content: source, data: {} };
+
+  const parsed = yaml.load(source.slice(opening[0].length, closing.index));
+  const data = parsed && typeof parsed === "object" && !Array.isArray(parsed)
+    ? parsed as Record<string, unknown>
+    : {};
+  return { content: source.slice(closing.index + closing[0].length), data };
+}
+
 function parseMarkdownFile(text: string): { body: string; data: Record<string, unknown> } {
-  const parsed = matter(text, MATTER_OPTIONS);
-  return { body: parsed.content.trim(), data: parsed.data as Record<string, unknown> };
+  const parsed = parseFrontmatter(text);
+  return { body: parsed.content.trim(), data: parsed.data };
 }
 
 function renderContentFile(meta: Record<string, unknown>, body: string): string {
@@ -515,6 +565,7 @@ async function listProjectDocuments(projectId: string): Promise<ProjectDocumentL
   const result: ProjectDocumentListItem[] = [];
   const readOne = async (file: string, kind: ProjectDocumentKind, id: string) => {
     if (!(await exists(file))) return;
+    await assertPathWithin(projectsRoot(), file);
     const parsed = parseMarkdownFile(await fs.readFile(file, 'utf-8'));
     const meta = documentMeta(parsed.data, id);
     result.push({
@@ -648,9 +699,17 @@ export async function saveProjectBanner(
 
   const name = `banner${extension}`;
   const contentDir = path.join(projectsRoot(), slug);
-  const publicDir = path.join(repoRoot(), 'apps', 'blog', 'public', 'projects', slug);
+  const publicRoot = path.join(repoRoot(), 'apps', 'blog', 'public', 'projects');
+  const publicDir = path.join(publicRoot, slug);
   await fs.mkdir(contentDir, { recursive: true });
+  await assertPathWithin(repoRoot(), contentDir);
   await fs.mkdir(publicDir, { recursive: true });
+  await assertPathWithin(repoRoot(), publicDir);
+  // Unlink an existing banner first so a malicious/stale symlink is never followed.
+  await Promise.all([
+    fs.rm(path.join(contentDir, name), { force: true }),
+    fs.rm(path.join(publicDir, name), { force: true }),
+  ]);
   await Promise.all([
     fs.writeFile(path.join(contentDir, name), buffer),
     fs.writeFile(path.join(publicDir, name), buffer),
@@ -667,6 +726,7 @@ export async function saveProjectImage(projectId: string, filename: string, buff
   const stem = path.basename(filename, extension).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'imagem';
   const folder = path.dirname(markdownPath);
+  await assertPathWithin(projectsRoot(), folder);
   let name = stem + extension;
   let suffix = 2;
   while (await exists(path.join(folder, name))) name = stem + '-' + suffix++ + extension;
@@ -684,6 +744,7 @@ export async function saveProjectDocumentImage(
   await projectFile(projectId);
   const markdownPath = documentLocation(projectId, kind, id);
   if (!(await exists(markdownPath))) throw new Error('Documento não encontrado.');
+  await assertPathWithin(projectsRoot(), markdownPath);
   const extension = path.extname(filename).toLowerCase();
   if (!['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'].includes(extension)) {
     throw new Error('Formato inválido. Use JPG, PNG, WEBP, GIF ou AVIF.');
@@ -696,6 +757,7 @@ export async function saveProjectDocumentImage(
     .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')
     .slice(0, 70) || 'imagem';
   const folder = path.dirname(markdownPath);
+  await assertPathWithin(projectsRoot(), folder);
   let name = `${stem}${extension}`;
   let suffix = 2;
   while (await exists(path.join(folder, name))) name = `${stem}-${suffix++}${extension}`;
@@ -711,6 +773,7 @@ export async function readProjectDocument(
   await projectFile(projectId);
   const filePath = documentLocation(projectId, kind, id);
   if (!(await exists(filePath))) throw new Error('Documento não encontrado.');
+  await assertPathWithin(projectsRoot(), filePath);
   const parsed = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
   return {
     projectId,
@@ -731,6 +794,7 @@ export async function createProjectDocument(
   const base = slugify(title) || (kind === 'chapter' ? 'novo-capitulo' : 'novo-complemento');
   const folder = path.join(projectsRoot(), safeSegment(projectId, 'projeto'), kind === 'chapter' ? 'chapters' : 'supplements');
   await fs.mkdir(folder, { recursive: true });
+  await assertPathWithin(projectsRoot(), folder);
   let id = base;
   let suffix = 2;
   while (await exists(path.join(folder, `${id}.md`))) id = `${base}-${suffix++}`;
@@ -753,6 +817,7 @@ export async function saveProjectDocument(
 ): Promise<ProjectDocument> {
   const filePath = documentLocation(projectId, kind, id);
   if (!(await exists(filePath))) throw new Error('Documento não encontrado.');
+  await assertPathWithin(projectsRoot(), filePath);
   const existing = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
   const next: ProjectDocumentMeta = {
     ...existing.data,

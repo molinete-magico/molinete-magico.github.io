@@ -22,9 +22,7 @@ export default defineConfig({
       fs: {
         // Autoriza explicitamente a raiz, a pasta de conteúdo e o app.
         allow: [appRoot, repositoryRoot, contentRoot],
-        // O Vite ainda rejeita esses assets no modo estrito em alguns
-        // setups de monorepo/symlink. Isso afeta apenas o servidor local.
-        strict: false,
+        // Mantém o acesso ao filesystem restrito à allowlist acima.
       },
     },
   },
