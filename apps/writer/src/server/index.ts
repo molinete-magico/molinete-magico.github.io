@@ -113,6 +113,7 @@ function shellHtml(): string {
         '<button type="button" data-md="code" title="Código">&lt;/&gt;</button>',
         '<span class="toolbar-spacer"></span>',
         '<span class="toolbar-hint">Ctrl+S salva</span>',
+        '<a href="/v2" class="writer-v2-entry" style="margin-left:12px;padding:4px 8px;border:1px solid var(--green-500);color:var(--green-300);text-decoration:none;font:12px var(--font-mono)">Testar novo Writer ↗</a>',
       ].join('');
 
       const paneLabel = document.querySelector('.pane-label');
