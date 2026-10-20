@@ -45,6 +45,43 @@ function status(message: string, mode: 'ok' | 'warn' | 'error' = 'ok') {
   node.textContent = message;
   node.dataset.state = mode;
 }
+function askText(title: string, label: string, initial = '', placeholder = ''): Promise<string | null> {
+  return new Promise((resolve) => {
+    const root = $('#dialog-root')!;
+    root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="action-dialog-title"><div class="dialog-heading"><h2 id="action-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-dialog-cancel aria-label="Fechar">×</button></div><form id="text-dialog-form"><label>' + esc(label) + '<input id="text-dialog-value" value="' + esc(initial) + '" placeholder="' + esc(placeholder) + '" autocomplete="off" required></label><div class="settings-actions"><button type="button" class="button" data-dialog-cancel>Cancelar</button><button type="submit" class="button button-primary">Continuar</button></div></form></section></div>';
+    const finish = (value: string | null) => { root.replaceChildren(); resolve(value); };
+    root.querySelectorAll('[data-dialog-cancel]').forEach((button) => button.addEventListener('click', () => finish(null)));
+    $('#text-dialog-form')!.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = ($('#text-dialog-value') as HTMLInputElement).value.trim();
+      finish(value || null);
+    });
+    ($('#text-dialog-value') as HTMLInputElement).focus();
+  });
+}
+function askChoice<T extends string>(title: string, label: string, options: Array<{value:T; label:string}>): Promise<T | null> {
+  return new Promise((resolve) => {
+    const root = $('#dialog-root')!;
+    root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="choice-dialog-title"><div class="dialog-heading"><h2 id="choice-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-dialog-cancel aria-label="Fechar">×</button></div><form id="choice-dialog-form"><label>' + esc(label) + '<select id="choice-dialog-value">' + options.map((option) => '<option value="' + esc(option.value) + '">' + esc(option.label) + '</option>').join('') + '</select></label><div class="settings-actions"><button type="button" class="button" data-dialog-cancel>Cancelar</button><button type="submit" class="button button-primary">Continuar</button></div></form></section></div>';
+    const finish = (value: T | null) => { root.replaceChildren(); resolve(value); };
+    root.querySelectorAll('[data-dialog-cancel]').forEach((button) => button.addEventListener('click', () => finish(null)));
+    $('#choice-dialog-form')!.addEventListener('submit', (event) => {
+      event.preventDefault();
+      finish((($('#choice-dialog-value') as HTMLSelectElement).value || null) as T | null);
+    });
+    ($('#choice-dialog-value') as HTMLSelectElement).focus();
+  });
+}
+function showActionMenu(title: string, actions: Array<{label:string; danger?:boolean; run:()=>void | Promise<void>}>) {
+  const root = $('#dialog-root')!;
+  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog action-dialog" role="dialog" aria-modal="true" aria-labelledby="menu-dialog-title"><div class="dialog-heading"><h2 id="menu-dialog-title">' + esc(title) + '</h2><button type="button" class="icon-button" data-menu-close aria-label="Fechar">×</button></div><div class="action-menu-list">' + actions.map((action, index) => '<button type="button" class="action-menu-item ' + (action.danger ? 'danger-text' : '') + '" data-action-index="' + index + '">' + esc(action.label) + '<span>→</span></button>').join('') + '</div></section></div>';
+  root.querySelectorAll('[data-menu-close]').forEach((button) => button.addEventListener('click', () => root.replaceChildren()));
+  root.querySelectorAll<HTMLButtonElement>('[data-action-index]').forEach((button) => button.addEventListener('click', () => {
+    const action = actions[Number(button.dataset.actionIndex)];
+    root.replaceChildren();
+    if (action) void Promise.resolve(action.run()).catch((err) => status((err as Error).message, 'error'));
+  }));
+}
 function bodyNow() { return state.editor?.getMarkdown() ?? ''; }
 function activeId() {
   if (state.kind === 'post') return state.currentPost?.id ?? '';
@@ -340,10 +377,10 @@ async function handleDocumentAction(event: Event) {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-create-doc]');
   if (!button || !state.currentProject) return;
   const kind = button.dataset.createDoc as 'chapter' | 'supplement';
-  const title = window.prompt(kind === 'chapter' ? 'Título do novo capítulo:' : 'Título do suplemento:', '');
-  if (!title?.trim()) return;
+  const title = await askText(kind === 'chapter' ? 'Novo capítulo' : 'Novo suplemento', 'Título', '', kind === 'chapter' ? 'Ex.: Capítulo 1' : 'Ex.: Material complementar');
+  if (!title) return;
   try {
-    const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: state.currentProject.id, kind, title: title.trim() });
+    const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: state.currentProject.id, kind, title });
     await loadCatalog();
     await openProjectDocument(state.currentProject.id, doc.kind, doc.id);
   } catch (err) { status((err as Error).message, 'error'); }
@@ -442,19 +479,20 @@ async function publishCurrent() {
   } catch (err) { status((err as Error).message, 'error'); }
 }
 async function createNewPost() {
-  const title = window.prompt('Título do novo post:', 'Sem título');
-  if (!title?.trim()) return;
+  const title = await askText('Criar post', 'Título do post', '', 'Ex.: Uma ideia que quero desenvolver');
+  if (!title) return;
   try {
-    const created = await api<Post>('POST', '/api/post', { title: title.trim() });
+    const created = await api<Post>('POST', '/api/post', { title });
     await loadCatalog(); await openPost(created.id);
   } catch (err) { status((err as Error).message, 'error'); }
 }
 async function createNewProject() {
-  const title = window.prompt('Nome do projeto:');
-  if (!title?.trim()) return;
-  const type = window.prompt('Tipo do projeto: rpg ou story', 'story')?.trim().toLowerCase() === 'rpg' ? 'rpg' : 'story';
+  const title = await askText('Criar projeto', 'Nome do projeto', '', 'Ex.: Cinzas do Vale');
+  if (!title) return;
+  const type = await askChoice<'rpg' | 'story'>('Tipo do projeto', 'Como você classifica este projeto?', [{value:'story',label:'História'}, {value:'rpg',label:'Sistema de RPG'}]);
+  if (!type) return;
   try {
-    const project = await api<Project>('POST', '/api/project', { title: title.trim(), type });
+    const project = await api<Project>('POST', '/api/project', { title, type });
     await loadCatalog(); await openProject(project.id);
   } catch (err) { status((err as Error).message, 'error'); }
 }
@@ -537,23 +575,18 @@ async function deleteCurrentPost() {
   catch (err) { status((err as Error).message, 'error'); }
 }
 function showPostMenu(id: string) {
-  const choice = window.prompt('Ações: digite "duplicar" ou "excluir".');
-  if (choice === 'duplicar') void (async () => { try { const p = await api<Post>('POST', '/api/post/duplicate', { id }); await loadCatalog(); await openPost(p.id); } catch (e) { status((e as Error).message, 'error'); } })();
-  if (choice === 'excluir' && window.confirm('Excluir este post e enviar a alteração ao GitHub?')) void (async () => { try { await api('POST', '/api/post/delete', { id }); await loadCatalog(); showLibrary(); } catch (e) { status((e as Error).message, 'error'); } })();
+  showActionMenu('Ações do post', [
+    { label: 'Abrir no editor', run: async () => { if (confirmLeave()) await openPost(id); } },
+    { label: 'Duplicar post', run: async () => { if (!confirmLeave()) return; const post = await api<Post>('POST', '/api/post/duplicate', { id }); await loadCatalog(); await openPost(post.id); } },
+    { label: 'Excluir post', danger: true, run: async () => { if (!window.confirm('Excluir este post e enviar a alteração ao GitHub?')) return; await api('POST', '/api/post/delete', { id }); await loadCatalog(); showLibrary(); } },
+  ]);
 }
-async function showProjectMenu(id: string) {
-  const choice = window.prompt('Ações do projeto: digite "abrir", "capítulo" ou "suplemento".');
-  if (choice === 'abrir') { await openProject(id); return; }
-  if (choice !== 'capítulo' && choice !== 'suplemento') return;
-  try {
-    const project = await api<Project>('GET', '/api/project/' + encodeURIComponent(id));
-    const kind = choice === 'capítulo' ? 'chapter' : 'supplement';
-    const title = window.prompt(kind === 'chapter' ? 'Título do capítulo:' : 'Título do suplemento:');
-    if (!title?.trim()) return;
-    const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: id, kind, title: title.trim() });
-    await loadCatalog();
-    await openProjectDocument(project.id, doc.kind, doc.id);
-  } catch (err) { status((err as Error).message, 'error'); }
+function showProjectMenu(id: string) {
+  showActionMenu('Ações do projeto', [
+    { label: 'Abrir projeto', run: async () => { if (confirmLeave()) await openProject(id); } },
+    { label: 'Criar capítulo', run: async () => { if (!confirmLeave()) return; const title = await askText('Novo capítulo', 'Título do capítulo'); if (!title) return; const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: id, kind: 'chapter', title }); await loadCatalog(); await openProjectDocument(id, doc.kind, doc.id); } },
+    { label: 'Criar suplemento', run: async () => { if (!confirmLeave()) return; const title = await askText('Novo suplemento', 'Título do suplemento'); if (!title) return; const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: id, kind: 'supplement', title }); await loadCatalog(); await openProjectDocument(id, doc.kind, doc.id); } },
+  ]);
 }
 function toggleFocus() {
   if (!state.kind) { status('Abra um documento para usar o modo foco.', 'warn'); return; }
