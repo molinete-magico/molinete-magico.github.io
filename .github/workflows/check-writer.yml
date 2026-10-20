@@ -43,6 +43,13 @@ jobs:
       - name: Type-check Writer
         run: npm run check --workspace=apps/writer
 
+      - name: Test Writer security guards
+        run: npm run test --workspace=apps/writer
+
+      - name: Audit dependency advisories
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
       - name: Build Writer
         run: npm run build --workspace=apps/writer
 
