@@ -176,6 +176,8 @@ function applyPalette(palette: Palette) {
   state.palette = palette;
   localStorage.setItem('writer-v2-palette', palette);
   document.documentElement.dataset.writerPalette = palette;
+  const selector = $('#settings-palette') as HTMLSelectElement | null;
+  if (selector) selector.value = palette;
   const toggle = $('#palette-toggle');
   if (toggle) {
     toggle.title = 'Paleta atual: ' + paletteLabel(palette) + ' — clique para alternar';
@@ -184,18 +186,17 @@ function applyPalette(palette: Palette) {
 }
 function renderShell() {
   app.innerHTML = '<header class="v2-topbar"><a class="brand" href="/v2" id="brand-home" aria-label="Voltar à biblioteca"><span class="brand-mark">M.</span><span>WRITER<span class="brand-sub"> / ATELIÊ DE ESCRITA</span></span></a><div class="topbar-tools"><span id="status-line" role="status" aria-live="polite">Conectando ao arquivo…</span><button class="icon-button" id="palette-toggle" type="button" title="Alternar paleta de escrita" aria-label="Alternar paleta de escrita">◐</button><button class="icon-button" id="focus-toggle" type="button" title="Modo foco" aria-label="Modo foco">⤢</button><button class="icon-button" id="settings-toggle" type="button" title="Configurações do Writer" aria-label="Configurações">⚙</button></div></header><main id="v2-main"></main><div id="dialog-root"></div>';
-  document.documentElement.dataset.writerPalette = 'site';
+  document.documentElement.dataset.writerPalette = state.palette;
   $('#brand-home')!.addEventListener('click', async (event) => {
     event.preventDefault();
     if (!confirmLeave()) return;
     showLibrary();
   });
   $('#palette-toggle')!.addEventListener('click', () => {
-    if (!state.kind) { status('A paleta neutra fica disponível durante a escrita.', 'warn'); return; }
     const palettes: Palette[] = ['site', 'paper', 'mono', 'graphite'];
-    state.palette = palettes[(palettes.indexOf(state.palette) + 1) % palettes.length];
-    applyPalette(state.palette);
-    status('Paleta de escrita: ' + paletteLabel(state.palette));
+    const next = palettes[(palettes.indexOf(state.palette) + 1) % palettes.length];
+    applyPalette(next);
+    status('Paleta da interface: ' + paletteLabel(state.palette));
   });
   $('#focus-toggle')!.addEventListener('click', () => toggleFocus());
   $('#settings-toggle')!.addEventListener('click', () => showSettings());
@@ -209,9 +210,9 @@ async function loadCatalog() {
   state.projects = projects;
 }
 function renderLibrary() {
-  document.documentElement.dataset.writerPalette = 'site';
+  document.documentElement.dataset.writerPalette = state.palette;
   $('#focus-toggle')!.setAttribute('disabled', '');
-  $('#palette-toggle')!.setAttribute('disabled', '');
+  $('#palette-toggle')!.removeAttribute('disabled');
   const main = $('#v2-main')!;
   main.innerHTML = '<section class="library-page"><div class="library-intro"><div><p class="eyebrow">ARQUIVO PESSOAL / WRITER</p><h1>Biblioteca</h1><p>Encontre uma ideia, retome um rascunho ou continue um projeto.</p></div><div class="library-actions"><button class="button button-primary" id="create-post">+ Novo post</button><button class="button" id="create-project">+ Novo projeto</button></div></div><div class="library-toolbar"><label class="search-field"><span aria-hidden="true">⌕</span><input id="library-search" type="search" placeholder="Buscar posts, tags, projetos e documentos…" aria-label="Buscar na biblioteca"></label><div class="view-filters" role="group" aria-label="Filtrar conteúdo"><button class="filter-button active" data-filter="all" aria-pressed="true">Tudo</button><button class="filter-button" data-filter="draft" aria-pressed="false">Rascunhos</button><button class="filter-button" data-filter="published" aria-pressed="false">Publicados</button><button class="filter-button" data-filter="projects" aria-pressed="false">Projetos</button></div></div><div class="library-stats"><div><span>Posts</span><strong id="count-posts">0</strong></div><div><span>Rascunhos</span><strong id="count-drafts">0</strong></div><div><span>Projetos</span><strong id="count-projects">0</strong></div><div><span>Documentos</span><strong id="count-documents">0</strong></div></div><section class="library-section"><div class="section-heading"><h2 id="library-results-title">Todos os conteúdos</h2><label class="sort-label">Ordenar por <select id="library-sort"><option value="updated">Mais recentes</option><option value="title">Título</option><option value="date">Data de publicação</option></select></label></div><div id="library-results" class="library-results"></div></section><p class="library-note">Markdown continua sendo a fonte da verdade. A biblioteca organiza o conteúdo; a publicação continua sendo uma ação explícita.</p></section>';
   $('#create-post')!.addEventListener('click', createNewPost);
@@ -673,15 +674,14 @@ async function loadGitStatus() {
 }
 function showSettings() {
   const root = $('#dialog-root')!;
-  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">Configurações do Writer</h2><button id="close-settings" class="icon-button" aria-label="Fechar">×</button></div><p>Estas ações operam no repositório local configurado para o Writer.</p><label>Paleta do espaço de escrita<select id="settings-palette" ' + (!state.kind ? 'disabled' : '') + '><option value="site">Verde-petróleo do site</option><option value="paper">Papel claro</option><option value="mono">Preto e branco</option><option value="graphite">Cinza escuro</option></select></label><label>Diretório do repositório<input id="workspace-path" placeholder="Deixe vazio para abrir o seletor de pasta"></label><div class="settings-actions"><button class="button" id="set-workspace">Selecionar workspace</button><button class="button" id="git-pull">Atualizar do Git</button><button class="button" id="git-push">Enviar commits</button></div><p id="settings-status" role="status"></p></section></div>';
+  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">Configurações do Writer</h2><button id="close-settings" class="icon-button" aria-label="Fechar">×</button></div><p>Estas ações operam no repositório local configurado para o Writer.</p><label>Paleta da interface<select id="settings-palette"><option value="site">Verde-petróleo</option><option value="paper">Papel claro</option><option value="mono">Preto e branco</option><option value="graphite">Cinza escuro</option></select></label><label>Diretório do repositório<input id="workspace-path" placeholder="Deixe vazio para abrir o seletor de pasta"></label><div class="settings-actions"><button class="button" id="set-workspace">Selecionar workspace</button><button class="button" id="git-pull">Atualizar do Git</button><button class="button" id="git-push">Enviar commits</button></div><p id="settings-status" role="status"></p></section></div>';
   $('#close-settings')!.addEventListener('click', () => root.replaceChildren());
   const paletteSelect = $('#settings-palette') as HTMLSelectElement | null;
   if (paletteSelect) {
     paletteSelect.value = state.palette;
     paletteSelect.addEventListener('change', () => {
-      if (!state.kind) return;
       applyPalette(paletteSelect.value as Palette);
-      status('Paleta de escrita: ' + paletteLabel(state.palette));
+      status('Paleta da interface: ' + paletteLabel(state.palette));
     });
   }
   void api<{workspace:{root:string}}>('GET', '/api/settings').then((settings) => {
