@@ -30,8 +30,8 @@
   --danger: #ff8f8f;
   --ok: #7ff4b8;
   --warn: #d6c878;
-  --font-sans: Verdana, Tahoma, Geneva, "Segoe UI", sans-serif;
-  --font-serif: Georgia, "Times New Roman", serif;
+  --font-sans: Verdana, Tahoma, Arial, sans-serif;
+  --font-serif: Verdana, Tahoma, Arial, sans-serif;
   --font-mono: "Courier New", Courier, ui-monospace, monospace;
   --topbar-h: 58px;
   --sidebar-w: 310px;
