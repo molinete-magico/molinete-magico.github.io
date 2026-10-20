@@ -254,7 +254,34 @@ editorModeButton = $('#btn-editor-mode') as HTMLButtonElement;
 blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
   updateCanonicalBody(markdown);
   renderPreviewDebounced();
-});
+}, async (file) => {
+  if (!file.type.startsWith('image/')) { setSaved(false, 'O arquivo precisa ser uma imagem.'); return null; }
+  if (file.size === 0 || file.size > 15 * 1024 * 1024) { setSaved(false, 'A imagem deve ter até 15 MB.'); return null; }
+  const form = new FormData();
+  form.append('file', file);
+  let endpoint: string;
+  if (state.projectMode) {
+    if (state.currentProjectDoc) {
+      form.append('projectId', state.currentProjectDoc.projectId);
+      form.append('kind', state.currentProjectDoc.kind);
+      form.append('id', state.currentProjectDoc.id);
+      endpoint = '/api/project-document/image';
+    } else if (state.currentProject && state.projectItemKind === 'project') {
+      endpoint = '/api/project/' + encodeURIComponent(state.currentProject.id) + '/image';
+    } else { setSaved(false, 'Abra um documento do projeto antes de adicionar imagens.'); return null; }
+  } else {
+    if (!state.current) { setSaved(false, 'Abra um post antes de adicionar imagens.'); return null; }
+    endpoint = '/api/post/' + encodeURIComponent(state.current.id) + '/image';
+  }
+  setSaved(false, 'Enviando imagem...');
+  try {
+    const response = await fetch(endpoint, { method: 'POST', body: form });
+    const data = await response.json() as { name?: string; alt?: string; error?: string };
+    if (!response.ok || !data.name) throw new Error(data.error ?? 'Não foi possível enviar a imagem.');
+    setSaved(false, 'Imagem enviada; salve o documento para guardar a referência.');
+    return { name: data.name, alt: data.alt ?? file.name };
+  } catch (error) { setSaved(false, (error as Error).message); return null; }
+}, imageUrlForMarkdown);
 editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
 
 // ---------------------------------------------------------------
@@ -275,6 +302,19 @@ const editorTheme = EditorView.theme(
 
 function currentBody(): string {
   return cmView?.state.doc.toString() ?? '';
+}
+
+function imageUrlForMarkdown(src: string): string {
+  if (!src || /^(?:[a-z]+:|\/\/|\/|#)/i.test(src)) return src;
+  const name = src.split(/[?#]/, 1)[0];
+  if (!name || name.includes('..') || name.includes('/')) return src;
+  const query = 'name=' + encodeURIComponent(name);
+  if (state.projectMode) {
+    if (state.currentProjectDoc) return '/api/project-document/image-file?project=' + encodeURIComponent(state.currentProjectDoc.projectId) + '&kind=' + encodeURIComponent(state.currentProjectDoc.kind) + '&id=' + encodeURIComponent(state.currentProjectDoc.id) + '&' + query;
+    if (state.currentProject && state.projectItemKind === 'project') return '/api/project-image?project=' + encodeURIComponent(state.currentProject.id) + '&' + query;
+    return src;
+  }
+  return state.current ? '/api/post-image?post=' + encodeURIComponent(state.current.id) + '&' + query : src;
 }
 
 function updateCanonicalBody(markdown: string) {
@@ -338,6 +378,9 @@ marked.setOptions({ gfm: true, breaks: true });
 function renderPreview() {
   const raw = marked.parse(currentBody() || '*Escreva algo…*');
   preview.innerHTML = DOMPurify.sanitize(typeof raw === 'string' ? raw : String(raw));
+  preview.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+    image.src = imageUrlForMarkdown(image.getAttribute('src') ?? '');
+  });
 }
 
 const renderPreviewDebounced = debounce(renderPreview, 250);
