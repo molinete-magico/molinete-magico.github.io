@@ -7,6 +7,7 @@ on:
       - "apps/writer/**"
       - "apps/blog/**"
       - "content/projects/**"
+      - "content/posts/**"
       - "package.json"
       - "package-lock.json"
       - "scripts/**"
