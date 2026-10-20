@@ -369,15 +369,21 @@ export async function saveImage(postId: string, filename: string, buffer: Buffer
   if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) throw new Error('A imagem deve ter até 15 MB.');
   const stem = path.basename(filename, extension).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'imagem';
-  const folder = path.join(postsRoot(), postId);
-  await fs.mkdir(folder, { recursive: true });
+  const postFile = await resolvePostFile(postId);
+  let folder = path.dirname(postFile);
+  if (folder === postsRoot()) {
+    folder = path.join(postsRoot(), postId);
+    await fs.mkdir(folder, { recursive: true });
+    const destination = path.join(folder, 'index.md');
+    if (await exists(destination)) throw new Error('Já existe uma pasta para este post; resolva o conflito antes de adicionar imagens.');
+    await fs.rename(postFile, destination);
+  }
   let safe = stem + extension;
   let suffix = 2;
   while (await exists(path.join(folder, safe))) safe = stem + '-' + suffix++ + extension;
   await fs.writeFile(path.join(folder, safe), buffer);
   return safe;
 }
-
 function stringOr(v: unknown, fallback: string): string {
   return typeof v === 'string' && v.trim() !== '' ? v : fallback;
 }
