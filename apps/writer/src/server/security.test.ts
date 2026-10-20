@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { postsRoot } from './fs.ts';
 import { app } from './index.ts';
-import { parseFrontmatter, resolvePostFile } from './content.ts';
+import { parseFrontmatter, readPostImage, resolvePostFile } from './content.ts';
 
 test('Writer rejects API requests from a foreign browser origin', async () => {
   const response = await app.request('/api/posts', {
@@ -41,6 +41,26 @@ test('Writer rejects a post symlink that resolves outside the posts directory', 
   }
 });
 
+
+test('Writer rejects image folders that are symlinks outside the posts root', async () => {
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'writer-image-audit-'));
+  const id = `.writer-image-audit-${process.pid}`;
+  const flatPost = path.join(postsRoot(), `${id}.md`);
+  const linkedFolder = path.join(postsRoot(), id);
+  try {
+    await fs.writeFile(path.join(outside, 'secret.png'), 'not-an-image');
+    await fs.writeFile(flatPost, '---\\ntitle: test\\n---\\nbody\\n');
+    await fs.symlink(outside, linkedFolder, 'dir');
+    await assert.rejects(
+      readPostImage(id, 'secret.png'),
+      /fora da pasta de conteúdo permitida/,
+    );
+  } finally {
+    await fs.rm(linkedFolder, { recursive: true, force: true });
+    await fs.rm(flatPost, { force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
 
 test('Writer parses YAML front matter and preserves the Markdown body', () => {
   const parsed = parseFrontmatter('---\ntitle: Cinzas do Vale\ntags:\n  - rpg\n  - sum\npublished: true\n---\n\n# Capítulo\n');
