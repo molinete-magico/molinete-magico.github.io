@@ -715,5 +715,6 @@ document.addEventListener('keydown', (event) => {
   }
   if (event.key === 'Escape' && state.focus) toggleFocus();
 });
+window.setInterval(() => { if (state.kind) void loadGitStatus(); }, 20000);
 renderShell();
 showLibrary();
