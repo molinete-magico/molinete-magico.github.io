@@ -25,6 +25,8 @@ const state: {
   current: Post | null;
   git: GitStatus | null;
   filter: string;
+  postFilter: 'all' | 'draft' | 'published';
+  expandedProjectIds: string[];
   dirty: { title: boolean; body: boolean; meta: boolean };
   savedAt: Date | null;
   tagsDirty: boolean;
@@ -39,6 +41,8 @@ const state: {
   current: null,
   git: null,
   filter: '',
+  postFilter: 'all',
+  expandedProjectIds: [],
   dirty: { title: false, body: false, meta: false },
   savedAt: null,
   tagsDirty: false,
@@ -115,6 +119,17 @@ function setEditorMode(useVisual: boolean) {
 }
 
 const app = $('#app')!;
+function showLibraryHome() {
+  app.classList.add('library-mode'); $('#library-home')!.hidden = false;
+  $('#btn-library')!.hidden = true; $('#btn-mode')!.hidden = true; $('#btn-new')!.hidden = true;
+  $('#btn-save')!.hidden = true; $('#btn-publish')!.hidden = true; $('#save-state')!.hidden = true; $('#git-badge')!.hidden = true;
+  emptyState.hidden = true; editorView.hidden = true; renderLibraryHome();
+}
+function showEditorWorkspace() {
+  app.classList.remove('library-mode'); $('#library-home')!.hidden = true;
+  $('#btn-library')!.hidden = false; $('#btn-mode')!.hidden = false; $('#btn-new')!.hidden = false;
+  $('#btn-save')!.hidden = false; $('#btn-publish')!.hidden = false; $('#save-state')!.hidden = false; $('#git-badge')!.hidden = false;
+}
 app.innerHTML = `
   <header class="topbar">
     <div class="brand">
@@ -122,6 +137,7 @@ app.innerHTML = `
       <span class="git-badge" id="git-badge">…</span>
     </div>
     <div class="actions">
+      <button id="btn-library" class="ghost" hidden>← Biblioteca</button>
       <button id="btn-mode" class="ghost" aria-pressed="false">Projetos</button>
       <button id="btn-new" class="ghost">+ Novo post</button>
       <span id="save-state" class="save-state" role="status"></span>
@@ -133,6 +149,11 @@ app.innerHTML = `
 
   <aside class="sidebar">
     <input id="search" type="search" placeholder="Pesquisar posts..." aria-label="Pesquisar conteúdo" />
+    <nav id="post-filters" class="post-filters" aria-label="Filtrar posts">
+      <button type="button" data-post-filter="all" class="active" aria-pressed="true">Todos</button>
+      <button type="button" data-post-filter="draft" aria-pressed="false">Rascunhos</button>
+      <button type="button" data-post-filter="published" aria-pressed="false">Publicados</button>
+    </nav>
     <div id="project-actions" class="project-actions" hidden>
       <button id="btn-new-chapter" class="ghost tiny">+ capítulo</button>
       <button id="btn-new-supplement" class="ghost tiny">+ complemento</button>
@@ -143,6 +164,14 @@ app.innerHTML = `
   </aside>
 
   <main id="editor" class="editor">
+    <section id="library-home" class="library-home" aria-labelledby="library-title">
+      <div class="library-heading"><div><p class="library-kicker">ARQUIVO PESSOAL / WRITER</p><h1 id="library-title">Sua biblioteca</h1><p class="library-intro">Posts, rascunhos e projetos em um só lugar.</p></div><div class="library-create"><button id="home-new-post" class="primary" type="button">+ Novo post</button><button id="home-new-project" class="ghost" type="button">+ Novo projeto</button></div></div>
+      <label class="library-search-wrap"><span>Pesquisar no arquivo</span><input id="library-search" type="search" placeholder="Título, tag ou projeto..." aria-label="Pesquisar na biblioteca" /></label>
+      <div class="library-summary"><div class="library-stat"><span>Posts</span><strong id="library-post-count">0</strong></div><div class="library-stat"><span>Rascunhos</span><strong id="library-draft-count">0</strong></div><div class="library-stat"><span>Projetos</span><strong id="library-project-count">0</strong></div></div>
+      <section class="library-section"><div class="library-section-heading"><h2>Posts</h2><div class="library-filter" role="group" aria-label="Filtrar posts"><button type="button" data-library-filter="all" class="active" aria-pressed="true">Todos</button><button type="button" data-library-filter="draft" aria-pressed="false">Rascunhos</button><button type="button" data-library-filter="published" aria-pressed="false">Publicados</button></div></div><ul id="library-posts" class="library-items"></ul></section>
+      <section class="library-section"><div class="library-section-heading"><h2>Projetos</h2><span class="library-section-note">RPG · histórias · documentação</span></div><ul id="library-projects" class="library-items"></ul></section>
+      <p class="library-footnote">Markdown continua sendo a fonte da verdade. Salvar não publica automaticamente.</p>
+    </section>
     <div class="empty" id="empty-state">
       <p>Selecione um post na lista ou crie um novo.</p>
     </div>
@@ -286,6 +315,8 @@ blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
   } catch (error) { setSaved(false, (error as Error).message); return null; }
 }, imageUrlForMarkdown);
 editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
+// Sempre iniciar no editor Markdown direto; o modo visual é opcional.
+setEditorMode(false);
 
 // ---------------------------------------------------------------
 // CodeMirror: editor Markdown
@@ -457,11 +488,23 @@ const editorView = $('#editor-view')!;
 const tagChips = $('#tag-chips')!;
 const saveState = $('#save-state')!;
 
+function renderLibraryHome() {
+  const q = ($('#library-search') as HTMLInputElement).value.trim().toLowerCase();
+  const posts = state.posts.filter((p) => (state.postFilter === 'all' || (state.postFilter === 'draft' ? p.draft : !p.draft)) && (!q || [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q)));
+  const projects = state.projects.filter((p) => !q || [p.title, p.id, p.description, ...p.documents.map((d) => d.title)].join(' ').toLowerCase().includes(q));
+  $('#library-post-count')!.textContent = String(state.posts.length);
+  $('#library-draft-count')!.textContent = String(state.posts.filter((p) => p.draft).length);
+  $('#library-project-count')!.textContent = String(state.projects.length);
+  $('#library-posts')!.innerHTML = posts.length ? posts.slice(0, 12).map((p) => '<li class="library-item"><button type="button" class="library-item-main" data-open-post="' + escapeHtml(p.id) + '"><span class="library-item-mark ' + (p.draft ? 'draft' : 'published') + '"></span><span class="library-item-copy"><strong>' + escapeHtml(p.title || p.id) + '</strong><span>' + (p.draft ? 'Rascunho' : 'Publicado') + ((p.tags?.length) ? ' · ' + p.tags.map(escapeHtml).join(', ') : '') + '</span></span><time>' + formatDate(p.pubDate) + '</time><span class="library-open-indicator">→</span></button></li>').join('') : '<li class="library-empty">Nenhum post corresponde à busca.</li>';
+  $('#library-projects')!.innerHTML = projects.length ? projects.map((p) => '<li class="library-item"><button type="button" class="library-item-main" data-open-project="' + escapeHtml(p.id) + '"><span class="library-item-mark ' + (p.published ? 'published' : 'draft') + '"></span><span class="library-item-copy"><strong>' + escapeHtml(p.title || p.id) + '</strong><span>' + (p.type === 'rpg' ? 'Sistema de RPG' : 'História') + ' · ' + p.documents.length + ' documentos · ' + (p.published ? 'Publicado' : 'Rascunho') + '</span></span><span class="library-open-indicator">→</span></button></li>').join('') : '<li class="library-empty">Nenhum projeto corresponde à busca.</li>';
+}
 function renderList() {
   const q = state.filter.trim().toLowerCase();
   const items = state.posts.filter((p) => {
-    if (!q) return true;
-    return [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q);
+    const matchesStatus = state.postFilter === 'all' ||
+      (state.postFilter === 'draft' ? p.draft : !p.draft);
+    const matchesQuery = !q || [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q);
+    return matchesStatus && matchesQuery;
   });
 
   postList.innerHTML = items
@@ -470,8 +513,10 @@ function renderList() {
       <li class="post-item">
         <button class="post-open" data-id="${escapeHtml(p.id)}">
           <span class="dot ${p.draft ? 'draft' : 'pub'}" title="${p.draft ? 'Rascunho' : 'Publicado'}"></span>
-          <span class="post-title">${escapeHtml(p.title || p.id)}</span>
-          <span class="post-date">${formatDate(p.pubDate)}</span>
+          <span class="post-item-copy">
+            <span class="post-title">${escapeHtml(p.title || p.id)}</span>
+            <span class="post-item-meta"><span class="post-status-label">${p.draft ? 'Rascunho' : 'Publicado'}</span><span class="post-date">${formatDate(p.pubDate)}</span></span>
+          </span>
         </button>
         <span class="post-actions">
           <button data-act="dup" data-id="${escapeHtml(p.id)}" title="Duplicar">⧉</button>
@@ -489,6 +534,7 @@ async function loadList() {
     state.posts = [];
   }
   renderList();
+  renderLibraryHome();
 }
 
 
@@ -500,6 +546,7 @@ function renderProjectList() {
   );
   projectList.innerHTML = projects.map((project) => {
     const selectedProject = state.currentProject?.id === project.id && state.projectItemKind === 'project';
+    const expanded = state.expandedProjectIds.includes(project.id) || Boolean(q);
     const docs = project.documents.map((doc) => {
       const selected = state.currentProject?.id === project.id &&
         state.currentProjectDoc?.kind === doc.kind && state.currentProjectDoc?.id === doc.id;
@@ -513,12 +560,14 @@ function renderProjectList() {
       </li>`;
     }).join('');
     return `<li class="project-item ${selectedProject ? 'active' : ''}">
-      <button class="project-open" data-project-id="${escapeHtml(project.id)}">
-        <span class="dot ${project.published ? 'pub' : 'draft'}" title="${project.published ? 'Publicado' : 'Rascunho'}"></span>
-        <span class="post-title">${escapeHtml(project.title)}</span>
-        <span class="post-date">${project.type === 'rpg' ? 'RPG' : 'HISTÓRIA'}</span>
-      </button>
-      <ul class="project-doc-list">${docs}</ul>
+      <div class="project-tree-row">
+        <button class="project-expand" type="button" data-toggle-project="${escapeHtml(project.id)}" aria-expanded="${expanded}" aria-label="${expanded ? 'Recolher' : 'Expandir'} ${escapeHtml(project.title)}">${expanded ? '▾' : '▸'}</button>
+        <button class="project-open" data-project-id="${escapeHtml(project.id)}">
+          <span class="dot ${project.published ? 'pub' : 'draft'}" title="${project.published ? 'Publicado' : 'Rascunho'}"></span>
+          <span class="project-copy"><span class="post-title">${escapeHtml(project.title)}</span><span class="post-item-meta"><span class="post-status-label">${project.published ? 'Publicado' : 'Rascunho'}</span><span class="post-date">${project.type === 'rpg' ? 'RPG' : 'HISTÓRIA'}</span></span></span>
+        </button>
+      </div>
+      <ul class="project-doc-list" ${expanded ? '' : 'hidden'}>${docs}</ul>
     </li>`;
   }).join('');
 }
@@ -545,6 +594,7 @@ function setProjectEditorVisibility(kind: 'project' | ProjectDocumentKind) {
 }
 
 async function openProject(id: string) {
+  showEditorWorkspace();
   const project = await api<Project>('GET', `/api/project/${encodeURIComponent(id)}`);
   state.currentProject = project;
   state.currentProjectDoc = null;
@@ -571,6 +621,7 @@ async function openProject(id: string) {
 }
 
 async function openProjectDocument(projectId: string, kind: ProjectDocumentKind, id: string) {
+  showEditorWorkspace();
   let project = state.currentProject;
   if (!project || project.id !== projectId) {
     project = await api<Project>('GET', `/api/project/${encodeURIComponent(projectId)}`);
@@ -679,6 +730,7 @@ async function publishProjectCurrent() {
 }
 
 async function openPost(id: string) {
+  showEditorWorkspace();
   state.current = await api<Post>('GET', `/api/post/${encodeURIComponent(id)}`);
   postMeta.hidden = false;
   postBannerActions.hidden = false;
@@ -1076,6 +1128,44 @@ function modal(title: string, body: string) {
 }
 
 // ------------------------------------------------------------------
+// Biblioteca inicial
+// ------------------------------------------------------------------
+$('#btn-library')!.addEventListener('click', async () => { if (await confirmNavigation()) showLibraryHome(); });
+$('#home-new-post')!.addEventListener('click', () => ($('#btn-new') as HTMLButtonElement).click());
+$('#home-new-project')!.addEventListener('click', async () => {
+  const title = window.prompt('Nome do novo projeto:')?.trim(); if (!title) return;
+  const typeInput = window.prompt('Tipo do projeto: digite "rpg" ou "story".', 'story')?.trim().toLowerCase();
+  try {
+    state.projectMode = true;
+    const project = await api<Project>('POST', '/api/project', { title, type: typeInput === 'rpg' ? 'rpg' : 'story' });
+    await loadProjects(); postList.hidden = true; projectList.hidden = false; $('#post-filters')!.hidden = true;
+    ($('#btn-mode') as HTMLButtonElement).textContent = 'Posts'; ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo projeto';
+    search.placeholder = 'Pesquisar projetos e documentos...'; await openProject(project.id);
+  } catch (err) { setSaved(false, (err as Error).message); }
+});
+$('#library-search')!.addEventListener('input', renderLibraryHome);
+$('#library-posts')!.addEventListener('click', async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-open-post]');
+  if (!button || !(await confirmNavigation())) return;
+  state.projectMode = false; postList.hidden = false; projectList.hidden = true; $('#post-filters')!.hidden = false;
+  ($('#btn-mode') as HTMLButtonElement).textContent = 'Projetos'; ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo post';
+  await openPost(button.dataset.openPost!);
+});
+$('#library-projects')!.addEventListener('click', async (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-open-project]');
+  if (!button || !(await confirmNavigation())) return;
+  state.projectMode = true; postList.hidden = true; projectList.hidden = false; $('#post-filters')!.hidden = true;
+  ($('#btn-mode') as HTMLButtonElement).textContent = 'Posts'; ($('#btn-new') as HTMLButtonElement).textContent = '+ Novo projeto';
+  search.placeholder = 'Pesquisar projetos e documentos...'; await openProject(button.dataset.openProject!);
+});
+$('#library-home')!.addEventListener('click', (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-library-filter]');
+  if (!button) return; state.postFilter = button.dataset.libraryFilter as typeof state.postFilter;
+  $('#library-home')!.querySelectorAll<HTMLButtonElement>('[data-library-filter]').forEach((item) => { const active = item === button; item.classList.toggle('active', active); item.setAttribute('aria-pressed', String(active)); });
+  renderLibraryHome();
+});
+
+// ------------------------------------------------------------------
 // Botões principais
 // ------------------------------------------------------------------
 $('#btn-new')!.addEventListener('click', async () => {
@@ -1103,6 +1193,7 @@ $('#btn-mode')!.addEventListener('click', async () => {
   ($('#btn-new') as HTMLButtonElement).textContent = state.projectMode ? '+ Novo projeto' : '+ Novo post';
   postList.hidden = state.projectMode;
   projectList.hidden = !state.projectMode;
+  $('#post-filters')!.toggleAttribute('hidden', state.projectMode);
   projectActions.hidden = !state.projectMode;
   search.placeholder = state.projectMode ? 'Pesquisar projetos e documentos...' : 'Pesquisar posts...';
   search.value = '';
@@ -1173,6 +1264,14 @@ $('#btn-settings')!.addEventListener('click', () => openSettings());
 projectList.addEventListener('click', async (e) => {
   const target = (e.target as HTMLElement).closest('button') as HTMLElement | null;
   if (!target) return;
+  const toggleId = target.getAttribute('data-toggle-project');
+  if (toggleId) {
+    state.expandedProjectIds = state.expandedProjectIds.includes(toggleId)
+      ? state.expandedProjectIds.filter((id) => id !== toggleId)
+      : [...state.expandedProjectIds, toggleId];
+    renderProjectList();
+    return;
+  }
   if (!(await confirmNavigation())) return;
   const projectId = target.getAttribute('data-project-id');
   if (!projectId) return;
@@ -1223,6 +1322,18 @@ search.addEventListener('input', () => {
   state.filter = search.value;
   if (state.projectMode) renderProjectList();
   else renderList();
+});
+
+$('#post-filters')!.addEventListener('click', (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-post-filter]');
+  if (!button) return;
+  state.postFilter = button.dataset.postFilter as typeof state.postFilter;
+  $('#post-filters')!.querySelectorAll<HTMLButtonElement>('[data-post-filter]').forEach((item) => {
+    const active = item === button;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-pressed', String(active));
+  });
+  renderList();
 });
 
 // Marca os campos de metadados como sujos ao editar
@@ -1758,7 +1869,8 @@ async function openSettings() {
 // ------------------------------------------------------------------
 async function resume() {
   state.tagsDirty = false;
-  await Promise.all([loadList(), refreshGit()]);
+  await Promise.all([loadList(), loadProjects(), refreshGit()]);
+  showLibraryHome();
   restoreAutosave();
 }
 
