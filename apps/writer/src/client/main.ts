@@ -598,6 +598,8 @@ async function openProjectDocument(projectId: string, kind: ProjectDocumentKind,
 }
 
 async function saveProjectCurrent(): Promise<boolean> {
+  const revision = editRevision;
+  const body = currentBody();
   try {
     if (state.projectItemKind === 'project') {
       if (!state.currentProject) return false;
@@ -612,7 +614,7 @@ async function saveProjectCurrent(): Promise<boolean> {
         ...(fieldProjectCover.value.trim() ? { cover: fieldProjectCover.value.trim() } : { cover: undefined }),
       };
       state.currentProject = await api<Project>('POST', '/api/project/save', {
-        id: state.currentProject.id, file, body: currentBody(),
+        id: state.currentProject.id, file, body,
       });
     } else {
       if (!state.currentProjectDoc) return false;
@@ -627,11 +629,18 @@ async function saveProjectCurrent(): Promise<boolean> {
         kind: state.currentProjectDoc.kind,
         id: state.currentProjectDoc.id,
         file,
-        body: currentBody(),
+        body,
       });
     }
-    state.dirty = { title: false, body: false, meta: false };
     await loadProjects();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'O conteúdo anterior foi salvo; há edições mais recentes ainda não salvas.');
+      return false;
+    }
+    state.dirty = { title: false, body: false, meta: false };
+    state.tagsDirty = false;
+    clearAutosave();
     setSaved(true);
     return true;
   } catch (err) {
@@ -909,22 +918,29 @@ function todayClient() {
 async function saveCurrent(): Promise<boolean> {
   if (state.projectMode) return saveProjectCurrent();
   if (!state.current) return false;
+  const revision = editRevision;
   const meta = currentMeta();
+  const body = currentBody();
   try {
-    await api('POST', '/api/post/save', {
+    state.current = await api<Post>('POST', '/api/post/save', {
       id: state.current.id,
       file: meta,
-      body: currentBody(),
+      body,
       // Só mudamos a data se o usuário editou o campo de data. O servidor
       // ignora a data enviada quando isso é false, então até um cliente
       // velho/equivocado não avança a data de publicação.
       changeDate: meta.pubDate !== state.current.file.pubDate,
     });
+    await loadList();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'O conteúdo anterior foi salvo; há edições mais recentes ainda não salvas.');
+      return false;
+    }
     state.dirty = { title: false, body: false, meta: false };
     state.tagsDirty = false;
     clearAutosave();
     setSaved(true);
-    await loadList();
     return true;
   } catch (err) {
     setSaved(false, (err as Error).message);
@@ -938,20 +954,30 @@ async function saveCurrent(): Promise<boolean> {
 async function publishCurrent() {
   if (state.projectMode) return publishProjectCurrent();
   if (!state.current) return;
+  const revision = editRevision;
   const meta = { ...currentMeta(), draft: false };
+  const body = currentBody();
   fieldDraft.checked = false;
   setSaving('Publicando...');
   try {
     const res = await api<{ subject: string }>('POST', '/api/publish', {
       id: state.current.id,
       file: meta,
-      body: currentBody(),
+      body,
       changeDate: meta.pubDate !== state.current.file.pubDate,
     });
-    setSaved(true, `Publicado ✓ ${res.subject}`);
-    clearAutosave();
+    state.current.file = { ...state.current.file, ...meta };
     await loadList();
     await refreshGit();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'Publicado, mas há edições mais recentes que ainda não foram salvas.');
+      return;
+    }
+    state.dirty = { title: false, body: false, meta: false };
+    state.tagsDirty = false;
+    clearAutosave();
+    setSaved(true, `Publicado ✓ ${res.subject}`);
   } catch (err) {
     setSaved(false, (err as Error).message);
     setSaving('');
@@ -1491,8 +1517,11 @@ function setSaving(msg: string) {
 // ------------------------------------------------------------------
 const LS_KEY = 'writer:unsaved';
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+let editRevision = 0;
 
 function scheduleAutosave() {
+  // Every user edit advances a revision so a slow save cannot clear newer changes.
+  editRevision += 1;
   if (autosaveTimer) clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(writeAutosave, 900);
 }
