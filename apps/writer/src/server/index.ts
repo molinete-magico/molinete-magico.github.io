@@ -70,7 +70,7 @@ app.use('/api/*', async (c, next) => {
   }
 
   const host = c.req.header('host') ?? new URL(c.req.url).host;
-  const originHostname = parsedOrigin.hostname.replace(/^\\[|\\]$/g, '').toLowerCase();
+  const originHostname = parsedOrigin.hostname.replace('[', '').replace(']', '').toLowerCase();
   const isLoopback = originHostname === 'localhost' ||
     originHostname === '127.0.0.1' ||
     originHostname === '::1';
