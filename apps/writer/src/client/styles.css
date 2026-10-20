@@ -1735,6 +1735,8 @@ button.primary:hover:not(:disabled) {
   overflow-wrap: anywhere;
 }
 .block-editor-canvas > :first-child { margin-top: 0; }
+.block-editor-canvas img { display: block; max-width: 100%; height: auto; margin: 1.25rem auto; object-fit: contain; }
+.block-editor-canvas img[alt=""] { outline: 1px dashed var(--border-strong, #155a41); }
 .block-editor-canvas h1,
 .block-editor-canvas h2,
 .block-editor-canvas h3,
