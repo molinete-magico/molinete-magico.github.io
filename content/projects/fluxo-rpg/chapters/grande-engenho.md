@@ -12,8 +12,5 @@ Nessa academia os estudantes já são bruxos iniciados (ou seja, já tem a fora�
 
 Todos os anos, a academia recebe cerca de 300 estudantes, que inicialmente são filtrados até sobrarem 75. Todos os anos a filtragem muda, sendo impossível saber qual será o método do ano que estão entrando.
 
-## Mapa interativo
-
-Explore a ilha, aproxime os detalhes e selecione os pontos numerados para consultar os principais locais do Grande Engenho.
 
 ## Costumes e
