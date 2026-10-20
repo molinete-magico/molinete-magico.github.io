@@ -9,6 +9,7 @@ on:
       - "content/projects/**"
       - "package.json"
       - "package-lock.json"
+      - "scripts/**"
       - ".github/workflows/check-writer.yml"
       - ".github/workflows/deploy-blog.yml"
   push:
@@ -19,6 +20,7 @@ on:
       - "content/projects/**"
       - "package.json"
       - "package-lock.json"
+      - "scripts/**"
       - ".github/workflows/check-writer.yml"
 
 permissions:
