@@ -655,7 +655,11 @@ function showSettings() {
   $('#set-workspace')!.addEventListener('click', async () => {
     const path = ($('#workspace-path') as HTMLInputElement).value.trim();
     if (state.dirty && !(await saveCurrent())) return;
-    try { const result = await api<{root: string}>('POST', '/api/workspace', path ? { path } : {}); ($('#settings-status')!).textContent = 'Workspace: ' + result.root; await loadCatalog(); }
+    try {
+      const result = await api<{root: string}>('POST', '/api/workspace', path ? { path } : {});
+      showLibrary();
+      ($('#settings-status')!).textContent = 'Workspace: ' + result.root;
+    }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
   const commitButton = document.createElement('button');
@@ -673,7 +677,12 @@ function showSettings() {
   $('#git-pull')!.addEventListener('click', async () => {
     if (state.dirty && !(await saveCurrent())) return;
     if (!window.confirm('Buscar alterações remotas? O Git pode apontar conflitos caso existam alterações incompatíveis.')) return;
-    try { await api('POST', '/api/git/pull', {}); await loadCatalog(); ($('#settings-status')!).textContent = 'Atualização concluída.'; await loadGitStatus(); }
+    try {
+      await api('POST', '/api/git/pull', {});
+      showLibrary();
+      ($('#settings-status')!).textContent = 'Atualização concluída.';
+      await loadGitStatus();
+    }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
   $('#git-push')!.addEventListener('click', async () => {
