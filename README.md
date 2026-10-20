@@ -42,7 +42,10 @@ Para validar o build de produção:
 
 ```bash
 npm run check
+npm run check:writer
+npm run test:writer
 npm run build
+npm run check:site
 ```
 
 ## Writer (local)
