@@ -8,8 +8,11 @@ function normalizePath(pathname: string) {
   const withoutBase = pathname.startsWith(basePath)
     ? pathname.slice(basePath.length)
     : pathname;
-  const normalized = `/${withoutBase}`.replace(/\\/{2,}/g, '/').replace(/\\/$/, '');
-  return normalized || '/';
+  const withLeadingSlash = withoutBase.startsWith('/') ? withoutBase : `/${withoutBase}`;
+  const withoutTrailingSlash = withLeadingSlash.endsWith('/')
+    ? withLeadingSlash.slice(0, -1)
+    : withLeadingSlash;
+  return withoutTrailingSlash || '/';
 }
 
 const currentPath = normalizePath(Astro.url.pathname);
