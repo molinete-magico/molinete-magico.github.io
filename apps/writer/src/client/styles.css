@@ -2366,3 +2366,12 @@ button.danger {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
 }
+
+
+/* Mantém o divisor sincronizado com a proporção controlada pelo cliente. */
+.split {
+  grid-template-columns: minmax(0, var(--editor-pane, 60%)) 8px minmax(0, 1fr);
+}
+@media (max-width: 780px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+}
