@@ -29,15 +29,54 @@ function slugDate(value: string): string {
   const parts = value.slice(0, 10).split('-');
   return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : value;
 }
+function formatError(error: unknown): string {
+  const raw = error instanceof Error ? error.message : String(error ?? 'Erro desconhecido.');
+  const message = raw.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim();
+  if (/failed to fetch|networkerror|fetch failed|econnrefused|socket hang up/i.test(message)) {
+    return 'Não foi possível conectar ao Writer. Verifique se o servidor continua aberto e tente novamente.';
+  }
+  if (/non-fast-forward|fetch first|rejected.*push|updates were rejected|failed to push some refs/i.test(message)) {
+    return 'O envio foi recusado porque o repositório remoto tem alterações que ainda não estão nesta cópia. Suas alterações locais foram preservadas. Use “Atualizar do Git” e tente enviar novamente; se houver divergência, o Git informará sem sobrescrever commits.';
+  }
+  if (/would be overwritten by merge|you have unmerged paths|merge conflict|conflict/i.test(message)) {
+    return 'O Git encontrou alterações conflitantes. Nenhum reset ou sobrescrita foi executado; resolva os conflitos no repositório e tente novamente.';
+  }
+  if (/authentication failed|permission denied \(publickey\)|could not read username|repository not found/i.test(message)) {
+    return 'O Git não conseguiu autenticar ou acessar o remoto. Confira sua autenticação e as permissões do repositório.';
+  }
+  if (/no tracking information|no upstream configured|has no upstream branch/i.test(message)) {
+    return 'Esta branch não possui uma branch remota configurada. Configure o upstream no Git antes de enviar ou atualizar.';
+  }
+  if (/not a git repository/i.test(message)) {
+    return 'A pasta configurada não é um repositório Git válido. Confira o workspace nas configurações.';
+  }
+  return message || 'Ocorreu um erro inesperado. Tente novamente.';
+}
 async function api<T>(method: string, url: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
   let payload: BodyInit | undefined;
   if (body instanceof FormData) payload = body;
   else if (body !== undefined) { headers['Content-Type'] = 'application/json'; payload = JSON.stringify(body); }
-  const response = await fetch(url, { method, headers, body: payload });
+  let response: Response;
+  try {
+    response = await fetch(url, { method, headers, body: payload });
+  } catch (error) {
+    throw new Error(formatError(error));
+  }
   const contentType = response.headers.get('content-type') || '';
-  const result = contentType.includes('application/json') ? await response.json() : await response.text();
-  if (!response.ok) throw new Error(typeof result === 'object' && result && 'error' in result ? String(result.error) : String(result || response.statusText));
+  let result: unknown = '';
+  try {
+    result = contentType.includes('application/json') ? await response.json() : await response.text();
+  } catch {
+    result = '';
+  }
+  if (!response.ok) {
+    const detail = typeof result === 'object' && result !== null && 'error' in result
+      ? String(result.error)
+      : typeof result === 'string' ? result.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim() : '';
+    const fallback = detail || response.statusText || 'Erro na requisição.';
+    throw new Error(formatError(response.status >= 500 ? fallback : (detail || `Falha ${method} ${url} (HTTP ${response.status}).`)));
+  }
   return result as T;
 }
 function status(message: string, mode: 'ok' | 'warn' | 'error' = 'ok') {
@@ -82,7 +121,7 @@ function showActionMenu(title: string, actions: Array<{label:string; danger?:boo
   root.querySelectorAll<HTMLButtonElement>('[data-action-index]').forEach((button) => button.addEventListener('click', () => {
     const action = actions[Number(button.dataset.actionIndex)];
     root.replaceChildren();
-    if (action) void Promise.resolve(action.run()).catch((err) => status((err as Error).message, 'error'));
+    if (action) void Promise.resolve(action.run()).catch((err) => status(formatError(err), 'error'));
   }));
 }
 function bodyNow() { return state.editor?.getMarkdown() ?? ''; }
@@ -254,7 +293,7 @@ function renderLibraryResults() {
     try {
       if (button.dataset.kind === 'post') await openPost(button.dataset.id!);
       else await openProject(button.dataset.id!);
-    } catch (err) { status((err as Error).message, 'error'); }
+    } catch (err) { status(formatError(err), 'error'); }
   }));
   target.querySelectorAll<HTMLButtonElement>('[data-menu]').forEach((button) => button.addEventListener('click', () => {
     if (button.dataset.menu === 'post') showPostMenu(button.dataset.id!);
@@ -450,7 +489,7 @@ async function handleDocumentAction(event: Event) {
     const doc = await api<ProjectDocument>('POST', '/api/project-document', { projectId: state.currentProject.id, kind, title });
     await loadCatalog();
     await openProjectDocument(state.currentProject.id, doc.kind, doc.id);
-  } catch (err) { status((err as Error).message, 'error'); }
+  } catch (err) { status(formatError(err), 'error'); }
 }
 function bindSlashMenu() {
   const canvas = $('#block-host .block-editor-canvas');
@@ -526,7 +565,7 @@ async function saveCurrent(): Promise<boolean> {
     if ($('#crumb-title')) $('#crumb-title')!.textContent = activeTitle();
     status('Salvo com sucesso');
     return true;
-  } catch (err) { status((err as Error).message, 'error'); return false; }
+  } catch (err) { status(formatError(err), 'error'); return false; }
   finally { state.saving = false; }
 }
 async function publishCurrent() {
@@ -543,7 +582,10 @@ async function publishCurrent() {
       await api('POST', '/api/git/push');
     }
     await loadCatalog(); await loadGitStatus(); status('Publicação concluída');
-  } catch (err) { status((err as Error).message, 'error'); }
+  } catch (err) {
+    const message = formatError(err);
+    status(state.kind ? 'Salvo localmente, mas a publicação falhou: ' + message : message, 'error');
+  }
 }
 async function createNewPost() {
   const title = await askText('Criar post', 'Título do post', '', 'Ex.: Uma ideia que quero desenvolver');
@@ -551,7 +593,7 @@ async function createNewPost() {
   try {
     const created = await api<Post>('POST', '/api/post', { title });
     await loadCatalog(); await openPost(created.id);
-  } catch (err) { status((err as Error).message, 'error'); }
+  } catch (err) { status(formatError(err), 'error'); }
 }
 async function createNewProject() {
   const title = await askText('Criar projeto', 'Nome do projeto', '', 'Ex.: Cinzas do Vale');
@@ -561,7 +603,7 @@ async function createNewProject() {
   try {
     const project = await api<Project>('POST', '/api/project', { title, type });
     await loadCatalog(); await openProject(project.id);
-  } catch (err) { status((err as Error).message, 'error'); }
+  } catch (err) { status(formatError(err), 'error'); }
 }
 async function prepareImageForUpload(file: File): Promise<File> {
   if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) return file;
@@ -593,7 +635,7 @@ async function uploadInlineImage(file: File) {
     }
     return null;
   } catch (err) {
-    status((err as Error).message, 'error');
+    status(formatError(err), 'error');
     return null;
   }
 }
@@ -617,7 +659,7 @@ async function uploadBanner(event: Event) {
     preview.src = '/api/post-banner?post=' + encodeURIComponent(state.currentPost.id) + '&v=' + Date.now(); preview.hidden = false;
     markDirty(); status('Banner enviado; salve para registrar o enquadramento');
   }
-  catch (err) { status((err as Error).message, 'error'); }
+  catch (err) { status(formatError(err), 'error'); }
   finally { input.value = ''; }
 }
 async function uploadProjectCover(event: Event) {
@@ -631,18 +673,18 @@ async function uploadProjectCover(event: Event) {
     preview.src = '/api/project-image?project=' + encodeURIComponent(state.currentProject.id) + '&name=' + encodeURIComponent(name) + '&v=' + Date.now();
     preview.hidden = false; state.currentProject.file.bannerPosition = String(($('#project-banner-position') as HTMLInputElement).value) + '%';
     markDirty(); status('Banner do projeto enviado');
-  } catch (err) { status((err as Error).message, 'error'); }
+  } catch (err) { status(formatError(err), 'error'); }
   finally { input.value = ''; }
 }
 async function duplicateCurrentPost() {
   if (!state.currentPost || !confirmLeave()) return;
   try { const post = await api<Post>('POST', '/api/post/duplicate', { id: state.currentPost.id }); await loadCatalog(); await openPost(post.id); }
-  catch (err) { status((err as Error).message, 'error'); }
+  catch (err) { status(formatError(err), 'error'); }
 }
 async function deleteCurrentPost() {
   if (!state.currentPost || (state.dirty && !confirmLeave()) || !window.confirm('Excluir este post? Esta ação também tenta registrar e enviar a exclusão pelo Git.')) return;
   try { await api('POST', '/api/post/delete', { id: state.currentPost.id }); state.currentPost = null; state.kind = null; await loadCatalog(); showLibrary(); }
-  catch (err) { status((err as Error).message, 'error'); }
+  catch (err) { status(formatError(err), 'error'); }
 }
 function showPostMenu(id: string) {
   showActionMenu('Ações do post', [
@@ -697,7 +739,7 @@ function showSettings() {
       ($('#workspace-path') as HTMLInputElement).value = result.root;
       ($('#settings-status')!).textContent = 'Workspace: ' + result.root;
     }
-    catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
+    catch (err) { ($('#settings-status')!).textContent = formatError(err); }
   });
   const commitButton = document.createElement('button');
   commitButton.className = 'button';
@@ -709,7 +751,7 @@ function showSettings() {
     const message = await askText('Criar commit local', 'Mensagem do commit', 'writer: salvar alterações');
     if (!message) return;
     try { await api('POST', '/api/git/commit', { message }); ($('#settings-status')!).textContent = 'Commit criado.'; await loadGitStatus(); }
-    catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
+    catch (err) { ($('#settings-status')!).textContent = formatError(err); }
   });
   $('#git-pull')!.addEventListener('click', async () => {
     if (state.dirty && !(await saveCurrent())) return;
@@ -720,23 +762,30 @@ function showSettings() {
       ($('#settings-status')!).textContent = 'Atualização concluída.';
       await loadGitStatus();
     }
-    catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
+    catch (err) { ($('#settings-status')!).textContent = formatError(err); }
   });
   $('#git-push')!.addEventListener('click', async () => {
     try { await api('POST', '/api/git/push', {}); ($('#settings-status')!).textContent = 'Push concluído.'; await loadGitStatus(); }
-    catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
+    catch (err) { ($('#settings-status')!).textContent = formatError(err); }
   });
 }
 function showLibrary() {
   state.editor = null; state.currentPost = null; state.currentProject = null; state.currentDoc = null; state.kind = null; state.preview = false; state.focus = false;
   document.documentElement.classList.remove('writer-focus');
-  void loadCatalog().then(() => { renderLibrary(); status('Biblioteca atualizada'); }).catch((err) => status((err as Error).message, 'error'));
+  void loadCatalog().then(() => { renderLibrary(); status('Biblioteca atualizada'); }).catch((err) => status(formatError(err), 'error'));
 }
 document.addEventListener('keydown', (event) => {
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
     event.preventDefault(); void saveCurrent();
   }
   if (event.key === 'Escape' && state.focus) toggleFocus();
+});
+window.addEventListener('unhandledrejection', (event) => {
+  event.preventDefault();
+  status(formatError(event.reason), 'error');
+});
+window.addEventListener('error', (event) => {
+  status(formatError(event.error ?? event.message), 'error');
 });
 window.setInterval(() => { if (state.kind) void loadGitStatus(); }, 20000);
 renderShell();
