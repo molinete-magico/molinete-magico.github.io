@@ -286,6 +286,8 @@ blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
   } catch (error) { setSaved(false, (error as Error).message); return null; }
 }, imageUrlForMarkdown);
 editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
+// Sempre iniciar no editor Markdown direto; o modo visual é opcional.
+setEditorMode(false);
 
 // ---------------------------------------------------------------
 // CodeMirror: editor Markdown
