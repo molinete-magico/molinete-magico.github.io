@@ -414,7 +414,7 @@ async function handleTreeClick(event: Event) {
 }
 async function handleDocumentAction(event: Event) {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-create-doc]');
-  if (!button || !state.currentProject) return;
+  if (!button || !state.currentProject || !confirmLeave()) return;
   const kind = button.dataset.createDoc as 'chapter' | 'supplement';
   const title = await askText(kind === 'chapter' ? 'Novo capítulo' : 'Novo suplemento', 'Título', '', kind === 'chapter' ? 'Ex.: Capítulo 1' : 'Ex.: Material complementar');
   if (!title) return;
@@ -612,7 +612,7 @@ async function duplicateCurrentPost() {
   catch (err) { status((err as Error).message, 'error'); }
 }
 async function deleteCurrentPost() {
-  if (!state.currentPost || !window.confirm('Excluir este post? Esta ação também tenta registrar e enviar a exclusão pelo Git.')) return;
+  if (!state.currentPost || (state.dirty && !confirmLeave()) || !window.confirm('Excluir este post? Esta ação também tenta registrar e enviar a exclusão pelo Git.')) return;
   try { await api('POST', '/api/post/delete', { id: state.currentPost.id }); state.currentPost = null; state.kind = null; await loadCatalog(); showLibrary(); }
   catch (err) { status((err as Error).message, 'error'); }
 }
@@ -654,6 +654,7 @@ function showSettings() {
   }).catch(() => undefined);
   $('#set-workspace')!.addEventListener('click', async () => {
     const path = ($('#workspace-path') as HTMLInputElement).value.trim();
+    if (state.dirty && !(await saveCurrent())) return;
     try { const result = await api<{root: string}>('POST', '/api/workspace', path ? { path } : {}); ($('#settings-status')!).textContent = 'Workspace: ' + result.root; await loadCatalog(); }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
@@ -663,13 +664,15 @@ function showSettings() {
   commitButton.textContent = 'Criar commit local';
   $('.settings-actions')!.append(commitButton);
   commitButton.addEventListener('click', async () => {
+    if (state.dirty && !(await saveCurrent())) return;
     const message = await askText('Criar commit local', 'Mensagem do commit', 'writer: salvar alterações');
     if (!message) return;
     try { await api('POST', '/api/git/commit', { message }); ($('#settings-status')!).textContent = 'Commit criado.'; await loadGitStatus(); }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
   $('#git-pull')!.addEventListener('click', async () => {
-    if (!window.confirm('Buscar alterações remotas? Alterações locais não salvas podem entrar em conflito.')) return;
+    if (state.dirty && !(await saveCurrent())) return;
+    if (!window.confirm('Buscar alterações remotas? O Git pode apontar conflitos caso existam alterações incompatíveis.')) return;
     try { await api('POST', '/api/git/pull', {}); await loadCatalog(); ($('#settings-status')!).textContent = 'Atualização concluída.'; await loadGitStatus(); }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
