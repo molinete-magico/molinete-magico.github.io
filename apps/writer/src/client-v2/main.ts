@@ -116,7 +116,8 @@ function clearRecovery() {
   if (!raw) return;
   try {
     const recovery = JSON.parse(raw);
-    if (recovery.id === activeId() && recovery.kind === state.kind) localStorage.removeItem('writer-v2-recovery');
+    const projectId = state.currentDoc?.projectId ?? state.currentProject?.id ?? '';
+    if (recovery.id === activeId() && recovery.kind === state.kind && (recovery.projectId ?? '') === projectId) localStorage.removeItem('writer-v2-recovery');
   } catch { localStorage.removeItem('writer-v2-recovery'); }
 }
 function confirmLeave(): boolean {
@@ -353,7 +354,7 @@ function bindSlashMenu() {
     const text = selection?.anchorNode?.textContent ?? '';
     const offset = selection?.anchorOffset ?? 0;
     const prefix = text.slice(0, offset);
-    const open = event.key === '/' && /(?:^|\\s)\/$/.test(prefix);
+    const open = event.key === '/' && /(?:^|\s)\/$/.test(prefix);
     $('#slash-menu')!.hidden = !open;
   });
 }
