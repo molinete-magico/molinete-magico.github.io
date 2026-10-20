@@ -1,5 +1,6 @@
 ---
-// Mantém a URL antiga /posts funcionando sem recriar a aba removida.
-// O site é publicado na raiz do domínio GitHub Pages.
-return Astro.redirect('/archive/');
+import { withBase } from '../../lib/paths';
+
+// Keep the legacy /posts URL working without restoring the removed tab.
+return Astro.redirect(withBase('/archive/'));
 ---
