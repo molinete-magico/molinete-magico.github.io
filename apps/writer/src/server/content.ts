@@ -73,11 +73,45 @@ export function today(): string {
 //   content/posts/<slug>.md                (sem imagens)
 //   content/posts/<slug>/index.md          (post-pasta, com imagens junto)
 // Esta função resolve qual dos dois caminhos existe (ou lança erro).
+async function assertPathWithin(root: string, candidate: string): Promise<void> {
+  const [realRoot, realCandidate] = await Promise.all([
+    fs.realpath(root),
+    fs.realpath(candidate),
+  ]);
+  const relative = path.relative(realRoot, realCandidate);
+  if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error('O caminho solicitado está fora da pasta de conteúdo permitida.');
+  }
+}
+
+// Post IDs are single path segments, not arbitrary relative paths. Keep
+// legacy filenames/slugs (including dots and spaces), but reject traversal.
 export async function resolvePostFile(id: string): Promise<string> {
-  const asFile = path.join(postsRoot(), `${id}.md`);
-  const asFolder = path.join(postsRoot(), id, 'index.md');
-  if (await exists(asFile)) return asFile;
-  if (await exists(asFolder)) return asFolder;
+  if (
+    typeof id !== 'string' ||
+    !id ||
+    id.trim() !== id ||
+    id === '.' ||
+    id === '..' ||
+    id.includes('/') ||
+    id.includes('\\\\') ||
+    id.includes('\\0') ||
+    path.isAbsolute(id)
+  ) {
+    throw new Error('Identificador de post inválido.');
+  }
+
+  const root = postsRoot();
+  const asFile = path.join(root, `${id}.md`);
+  const asFolder = path.join(root, id, 'index.md');
+  if (await exists(asFile)) {
+    await assertPathWithin(root, asFile);
+    return asFile;
+  }
+  if (await exists(asFolder)) {
+    await assertPathWithin(root, asFolder);
+    return asFolder;
+  }
   throw new Error(`Post não encontrado: ${id}`);
 }
 
@@ -128,6 +162,7 @@ async function readImageFromFolder(folder: string, filename: string): Promise<{ 
   const contentType = imageContentType(filename);
   const imagePath = path.join(folder, filename);
   if (!(await exists(imagePath))) throw new Error('Imagem não encontrada.');
+  await assertPathWithin(folder, imagePath);
   return { buffer: await fs.readFile(imagePath), contentType };
 }
 
@@ -462,6 +497,7 @@ async function projectFile(id: string): Promise<string> {
   const slug = safeSegment(id, 'projeto');
   const file = path.join(projectsRoot(), slug, 'project.md');
   if (!(await exists(file))) throw new Error(`Projeto não encontrado: ${slug}`);
+  await assertPathWithin(projectsRoot(), file);
   return file;
 }
 
