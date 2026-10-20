@@ -200,7 +200,8 @@ export class BlockEditor {
 
   setMarkdown(markdown: string): void {
     const html = marked.parse(markdown || '', { async: false });
-    this.canvas.innerHTML = DOMPurify.sanitize(typeof html === 'string' ? html : String(html));
+    const sanitized = DOMPurify.sanitize(typeof html === 'string' ? html : String(html));
+    this.canvas.innerHTML = sanitized || '<p><br></p>';
   }
 
   getMarkdown(): string {
@@ -220,7 +221,7 @@ export class BlockEditor {
     const anchor = selection.anchorNode;
     const block = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)
       ?.closest('p, div, h1, h2, h3, h4');
-    if (!block || !this.canvas.contains(block)) return;
+    if (!block || block === this.canvas || !this.canvas.contains(block)) return;
 
     // Only convert a command when the caret is at the end of a plain, otherwise empty block.
     const text = block.textContent ?? '';
@@ -231,7 +232,7 @@ export class BlockEditor {
 
     const heading = /^(#{1,3})$/.exec(text);
     const unordered = /^[-+*]$/.test(text);
-    const ordered = /^1\\.$/.test(text);
+    const ordered = /^1\.$/.test(text);
     const quote = text === '>';
     const codeFence = text === '```';
 
