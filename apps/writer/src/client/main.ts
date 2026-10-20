@@ -306,7 +306,7 @@ function currentBody(): string {
 
 function imageUrlForMarkdown(src: string): string {
   if (!src || /^(?:[a-z]+:|\/\/|\/|#)/i.test(src)) return src;
-  const name = src.split(/[?#]/, 1)[0];
+  const name = src.split(/[?#]/, 1)[0].replace(/^\.\//, '');
   if (!name || name.includes('..') || name.includes('/')) return src;
   const query = 'name=' + encodeURIComponent(name);
   if (state.projectMode) {
