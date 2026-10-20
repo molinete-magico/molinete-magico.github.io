@@ -618,9 +618,9 @@ function showSettings() {
   commitButton.textContent = 'Criar commit local';
   $('.settings-actions')!.append(commitButton);
   commitButton.addEventListener('click', async () => {
-    const message = window.prompt('Mensagem do commit:', 'writer: salvar alterações');
-    if (!message?.trim()) return;
-    try { await api('POST', '/api/git/commit', { message: message.trim() }); ($('#settings-status')!).textContent = 'Commit criado.'; await loadGitStatus(); }
+    const message = await askText('Criar commit local', 'Mensagem do commit', 'writer: salvar alterações');
+    if (!message) return;
+    try { await api('POST', '/api/git/commit', { message }); ($('#settings-status')!).textContent = 'Commit criado.'; await loadGitStatus(); }
     catch (err) { ($('#settings-status')!).textContent = (err as Error).message; }
   });
   $('#git-pull')!.addEventListener('click', async () => {
