@@ -67,6 +67,23 @@ function persistRecovery() {
   const snapshot = {
     id: activeId(), kind: state.kind, projectId: state.currentDoc?.projectId ?? state.currentProject?.id ?? '',
     body: bodyNow(), title: ($('#doc-title') as HTMLInputElement | null)?.value ?? activeTitle(),
+    meta: {
+      'meta-description': ($('#meta-description') as HTMLInputElement | null)?.value,
+      'meta-date': ($('#meta-date') as HTMLInputElement | null)?.value,
+      'meta-draft': ($('#meta-draft') as HTMLInputElement | null)?.checked,
+      'meta-tags': ($('#meta-tags') as HTMLInputElement | null)?.value,
+      'banner-position': ($('#banner-position') as HTMLInputElement | null)?.value,
+      'banner-fit': ($('#banner-fit') as HTMLSelectElement | null)?.value,
+      'project-description': ($('#project-description') as HTMLInputElement | null)?.value,
+      'project-type': ($('#project-type') as HTMLSelectElement | null)?.value,
+      'project-order': ($('#project-order') as HTMLInputElement | null)?.value,
+      'project-published': ($('#project-published') as HTMLInputElement | null)?.checked,
+      'project-homepage': ($('#project-homepage') as HTMLInputElement | null)?.checked,
+      'project-cover': ($('#project-cover') as HTMLInputElement | null)?.value,
+      'project-banner-position': ($('#project-banner-position') as HTMLInputElement | null)?.value,
+      'document-order': ($('#document-order') as HTMLInputElement | null)?.value,
+      'document-published': ($('#document-published') as HTMLInputElement | null)?.checked,
+    },
     timestamp: Date.now(),
   };
   try { localStorage.setItem('writer-v2-recovery', JSON.stringify(snapshot)); } catch { /* storage can be unavailable */ }
@@ -75,11 +92,20 @@ async function restoreRecoveryIfMatches() {
   const raw = localStorage.getItem('writer-v2-recovery');
   if (!raw || !state.kind) return;
   try {
-    const recovery = JSON.parse(raw) as {id?: string; kind?: string; body?: string; title?: string; timestamp?: number};
-    if (recovery.id !== activeId() || recovery.kind !== state.kind) return;
+    const recovery = JSON.parse(raw) as {id?: string; kind?: string; projectId?: string; body?: string; title?: string; timestamp?: number; meta?: Record<string, unknown>};
+    const projectId = state.currentDoc?.projectId ?? state.currentProject?.id ?? '';
+    if (recovery.id !== activeId() || recovery.kind !== state.kind || recovery.projectId !== projectId) return;
     const when = recovery.timestamp ? new Date(recovery.timestamp).toLocaleString('pt-BR') : 'recentemente';
     if (window.confirm('Encontramos uma recuperação local de ' + when + '. Restaurar o texto que ainda não havia sido salvo?')) {
       ($('#doc-title') as HTMLInputElement).value = recovery.title ?? activeTitle();
+      const recoverableFields = ['meta-description','meta-date','meta-draft','meta-tags','banner-position','banner-fit','project-description','project-type','project-order','project-published','project-homepage','project-cover','project-banner-position','document-order','document-published'];
+      for (const id of recoverableFields) {
+        const field = $('#' + id) as HTMLInputElement | HTMLSelectElement | null;
+        const value = recovery.meta?.[id];
+        if (!field || value === undefined || value === null) continue;
+        if ('checked' in field && typeof value === 'boolean') field.checked = value;
+        else field.value = String(value);
+      }
       state.editor?.setMarkdown(recovery.body ?? '');
       markDirty();
     } else localStorage.removeItem('writer-v2-recovery');
@@ -325,7 +351,9 @@ function bindSlashMenu() {
   canvas.addEventListener('keyup', (event) => {
     const selection = window.getSelection();
     const text = selection?.anchorNode?.textContent ?? '';
-    const open = event.key === '/' && (selection?.anchorOffset === 1 || text.trim() === '/');
+    const offset = selection?.anchorOffset ?? 0;
+    const prefix = text.slice(0, offset);
+    const open = event.key === '/' && /(?:^|\\s)\/$/.test(prefix);
     $('#slash-menu')!.hidden = !open;
   });
 }
@@ -387,7 +415,9 @@ async function saveCurrent(): Promise<boolean> {
       const file: ProjectDocumentMeta = { ...state.currentDoc.file, title, order: Number(($('#document-order') as HTMLInputElement).value) || 0, published: ($('#document-published') as HTMLInputElement).checked };
       state.currentDoc = await api<ProjectDocument>('POST', '/api/project-document/save', { projectId: state.currentDoc.projectId, kind: state.currentDoc.kind, id: state.currentDoc.id, file, body });
     }
-    state.dirty = false; clearRecovery(); await loadCatalog(); renderDocumentTree(); status('Salvo com sucesso');
+    state.dirty = false; clearRecovery(); await loadCatalog(); renderDocumentTree();
+    if ($('#crumb-title')) $('#crumb-title')!.textContent = activeTitle();
+    status('Salvo com sucesso');
     return true;
   } catch (err) { status((err as Error).message, 'error'); return false; }
   finally { state.saving = false; }
