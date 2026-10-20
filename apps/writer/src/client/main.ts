@@ -1325,37 +1325,44 @@ $('#btn-image')!.addEventListener('click', () => {
 });
 
 $('#file-image')!.addEventListener('change', async (e) => {
-  const file = (e.target as HTMLInputElement).files?.[0];
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
-  const form = new FormData();
-  form.append('file', file);
-  let endpoint: string;
-  if (state.projectMode) {
-    const doc = state.currentProjectDoc;
-    if (!doc) {
-      setSaved(false, 'Abra o documento de um projeto antes de adicionar imagens.');
-      (e.target as HTMLInputElement).value = '';
-      return;
+  try {
+    if (!file.type.startsWith('image/') || file.size === 0 || file.size > 15 * 1024 * 1024) {
+      throw new Error('Escolha uma imagem válida de até 15 MB.');
     }
-    form.append('projectId', doc.projectId);
-    form.append('kind', doc.kind);
-    form.append('id', doc.id);
-    endpoint = '/api/project-document/image';
-  } else {
-    if (!state.current) return;
-    endpoint = `/api/post/${encodeURIComponent(state.current.id)}/image`;
+    const uploadFile = await prepareImageForUpload(file);
+    const form = new FormData();
+    form.append('file', uploadFile);
+    let endpoint: string;
+    if (state.projectMode) {
+      const doc = state.currentProjectDoc;
+      if (!doc) throw new Error('Abra o documento de um projeto antes de adicionar imagens.');
+      form.append('projectId', doc.projectId);
+      form.append('kind', doc.kind);
+      form.append('id', doc.id);
+      endpoint = '/api/project-document/image';
+    } else {
+      if (!state.current) throw new Error('Abra um post antes de adicionar imagens.');
+      endpoint = `/api/post/${encodeURIComponent(state.current.id)}/image`;
+    }
+    setSaved(false, 'Enviando imagem...');
+    const res = await fetch(endpoint, { method: 'POST', body: form });
+    const data = await res.json() as { name?: string; alt?: string; error?: string };
+    if (!res.ok || !data.name) throw new Error(data.error ?? 'Não foi possível enviar a imagem.');
+    // Insere a referência no Markdown na posição do cursor.
+    const snippet = `![${(data.alt ?? file.name.replace(/\.[^.]+$/, '')).replace(/\]/g, '\\]')}](${data.name})`;
+    const position = cmView?.state.selection.main.from;
+    if (cmView && position !== undefined) {
+      cmView.dispatch({ changes: { from: position, insert: snippet }, selection: { anchor: position + snippet.length } });
+    }
+    setSaved(false, 'Imagem inserida; salve o documento para guardar a referência.');
+  } catch (error) {
+    setSaved(false, (error as Error).message);
+  } finally {
+    input.value = '';
   }
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    body: form,
-  });
-  const data = await res.json();
-  if (!res.ok) return setSaved(false, data.error);
-  // Insere a referência no Markdown na posição do cursor.
-  const snippet = `![${data.alt ?? file.name}](${data.name})`;
-  cmView?.dispatch({ changes: { from: cmView.state.selection.main.from, insert: snippet }, selection: { anchor: cmView.state.selection.main.from + snippet.length } });
-  (e.target as HTMLInputElement).value = '';
-  setSaved(false, '');
 });
 
 // ------------------------------------------------------------------
