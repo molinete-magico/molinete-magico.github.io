@@ -25,6 +25,8 @@ const state: {
   current: Post | null;
   git: GitStatus | null;
   filter: string;
+  postFilter: 'all' | 'draft' | 'published';
+  expandedProjectIds: string[];
   dirty: { title: boolean; body: boolean; meta: boolean };
   savedAt: Date | null;
   tagsDirty: boolean;
@@ -39,6 +41,8 @@ const state: {
   current: null,
   git: null,
   filter: '',
+  postFilter: 'all',
+  expandedProjectIds: [],
   dirty: { title: false, body: false, meta: false },
   savedAt: null,
   tagsDirty: false,
@@ -133,6 +137,11 @@ app.innerHTML = `
 
   <aside class="sidebar">
     <input id="search" type="search" placeholder="Pesquisar posts..." aria-label="Pesquisar conteúdo" />
+    <nav id="post-filters" class="post-filters" aria-label="Filtrar posts">
+      <button type="button" data-post-filter="all" class="active" aria-pressed="true">Todos</button>
+      <button type="button" data-post-filter="draft" aria-pressed="false">Rascunhos</button>
+      <button type="button" data-post-filter="published" aria-pressed="false">Publicados</button>
+    </nav>
     <div id="project-actions" class="project-actions" hidden>
       <button id="btn-new-chapter" class="ghost tiny">+ capítulo</button>
       <button id="btn-new-supplement" class="ghost tiny">+ complemento</button>
@@ -462,8 +471,10 @@ const saveState = $('#save-state')!;
 function renderList() {
   const q = state.filter.trim().toLowerCase();
   const items = state.posts.filter((p) => {
-    if (!q) return true;
-    return [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q);
+    const matchesStatus = state.postFilter === 'all' ||
+      (state.postFilter === 'draft' ? p.draft : !p.draft);
+    const matchesQuery = !q || [p.title, p.id, ...(p.tags ?? [])].join(' ').toLowerCase().includes(q);
+    return matchesStatus && matchesQuery;
   });
 
   postList.innerHTML = items
@@ -472,8 +483,10 @@ function renderList() {
       <li class="post-item">
         <button class="post-open" data-id="${escapeHtml(p.id)}">
           <span class="dot ${p.draft ? 'draft' : 'pub'}" title="${p.draft ? 'Rascunho' : 'Publicado'}"></span>
-          <span class="post-title">${escapeHtml(p.title || p.id)}</span>
-          <span class="post-date">${formatDate(p.pubDate)}</span>
+          <span class="post-item-copy">
+            <span class="post-title">${escapeHtml(p.title || p.id)}</span>
+            <span class="post-item-meta"><span class="post-status-label">${p.draft ? 'Rascunho' : 'Publicado'}</span><span class="post-date">${formatDate(p.pubDate)}</span></span>
+          </span>
         </button>
         <span class="post-actions">
           <button data-act="dup" data-id="${escapeHtml(p.id)}" title="Duplicar">⧉</button>
@@ -502,6 +515,7 @@ function renderProjectList() {
   );
   projectList.innerHTML = projects.map((project) => {
     const selectedProject = state.currentProject?.id === project.id && state.projectItemKind === 'project';
+    const expanded = state.expandedProjectIds.includes(project.id) || Boolean(q);
     const docs = project.documents.map((doc) => {
       const selected = state.currentProject?.id === project.id &&
         state.currentProjectDoc?.kind === doc.kind && state.currentProjectDoc?.id === doc.id;
@@ -515,12 +529,14 @@ function renderProjectList() {
       </li>`;
     }).join('');
     return `<li class="project-item ${selectedProject ? 'active' : ''}">
-      <button class="project-open" data-project-id="${escapeHtml(project.id)}">
-        <span class="dot ${project.published ? 'pub' : 'draft'}" title="${project.published ? 'Publicado' : 'Rascunho'}"></span>
-        <span class="post-title">${escapeHtml(project.title)}</span>
-        <span class="post-date">${project.type === 'rpg' ? 'RPG' : 'HISTÓRIA'}</span>
-      </button>
-      <ul class="project-doc-list">${docs}</ul>
+      <div class="project-tree-row">
+        <button class="project-expand" type="button" data-toggle-project="${escapeHtml(project.id)}" aria-expanded="${expanded}" aria-label="${expanded ? 'Recolher' : 'Expandir'} ${escapeHtml(project.title)}">${expanded ? '▾' : '▸'}</button>
+        <button class="project-open" data-project-id="${escapeHtml(project.id)}">
+          <span class="dot ${project.published ? 'pub' : 'draft'}" title="${project.published ? 'Publicado' : 'Rascunho'}"></span>
+          <span class="project-copy"><span class="post-title">${escapeHtml(project.title)}</span><span class="post-item-meta"><span class="post-status-label">${project.published ? 'Publicado' : 'Rascunho'}</span><span class="post-date">${project.type === 'rpg' ? 'RPG' : 'HISTÓRIA'}</span></span></span>
+        </button>
+      </div>
+      <ul class="project-doc-list" ${expanded ? '' : 'hidden'}>${docs}</ul>
     </li>`;
   }).join('');
 }
@@ -1175,6 +1191,14 @@ $('#btn-settings')!.addEventListener('click', () => openSettings());
 projectList.addEventListener('click', async (e) => {
   const target = (e.target as HTMLElement).closest('button') as HTMLElement | null;
   if (!target) return;
+  const toggleId = target.getAttribute('data-toggle-project');
+  if (toggleId) {
+    state.expandedProjectIds = state.expandedProjectIds.includes(toggleId)
+      ? state.expandedProjectIds.filter((id) => id !== toggleId)
+      : [...state.expandedProjectIds, toggleId];
+    renderProjectList();
+    return;
+  }
   if (!(await confirmNavigation())) return;
   const projectId = target.getAttribute('data-project-id');
   if (!projectId) return;
@@ -1225,6 +1249,18 @@ search.addEventListener('input', () => {
   state.filter = search.value;
   if (state.projectMode) renderProjectList();
   else renderList();
+});
+
+$('#post-filters')!.addEventListener('click', (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-post-filter]');
+  if (!button) return;
+  state.postFilter = button.dataset.postFilter as typeof state.postFilter;
+  $('#post-filters')!.querySelectorAll<HTMLButtonElement>('[data-post-filter]').forEach((item) => {
+    const active = item === button;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-pressed', String(active));
+  });
+  renderList();
 });
 
 // Marca os campos de metadados como sujos ao editar
