@@ -316,8 +316,8 @@ export class BlockEditor {
     const textNode = anchor as Text;
     const offset = selection.anchorOffset;
     const beforeCaret = textNode.data.slice(0, offset);
-    const bold = /(?:^|[\\s(])?(\\*\\*|__)(\\S(?:.*?\\S)?)\\1$/.exec(beforeCaret);
-    const italic = /\\*([^*\\n]+)\\*$/.exec(beforeCaret);
+    const bold = /(\*\*|__)(\S(?:.*?\S)?)\1$/.exec(beforeCaret);
+    const italic = /\*([^*\n]+)\*$/.exec(beforeCaret);
     const match = bold ?? italic;
     if (!match) return;
 
