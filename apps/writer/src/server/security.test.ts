@@ -11,7 +11,7 @@ test('Writer rejects API requests from a foreign browser origin', async () => {
 });
 
 test('Writer rejects malformed and traversal post identifiers', async () => {
-  for (const id of ['../README.md', '..', '.', 'nested/post', 'nested\\\\post', '/etc/passwd', '\\0']) {
+  for (const id of ['../README.md', '..', '.', 'nested/post', 'nested\\\\post', '/etc/passwd', String.fromCharCode(0)]) {
     await assert.rejects(resolvePostFile(id), /Identificador de post inválido/);
   }
 });
