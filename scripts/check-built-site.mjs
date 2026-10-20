@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 const dist = path.join(root, 'apps', 'blog', 'dist');
-const basePath = (process.env.BASE_PATH ?? '/blog').replace(/\\/$/, '') || '';
+const basePath = (process.env.BASE_PATH ?? '/blog').replace(/\/$/, '') || '';
 const errors = [];
 
 async function walk(dir) {
@@ -52,14 +52,14 @@ async function checkReference(value, sourceFile, sourceUrl, label) {
 
   let relative;
   if (basePath && pathname === basePath) relative = '';
-  else if (!basePath) relative = pathname.replace(/^\\//, '');
+  else if (!basePath) relative = pathname.replace(/^\//, '');
   else if (pathname.startsWith(`${basePath}/`)) relative = pathname.slice(basePath.length + 1);
   else {
     errors.push(`${path.relative(root, sourceFile)}: link local fora do base path (${basePath}): ${value}`);
     return;
   }
 
-  relative = relative.replace(/^\\/+/, '');
+  relative = relative.replace(/^\/+/, '');
   let target = path.resolve(dist, relative || 'index.html');
   if (pathname.endsWith('/') || !path.extname(target)) target = path.join(target, 'index.html');
   const relativeTarget = path.relative(dist, target);
@@ -87,14 +87,14 @@ for (const file of files) {
   if (extension === '.html') {
     const html = await fs.readFile(file, 'utf8');
     const sourceUrl = publicUrlForFile(file);
-    const pattern = /\\b(href|src)\\s*=\\s*["']([^"']+)["']/gi;
+    const pattern = /\b(href|src)\s*=\s*["']([^"']+)["']/gi;
     for (const match of html.matchAll(pattern)) {
       await checkReference(match[2].trim(), file, sourceUrl, match[1].toLowerCase());
     }
   } else if (extension === '.css') {
     const css = await fs.readFile(file, 'utf8');
     const sourceUrl = publicUrlForFile(file);
-    const pattern = /url\\(\\s*(['"]?)(.*?)\\1\\s*\\)/gi;
+    const pattern = /url\(\s*(['"]?)(.*?)\1\s*\)/gi;
     for (const match of css.matchAll(pattern)) {
       await checkReference(match[2].trim(), file, sourceUrl, 'url() CSS');
     }
