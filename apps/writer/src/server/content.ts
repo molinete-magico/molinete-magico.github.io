@@ -400,10 +400,12 @@ export async function saveImage(postId: string, filename: string, buffer: Buffer
   if (folder === postsRoot()) {
     folder = path.join(postsRoot(), postId);
     await fs.mkdir(folder, { recursive: true });
+    await assertPathWithin(postsRoot(), folder);
     const destination = path.join(folder, 'index.md');
     if (await exists(destination)) throw new Error('Já existe uma pasta para este post; resolva o conflito antes de adicionar imagens.');
     await fs.rename(postFile, destination);
   }
+  await assertPathWithin(postsRoot(), folder);
   let safe = stem + extension;
   let suffix = 2;
   while (await exists(path.join(folder, safe))) safe = stem + '-' + suffix++ + extension;
@@ -561,6 +563,7 @@ async function listProjectDocuments(projectId: string): Promise<ProjectDocumentL
   const result: ProjectDocumentListItem[] = [];
   const readOne = async (file: string, kind: ProjectDocumentKind, id: string) => {
     if (!(await exists(file))) return;
+    await assertPathWithin(projectsRoot(), file);
     const parsed = parseMarkdownFile(await fs.readFile(file, 'utf-8'));
     const meta = documentMeta(parsed.data, id);
     result.push({
@@ -713,6 +716,7 @@ export async function saveProjectImage(projectId: string, filename: string, buff
   const stem = path.basename(filename, extension).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'imagem';
   const folder = path.dirname(markdownPath);
+  await assertPathWithin(projectsRoot(), folder);
   let name = stem + extension;
   let suffix = 2;
   while (await exists(path.join(folder, name))) name = stem + '-' + suffix++ + extension;
@@ -730,6 +734,7 @@ export async function saveProjectDocumentImage(
   await projectFile(projectId);
   const markdownPath = documentLocation(projectId, kind, id);
   if (!(await exists(markdownPath))) throw new Error('Documento não encontrado.');
+  await assertPathWithin(projectsRoot(), markdownPath);
   const extension = path.extname(filename).toLowerCase();
   if (!['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif'].includes(extension)) {
     throw new Error('Formato inválido. Use JPG, PNG, WEBP, GIF ou AVIF.');
@@ -742,6 +747,7 @@ export async function saveProjectDocumentImage(
     .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')
     .slice(0, 70) || 'imagem';
   const folder = path.dirname(markdownPath);
+  await assertPathWithin(projectsRoot(), folder);
   let name = `${stem}${extension}`;
   let suffix = 2;
   while (await exists(path.join(folder, name))) name = `${stem}-${suffix++}${extension}`;
@@ -757,6 +763,7 @@ export async function readProjectDocument(
   await projectFile(projectId);
   const filePath = documentLocation(projectId, kind, id);
   if (!(await exists(filePath))) throw new Error('Documento não encontrado.');
+  await assertPathWithin(projectsRoot(), filePath);
   const parsed = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
   return {
     projectId,
@@ -799,6 +806,7 @@ export async function saveProjectDocument(
 ): Promise<ProjectDocument> {
   const filePath = documentLocation(projectId, kind, id);
   if (!(await exists(filePath))) throw new Error('Documento não encontrado.');
+  await assertPathWithin(projectsRoot(), filePath);
   const existing = parseMarkdownFile(await fs.readFile(filePath, 'utf-8'));
   const next: ProjectDocumentMeta = {
     ...existing.data,
