@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 import type { Post, PostListItem, PostMeta, Project, ProjectListItem, ProjectDocument, ProjectDocumentKind, ProjectMeta, ProjectDocumentMeta, GitStatus } from '../shared/types';
 
 type OpenItem = 'post' | 'project' | ProjectDocumentKind;
-type Palette = 'site' | 'paper';
+type Palette = 'site' | 'paper' | 'mono' | 'graphite';
 const $ = <T extends HTMLElement>(selector: string, root: ParentNode = document) => root.querySelector<T>(selector);
 const app = $('#app')!;
 const state: {
@@ -17,7 +17,7 @@ const state: {
 } = {
   posts: [], projects: [], currentPost: null, currentProject: null, currentDoc: null,
   kind: null, editor: null, dirty: false, saving: false,
-  palette: (localStorage.getItem('writer-v2-palette') as Palette) || 'site',
+  palette: (['site', 'paper', 'mono', 'graphite'] as Palette[]).includes(localStorage.getItem('writer-v2-palette') as Palette) ? localStorage.getItem('writer-v2-palette') as Palette : 'site',
   focus: false, preview: false, git: null, tags: [], bannerAvailable: false,
 };
 
@@ -169,9 +169,23 @@ function confirmLeave(): boolean {
   }
   return leave;
 }
+function paletteLabel(palette: Palette): string {
+  return ({ site: 'Verde-petróleo', paper: 'Papel claro', mono: 'Preto e branco', graphite: 'Cinza escuro' } as Record<Palette, string>)[palette];
+}
+function applyPalette(palette: Palette) {
+  state.palette = palette;
+  localStorage.setItem('writer-v2-palette', palette);
+  document.documentElement.dataset.writerPalette = palette;
+  const toggle = $('#palette-toggle');
+  if (toggle) {
+    toggle.title = 'Paleta atual: ' + paletteLabel(palette) + ' — clique para alternar';
+    toggle.setAttribute('aria-label', 'Paleta atual: ' + paletteLabel(palette) + '. Alternar paleta de escrita');
+  }
+}
 function renderShell() {
   app.innerHTML = '<header class="v2-topbar"><a class="brand" href="/v2" id="brand-home" aria-label="Voltar à biblioteca"><span class="brand-mark">M.</span><span>WRITER<span class="brand-sub"> / ATELIÊ DE ESCRITA</span></span></a><div class="topbar-tools"><span id="status-line" role="status" aria-live="polite">Conectando ao arquivo…</span><button class="icon-button" id="palette-toggle" type="button" title="Alternar paleta de escrita" aria-label="Alternar paleta de escrita">◐</button><button class="icon-button" id="focus-toggle" type="button" title="Modo foco" aria-label="Modo foco">⤢</button><button class="icon-button" id="settings-toggle" type="button" title="Configurações do Writer" aria-label="Configurações">⚙</button></div></header><main id="v2-main"></main><div id="dialog-root"></div>';
   document.documentElement.dataset.writerPalette = 'site';
+  applyPalette('site');
   $('#brand-home')!.addEventListener('click', async (event) => {
     event.preventDefault();
     if (!confirmLeave()) return;
@@ -179,10 +193,10 @@ function renderShell() {
   });
   $('#palette-toggle')!.addEventListener('click', () => {
     if (!state.kind) { status('A paleta neutra fica disponível durante a escrita.', 'warn'); return; }
-    state.palette = state.palette === 'site' ? 'paper' : 'site';
-    localStorage.setItem('writer-v2-palette', state.palette);
-    document.documentElement.dataset.writerPalette = state.palette;
-    status(state.palette === 'paper' ? 'Paleta neutra para escrita' : 'Paleta original do site');
+    const palettes: Palette[] = ['site', 'paper', 'mono', 'graphite'];
+    state.palette = palettes[(palettes.indexOf(state.palette) + 1) % palettes.length];
+    applyPalette(state.palette);
+    status('Paleta de escrita: ' + paletteLabel(state.palette));
   });
   $('#focus-toggle')!.addEventListener('click', () => toggleFocus());
   $('#settings-toggle')!.addEventListener('click', () => showSettings());
@@ -660,8 +674,17 @@ async function loadGitStatus() {
 }
 function showSettings() {
   const root = $('#dialog-root')!;
-  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">Configurações do Writer</h2><button id="close-settings" class="icon-button" aria-label="Fechar">×</button></div><p>Estas ações operam no repositório local configurado para o Writer.</p><label>Diretório do repositório<input id="workspace-path" placeholder="Deixe vazio para abrir o seletor de pasta"></label><div class="settings-actions"><button class="button" id="set-workspace">Selecionar workspace</button><button class="button" id="git-pull">Atualizar do Git</button><button class="button" id="git-push">Enviar commits</button></div><p id="settings-status" role="status"></p></section></div>';
+  root.innerHTML = '<div class="dialog-backdrop"><section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">Configurações do Writer</h2><button id="close-settings" class="icon-button" aria-label="Fechar">×</button></div><p>Estas ações operam no repositório local configurado para o Writer.</p><label>Paleta do espaço de escrita<select id="settings-palette" ' + (!state.kind ? 'disabled' : '') + '><option value="site">Verde-petróleo do site</option><option value="paper">Papel claro</option><option value="mono">Preto e branco</option><option value="graphite">Cinza escuro</option></select></label><label>Diretório do repositório<input id="workspace-path" placeholder="Deixe vazio para abrir o seletor de pasta"></label><div class="settings-actions"><button class="button" id="set-workspace">Selecionar workspace</button><button class="button" id="git-pull">Atualizar do Git</button><button class="button" id="git-push">Enviar commits</button></div><p id="settings-status" role="status"></p></section></div>';
   $('#close-settings')!.addEventListener('click', () => root.replaceChildren());
+  const paletteSelect = $('#settings-palette') as HTMLSelectElement | null;
+  if (paletteSelect) {
+    paletteSelect.value = state.palette;
+    paletteSelect.addEventListener('change', () => {
+      if (!state.kind) return;
+      applyPalette(paletteSelect.value as Palette);
+      status('Paleta de escrita: ' + paletteLabel(state.palette));
+    });
+  }
   void api<{workspace:{root:string}}>('GET', '/api/settings').then((settings) => {
     const input = $('#workspace-path') as HTMLInputElement | null;
     if (input && settings.workspace?.root) input.value = settings.workspace.root;
