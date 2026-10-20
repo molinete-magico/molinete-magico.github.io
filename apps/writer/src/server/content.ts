@@ -115,6 +115,38 @@ export async function readPostBanner(id: string): Promise<{
   throw new Error('Este post não possui banner.');
 }
 
+function imageContentType(filename: string): string {
+  const extension = path.extname(filename).toLowerCase();
+  const types: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.avif': 'image/avif' };
+  const type = types[extension];
+  if (!type) throw new Error('Formato de imagem não suportado.');
+  return type;
+}
+
+async function readImageFromFolder(folder: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
+  if (!filename || filename !== path.basename(filename) || filename === '.' || filename === '..') throw new Error('Nome de imagem inválido.');
+  const contentType = imageContentType(filename);
+  const imagePath = path.join(folder, filename);
+  if (!(await exists(imagePath))) throw new Error('Imagem não encontrada.');
+  return { buffer: await fs.readFile(imagePath), contentType };
+}
+
+export async function readPostImage(postId: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
+  const postFile = await resolvePostFile(postId);
+  const folder = path.dirname(postFile) === postsRoot() ? path.join(postsRoot(), postId) : path.dirname(postFile);
+  return readImageFromFolder(folder, filename);
+}
+
+export async function readProjectImage(projectId: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
+  const file = await projectFile(projectId);
+  return readImageFromFolder(path.dirname(file), filename);
+}
+
+export async function readProjectDocumentImage(projectId: string, kind: ProjectDocumentKind, id: string, filename: string): Promise<{ buffer: Buffer; contentType: string }> {
+  await projectFile(projectId);
+  return readImageFromFolder(path.dirname(documentLocation(projectId, kind, id)), filename);
+}
+
 async function exists(p: string): Promise<boolean> {
   try {
     await fs.access(p);
@@ -332,9 +364,16 @@ export async function savePostBanner(postId: string, filename: string, buffer: B
 
 // Guarda uma imagem dentro da pasta do post e devolve o nome do arquivo.
 export async function saveImage(postId: string, filename: string, buffer: Buffer): Promise<string> {
-  const safe = filename.replace(/[^a-zA-Z0-9._-]/g, '-');
+  const extension = path.extname(filename).toLowerCase();
+  imageContentType('image' + extension);
+  if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) throw new Error('A imagem deve ter até 15 MB.');
+  const stem = path.basename(filename, extension).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'imagem';
   const folder = path.join(postsRoot(), postId);
   await fs.mkdir(folder, { recursive: true });
+  let safe = stem + extension;
+  let suffix = 2;
+  while (await exists(path.join(folder, safe))) safe = stem + '-' + suffix++ + extension;
   await fs.writeFile(path.join(folder, safe), buffer);
   return safe;
 }
@@ -612,6 +651,21 @@ export async function saveProjectBanner(
   ]);
 
   return `/projects/${slug}/${name}`;
+}
+
+export async function saveProjectImage(projectId: string, filename: string, buffer: Buffer): Promise<string> {
+  const markdownPath = await projectFile(projectId);
+  const extension = path.extname(filename).toLowerCase();
+  imageContentType('image' + extension);
+  if (buffer.length === 0 || buffer.length > 15 * 1024 * 1024) throw new Error('A imagem deve ter até 15 MB.');
+  const stem = path.basename(filename, extension).normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'imagem';
+  const folder = path.dirname(markdownPath);
+  let name = stem + extension;
+  let suffix = 2;
+  while (await exists(path.join(folder, name))) name = stem + '-' + suffix++ + extension;
+  await fs.writeFile(path.join(folder, name), buffer);
+  return name;
 }
 
 export async function saveProjectDocumentImage(
