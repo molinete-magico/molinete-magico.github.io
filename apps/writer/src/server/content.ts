@@ -376,10 +376,12 @@ export async function savePostBanner(postId: string, filename: string, buffer: B
   if (path.dirname(postFile) === postsRoot()) {
     folder = path.join(postsRoot(), postId);
     await fs.mkdir(folder, { recursive: true });
+    await assertPathWithin(postsRoot(), folder);
     const destination = path.join(folder, 'index.md');
     if (await exists(destination)) throw new Error('Já existe uma pasta para este post; resolva o conflito antes de adicionar o banner.');
     await fs.rename(postFile, destination);
   }
+  await assertPathWithin(postsRoot(), folder);
 
   for (const oldName of ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg', 'banner.avif']) {
     await fs.rm(path.join(folder, oldName), { force: true });
@@ -697,9 +699,17 @@ export async function saveProjectBanner(
 
   const name = `banner${extension}`;
   const contentDir = path.join(projectsRoot(), slug);
-  const publicDir = path.join(repoRoot(), 'apps', 'blog', 'public', 'projects', slug);
+  const publicRoot = path.join(repoRoot(), 'apps', 'blog', 'public', 'projects');
+  const publicDir = path.join(publicRoot, slug);
   await fs.mkdir(contentDir, { recursive: true });
+  await assertPathWithin(repoRoot(), contentDir);
   await fs.mkdir(publicDir, { recursive: true });
+  await assertPathWithin(repoRoot(), publicDir);
+  // Unlink an existing banner first so a malicious/stale symlink is never followed.
+  await Promise.all([
+    fs.rm(path.join(contentDir, name), { force: true }),
+    fs.rm(path.join(publicDir, name), { force: true }),
+  ]);
   await Promise.all([
     fs.writeFile(path.join(contentDir, name), buffer),
     fs.writeFile(path.join(publicDir, name), buffer),
