@@ -12,5 +12,8 @@ Nessa academia os estudantes já são bruxos iniciados (ou seja, já tem a fora�
 
 Todos os anos, a academia recebe cerca de 300 estudantes, que inicialmente são filtrados até sobrarem 75. Todos os anos a filtragem muda, sendo impossível saber qual será o método do ano que estão entrando.
 
+## Mapa interativo
 
-## Costumes e
+> https://molinete-magico.github.io/blog/mapas/grande-engenho.html
+
+O mapa do instituto completo (fiz rapidinho em JS, se estiver ruim ignore).
