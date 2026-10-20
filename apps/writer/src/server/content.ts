@@ -784,6 +784,7 @@ export async function createProjectDocument(
   const base = slugify(title) || (kind === 'chapter' ? 'novo-capitulo' : 'novo-complemento');
   const folder = path.join(projectsRoot(), safeSegment(projectId, 'projeto'), kind === 'chapter' ? 'chapters' : 'supplements');
   await fs.mkdir(folder, { recursive: true });
+  await assertPathWithin(projectsRoot(), folder);
   let id = base;
   let suffix = 2;
   while (await exists(path.join(folder, `${id}.md`))) id = `${base}-${suffix++}`;
