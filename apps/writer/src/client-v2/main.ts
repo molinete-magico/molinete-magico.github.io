@@ -228,7 +228,7 @@ function clearRecovery() {
     const recovery = JSON.parse(raw);
     const projectId = state.currentDoc?.projectId ?? state.currentProject?.id ?? '';
     if (recovery.id === activeId() && recovery.kind === state.kind && (recovery.projectId ?? '') === projectId) storageRemove('writer-v2-recovery');
-  } catch { localStorage.removeItem('writer-v2-recovery'); }
+  } catch { storageRemove('writer-v2-recovery'); }
 }
 function confirmLeave(): boolean {
   if (!state.dirty) return true;
