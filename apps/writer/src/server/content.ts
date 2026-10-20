@@ -94,8 +94,8 @@ export async function resolvePostFile(id: string): Promise<string> {
     id === '.' ||
     id === '..' ||
     id.includes('/') ||
-    id.includes('\\\\') ||
-    id.includes('\\0') ||
+    id.includes('\\') ||
+    id.includes('\0') ||
     path.isAbsolute(id)
   ) {
     throw new Error('Identificador de post inválido.');
