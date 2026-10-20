@@ -2570,3 +2570,57 @@ body {
   .library-item-main time { grid-column: 2; grid-row: 2; }
   .library-open-indicator { display: none; }
 }
+
+
+/* Markdown renderizado: mesma escala e ritmo tipográfico do site público. */
+:root {
+  --text-primary: var(--text);
+  --text-secondary: var(--green-500);
+  --border-rest: var(--green-800);
+  --border-hover: var(--green-500);
+  --border-focus: var(--green-300);
+  --glow-soft: rgba(62, 207, 142, 0.35);
+  --selection-bg: rgba(34, 160, 110, 0.4);
+  --fs-body: 1rem;
+  --fs-small: 0.8125rem;
+  --fs-h1: clamp(1.75rem, 1.35rem + 1.6vw, 2.75rem);
+  --fs-h2: clamp(1.35rem, 1.15rem + 1vw, 1.9rem);
+  --fs-h3: clamp(1.1rem, 1rem + 0.4vw, 1.3rem);
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+}
+.preview {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.65;
+  color: var(--text-primary);
+}
+.preview.prose h1, .preview.prose h2, .preview.prose h3, .preview.prose h4 {
+  font-family: var(--font-sans);
+  color: var(--accent);
+  line-height: 1.25;
+  text-shadow: 0 0 8px var(--glow-soft);
+}
+.preview.prose h1 { font-size: var(--fs-h1); margin: 0 0 var(--space-3); }
+.preview.prose h2 {
+  font-size: var(--fs-h2);
+  margin: var(--space-8) 0 0;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-strong);
+}
+.preview.prose h3 { font-size: var(--fs-h3); margin: var(--space-6) 0 0; color: var(--text-primary); }
+.preview.prose h4 { font-size: 1rem; margin: var(--space-4) 0 0; }
+.preview.prose p, .preview.prose ul, .preview.prose ol, .preview.prose blockquote, .preview.prose pre, .preview.prose table {
+  margin-top: var(--space-4);
+}
+.preview.prose ul, .preview.prose ol { padding-left: var(--space-6); }
+.preview.prose li { margin-top: var(--space-1); }
+.preview.prose a { color: var(--text-secondary); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.preview.prose a:hover { color: var(--accent); text-shadow: 0 0 6px var(--glow-soft); }
+.preview.prose strong { color: var(--text-primary); }
+.preview.prose blockquote { border-left: 4px solid var(--accent); background: var(--bg-elevated); padding: var(--space-3) var(--space-4); color: var(--text-secondary); }
+.preview.prose code { font-family: var(--font-mono); font-size: .86em; background: var(--code-bg); color: var(--text-primary); padding: .15em .4em; }
