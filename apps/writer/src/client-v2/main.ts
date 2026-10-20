@@ -77,7 +77,7 @@ async function api<T>(method: string, url: string, body?: unknown): Promise<T> {
       ? String(result.error).trim()
       : '';
     const textError = !isJson && contentType.includes('text/plain') && typeof result === 'string'
-      ? result.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim()
+      ? result.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
       : '';
     const detail = jsonError || textError;
 
