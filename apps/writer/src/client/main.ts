@@ -257,8 +257,11 @@ blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
 }, async (file) => {
   if (!file.type.startsWith('image/')) { setSaved(false, 'O arquivo precisa ser uma imagem.'); return null; }
   if (file.size === 0 || file.size > 15 * 1024 * 1024) { setSaved(false, 'A imagem deve ter até 15 MB.'); return null; }
+  let uploadFile: File;
+  try { uploadFile = await prepareImageForUpload(file); }
+  catch (error) { setSaved(false, (error as Error).message); return null; }
   const form = new FormData();
-  form.append('file', file);
+  form.append('file', uploadFile);
   let endpoint: string;
   if (state.projectMode) {
     if (state.currentProjectDoc) {
@@ -279,7 +282,7 @@ blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
     const data = await response.json() as { name?: string; alt?: string; error?: string };
     if (!response.ok || !data.name) throw new Error(data.error ?? 'Não foi possível enviar a imagem.');
     setSaved(false, 'Imagem enviada; salve o documento para guardar a referência.');
-    return { name: data.name, alt: data.alt ?? file.name };
+    return { name: data.name, alt: data.alt ?? file.name.replace(/\.[^.]+$/, '') };
   } catch (error) { setSaved(false, (error as Error).message); return null; }
 }, imageUrlForMarkdown);
 editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
@@ -302,6 +305,35 @@ const editorTheme = EditorView.theme(
 
 function currentBody(): string {
   return cmView?.state.doc.toString() ?? '';
+}
+
+async function prepareImageForUpload(file: File): Promise<File> {
+  // GIFs keep their original bytes so animated images remain animated.
+  if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) return file;
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) {
+    throw new Error('Formato não suportado. Use JPG, PNG, WebP, AVIF ou GIF.');
+  }
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error('Não foi possível abrir essa imagem para convertê-la em WebP.');
+  }
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Não foi possível preparar a imagem.');
+    context.drawImage(bitmap, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((result) => result ? resolve(result) : reject(new Error('Falha ao converter a imagem para WebP.')), 'image/webp', 0.82);
+    });
+    const base = file.name.replace(/\.[^.]+$/, '').normalize('NFC') || 'imagem';
+    return new File([blob], base + '.webp', { type: 'image/webp', lastModified: Date.now() });
+  } finally {
+    bitmap.close();
+  }
 }
 
 function imageUrlForMarkdown(src: string): string {
