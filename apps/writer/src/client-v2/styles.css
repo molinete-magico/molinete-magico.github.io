@@ -136,3 +136,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .action-menu-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .8rem; border: 1px solid var(--border-rest); background: var(--bg); color: var(--text-primary); text-align: left; }
 .action-menu-item:hover { border-color: var(--accent); background: var(--green-950); }
 .action-menu-item.danger-text { color: #d66; }
+
+.action-dialog-overlay { z-index: 60; }
+.action-dialog-overlay .settings-dialog { z-index: 61; }
