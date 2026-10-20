@@ -145,7 +145,10 @@ export class BlockEditor {
       this.emitChange();
     });
     this.canvas.addEventListener('input', () => {
-      if (!this.composing) this.emitChange();
+      if (!this.composing) {
+        this.handleInlineMarkdownShortcut();
+        this.emitChange();
+      }
     });
     this.canvas.addEventListener('keydown', (event) => this.handleMarkdownShortcut(event));
     this.root.querySelectorAll<HTMLButtonElement>('[data-command]').forEach((button) => {
@@ -214,9 +217,37 @@ export class BlockEditor {
 
   private handleMarkdownShortcut(event: KeyboardEvent): void {
     if (this.composing || event.ctrlKey || event.metaKey || event.altKey) return;
-    if (event.key !== ' ' && event.key !== 'Enter') return;
 
     const selection = window.getSelection();
+    if (event.key === 'Enter' && !event.shiftKey && selection?.isCollapsed && selection.anchorNode) {
+      const anchor = selection.anchorNode;
+      const currentBlock = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)
+        ?.closest('p, div, h1, h2, h3, h4');
+      const quote = currentBlock?.closest('blockquote');
+      if (currentBlock && quote && this.canvas.contains(quote) && !(currentBlock.textContent ?? '').trim()) {
+        event.preventDefault();
+        const paragraph = document.createElement('p');
+        paragraph.append(document.createElement('br'));
+        const hasEarlierQuoteContent = Array.from(quote.childNodes).some((node) =>
+          node !== currentBlock && ((node.textContent ?? '').trim().length > 0),
+        );
+        if (hasEarlierQuoteContent) {
+          currentBlock.remove();
+          quote.after(paragraph);
+        } else {
+          quote.replaceWith(paragraph);
+        }
+        const range = document.createRange();
+        range.selectNodeContents(paragraph);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        this.emitChange();
+        return;
+      }
+    }
+
+    if (event.key !== ' ' && event.key !== 'Enter') return;
     if (!selection?.isCollapsed || !selection.anchorNode) return;
     const anchor = selection.anchorNode;
     const block = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)
@@ -275,6 +306,39 @@ export class BlockEditor {
     selection.removeAllRanges();
     selection.addRange(range);
     this.emitChange();
+  }
+
+  private handleInlineMarkdownShortcut(): void {
+    const selection = window.getSelection();
+    const anchor = selection?.anchorNode;
+    if (!selection?.isCollapsed || !anchor || anchor.nodeType !== Node.TEXT_NODE) return;
+
+    const textNode = anchor as Text;
+    const offset = selection.anchorOffset;
+    const beforeCaret = textNode.data.slice(0, offset);
+    const bold = /(?:^|[\\s(])?(\\*\\*|__)(\\S(?:.*?\\S)?)\\1$/.exec(beforeCaret);
+    const italic = /\\*([^*\\n]+)\\*$/.exec(beforeCaret);
+    const match = bold ?? italic;
+    if (!match) return;
+
+    const marker = bold ? match[1] : '*';
+    const value = bold ? match[2] : match[1];
+    const start = offset - match[0].length;
+    const contentStart = start + marker.length;
+    const contentEnd = offset - marker.length;
+    if (contentEnd <= contentStart) return;
+
+    const element = document.createElement(bold ? 'strong' : 'em');
+    element.textContent = textNode.data.slice(contentStart, contentEnd);
+    const range = document.createRange();
+    range.setStart(textNode, start);
+    range.setEnd(textNode, offset);
+    range.deleteContents();
+    range.insertNode(element);
+    range.setStartAfter(element);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
   }
 
   private emitChange(): void {
