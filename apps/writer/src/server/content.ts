@@ -489,7 +489,7 @@ async function projectFile(id: string): Promise<string> {
   return file;
 }
 
-function parseFrontmatter(text: string): { content: string; data: Record<string, unknown> } {
+export function parseFrontmatter(text: string): { content: string; data: Record<string, unknown> } {
   // Front matter in this repository is YAML delimited by standalone --- lines.
   // Parse it directly with js-yaml v4, avoiding the legacy gray-matter/js-yaml v3 chain.
   const source = text.startsWith("\uFEFF") ? text.slice(1) : text;
