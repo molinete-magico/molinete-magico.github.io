@@ -596,8 +596,12 @@ async function publishCurrent() {
     if (state.kind === 'post' && state.currentPost) {
       const file = { ...currentPostMeta(), draft: false };
       ($('#meta-draft') as HTMLInputElement).checked = false;
+      // Keep the requested publication state recoverable if publishing fails after the local save.
+      markDirty();
       await api('POST', '/api/publish', { id: state.currentPost.id, file, body: bodyNow(), changeDate: file.pubDate !== state.currentPost.file.pubDate });
       state.currentPost.file = { ...state.currentPost.file, ...file };
+      state.dirty = false;
+      clearRecovery();
     } else {
       const label = state.kind === 'project' ? 'project: ' + activeTitle() : 'project document: ' + activeTitle();
       await api('POST', '/api/git/commit', { message: label });
