@@ -28,6 +28,12 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:var(--text-primary);font-family:var(--font-sans);font-size:14px;line-height:1.6}
+#v2-main{min-height:calc(100vh - var(--topbar-h))}
+.library-page{width:min(calc(100% - 2rem),1100px);margin:0 auto;padding:3rem 0 4rem}
+/* Keep the writing area in a centered, readable frame instead of stretching edge to edge. */
+.workspace{width:min(100%,1280px);margin:0 auto;min-height:calc(100vh - var(--topbar-h))}
+.workspace-bar{padding-left:clamp(1rem,3vw,2rem);padding-right:clamp(1rem,3vw,2rem)}
+.writing-stage{padding:clamp(1rem,3vw,2.5rem) clamp(1rem,4vw,3rem) 4rem}
 body{min-height:100vh;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 ::selection{background:rgba(34,160,110,.4);color:var(--text-primary)}
 button,input,select,textarea{font:inherit}
