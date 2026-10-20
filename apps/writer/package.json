@@ -8,7 +8,8 @@
     "check": "tsc --noEmit",
     "build:client": "esbuild src/client/main.ts --bundle --outdir=dist/client --format=esm --target=es2020 --minify",
     "build": "npm run build:client && node build.mjs",
-    "start": "node dist/writer.cjs"
+    "start": "node dist/writer.cjs",
+    "test": "tsx --test src/server/security.test.ts"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",
