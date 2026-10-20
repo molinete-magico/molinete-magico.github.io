@@ -6,6 +6,7 @@
 // que escreve os arquivos Markdown e executa o Git.
 
 import './styles.css';
+import { BlockEditor } from './block-editor';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState, Prec } from '@codemirror/state';
 import { markdown, markdownKeymap } from '@codemirror/lang-markdown';
@@ -95,6 +96,24 @@ function escapeHtml(s: string) {
 // ------------------------------------------------------------------
 // Renderização da interface (DOM puro)
 // ------------------------------------------------------------------
+let cmView: EditorView | null = null;
+let visualMode = false;
+let blockEditor: BlockEditor | null = null;
+let splitEditor: HTMLElement;
+let visualEditorShell: HTMLElement;
+let editorModeButton: HTMLButtonElement;
+
+function setEditorMode(useVisual: boolean) {
+  visualMode = useVisual;
+  if (visualMode) blockEditor?.setMarkdown(currentBody());
+  splitEditor.hidden = visualMode;
+  visualEditorShell.hidden = !visualMode;
+  editorModeButton.setAttribute('aria-pressed', String(visualMode));
+  editorModeButton.textContent = visualMode ? 'Voltar ao Markdown' : 'Usar editor visual';
+  if (visualMode) blockEditor?.focus();
+  else cmView?.requestMeasure();
+}
+
 const app = $('#app')!;
 app.innerHTML = `
   <header class="topbar">
@@ -199,6 +218,14 @@ app.innerHTML = `
         <p class="banner-fit-hint pane-hint">Cortar preenche o espaço e pode cortar as bordas. Achatar mostra a imagem inteira, mas pode alterar suas proporções.</p>
       </section>
 
+      <div class="editor-mode-bar">
+        <button id="btn-editor-mode" class="ghost tiny" type="button" aria-pressed="false">Usar editor visual</button>
+        <span class="pane-hint">Experimento: documento visual com Markdown preservado</span>
+      </div>
+      <section id="visual-editor-shell" class="visual-editor-shell" hidden aria-label="Editor visual">
+        <div id="block-editor-host"></div>
+      </section>
+
       <div class="split">
         <div class="pane">
           <div class="pane-label">
@@ -221,11 +248,48 @@ app.innerHTML = `
   </main>
 `;
 
+splitEditor = $('#editor-view .split') as HTMLElement;
+visualEditorShell = $('#visual-editor-shell') as HTMLElement;
+editorModeButton = $('#btn-editor-mode') as HTMLButtonElement;
+blockEditor = new BlockEditor($('#block-editor-host')!, (markdown) => {
+  updateCanonicalBody(markdown);
+  renderPreviewDebounced();
+}, async (file) => {
+  if (!file.type.startsWith('image/')) { setSaved(false, 'O arquivo precisa ser uma imagem.'); return null; }
+  if (file.size === 0 || file.size > 15 * 1024 * 1024) { setSaved(false, 'A imagem deve ter até 15 MB.'); return null; }
+  let uploadFile: File;
+  try { uploadFile = await prepareImageForUpload(file); }
+  catch (error) { setSaved(false, (error as Error).message); return null; }
+  const form = new FormData();
+  form.append('file', uploadFile);
+  let endpoint: string;
+  if (state.projectMode) {
+    if (state.currentProjectDoc) {
+      form.append('projectId', state.currentProjectDoc.projectId);
+      form.append('kind', state.currentProjectDoc.kind);
+      form.append('id', state.currentProjectDoc.id);
+      endpoint = '/api/project-document/image';
+    } else if (state.currentProject && state.projectItemKind === 'project') {
+      endpoint = '/api/project/' + encodeURIComponent(state.currentProject.id) + '/image';
+    } else { setSaved(false, 'Abra um documento do projeto antes de adicionar imagens.'); return null; }
+  } else {
+    if (!state.current) { setSaved(false, 'Abra um post antes de adicionar imagens.'); return null; }
+    endpoint = '/api/post/' + encodeURIComponent(state.current.id) + '/image';
+  }
+  setSaved(false, 'Enviando imagem...');
+  try {
+    const response = await fetch(endpoint, { method: 'POST', body: form });
+    const data = await response.json() as { name?: string; alt?: string; error?: string };
+    if (!response.ok || !data.name) throw new Error(data.error ?? 'Não foi possível enviar a imagem.');
+    setSaved(false, 'Imagem enviada; salve o documento para guardar a referência.');
+    return { name: data.name, alt: data.alt ?? file.name.replace(/\.[^.]+$/, '') };
+  } catch (error) { setSaved(false, (error as Error).message); return null; }
+}, imageUrlForMarkdown);
+editorModeButton.addEventListener('click', () => setEditorMode(!visualMode));
+
 // ---------------------------------------------------------------
 // CodeMirror: editor Markdown
 // ---------------------------------------------------------------
-let cmView: EditorView | null = null;
-
 const editorTheme = EditorView.theme(
   {
     '&': { height: '100%' },
@@ -241,6 +305,57 @@ const editorTheme = EditorView.theme(
 
 function currentBody(): string {
   return cmView?.state.doc.toString() ?? '';
+}
+
+async function prepareImageForUpload(file: File): Promise<File> {
+  // GIFs keep their original bytes so animated images remain animated.
+  if (file.type === 'image/gif' || /\.gif$/i.test(file.name)) return file;
+  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type)) {
+    throw new Error('Formato não suportado. Use JPG, PNG, WebP, AVIF ou GIF.');
+  }
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error('Não foi possível abrir essa imagem para convertê-la em WebP.');
+  }
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('Não foi possível preparar a imagem.');
+    context.drawImage(bitmap, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((result) => result ? resolve(result) : reject(new Error('Falha ao converter a imagem para WebP.')), 'image/webp', 0.82);
+    });
+    const base = file.name.replace(/\.[^.]+$/, '').normalize('NFC') || 'imagem';
+    return new File([blob], base + '.webp', { type: 'image/webp', lastModified: Date.now() });
+  } finally {
+    bitmap.close();
+  }
+}
+
+function imageUrlForMarkdown(src: string): string {
+  if (!src || /^(?:[a-z]+:|\/\/|\/|#)/i.test(src)) return src;
+  const name = src.split(/[?#]/, 1)[0].replace(/^\.\//, '');
+  if (!name || name.includes('..') || name.includes('/')) return src;
+  const query = 'name=' + encodeURIComponent(name);
+  if (state.projectMode) {
+    if (state.currentProjectDoc) return '/api/project-document/image-file?project=' + encodeURIComponent(state.currentProjectDoc.projectId) + '&kind=' + encodeURIComponent(state.currentProjectDoc.kind) + '&id=' + encodeURIComponent(state.currentProjectDoc.id) + '&' + query;
+    if (state.currentProject && state.projectItemKind === 'project') return '/api/project-image?project=' + encodeURIComponent(state.currentProject.id) + '&' + query;
+    return src;
+  }
+  return state.current ? '/api/post-image?post=' + encodeURIComponent(state.current.id) + '&' + query : src;
+}
+
+function updateCanonicalBody(markdown: string) {
+  if (!cmView) return;
+  const current = cmView.state.doc.toString();
+  if (current === markdown) return;
+  cmView.dispatch({
+    changes: { from: 0, to: cmView.state.doc.length, insert: markdown },
+  });
 }
 
 function createEditor(initialDoc: string, onChange: (doc: string) => void) {
@@ -281,6 +396,7 @@ function createEditor(initialDoc: string, onChange: (doc: string) => void) {
     }),
     parent: $('#cm-host')!,
   });
+  if (visualMode) blockEditor?.setMarkdown(initialDoc);
   return cm;
 }
 
@@ -294,6 +410,9 @@ marked.setOptions({ gfm: true, breaks: true });
 function renderPreview() {
   const raw = marked.parse(currentBody() || '*Escreva algo…*');
   preview.innerHTML = DOMPurify.sanitize(typeof raw === 'string' ? raw : String(raw));
+  preview.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+    image.src = imageUrlForMarkdown(image.getAttribute('src') ?? '');
+  });
 }
 
 const renderPreviewDebounced = debounce(renderPreview, 250);
@@ -479,6 +598,8 @@ async function openProjectDocument(projectId: string, kind: ProjectDocumentKind,
 }
 
 async function saveProjectCurrent(): Promise<boolean> {
+  const revision = editRevision;
+  const body = currentBody();
   try {
     if (state.projectItemKind === 'project') {
       if (!state.currentProject) return false;
@@ -493,7 +614,7 @@ async function saveProjectCurrent(): Promise<boolean> {
         ...(fieldProjectCover.value.trim() ? { cover: fieldProjectCover.value.trim() } : { cover: undefined }),
       };
       state.currentProject = await api<Project>('POST', '/api/project/save', {
-        id: state.currentProject.id, file, body: currentBody(),
+        id: state.currentProject.id, file, body,
       });
     } else {
       if (!state.currentProjectDoc) return false;
@@ -508,11 +629,18 @@ async function saveProjectCurrent(): Promise<boolean> {
         kind: state.currentProjectDoc.kind,
         id: state.currentProjectDoc.id,
         file,
-        body: currentBody(),
+        body,
       });
     }
-    state.dirty = { title: false, body: false, meta: false };
     await loadProjects();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'O conteúdo anterior foi salvo; há edições mais recentes ainda não salvas.');
+      return false;
+    }
+    state.dirty = { title: false, body: false, meta: false };
+    state.tagsDirty = false;
+    clearAutosave();
     setSaved(true);
     return true;
   } catch (err) {
@@ -523,7 +651,8 @@ async function saveProjectCurrent(): Promise<boolean> {
 
 async function publishProjectCurrent() {
   // Salva exatamente o estado escolhido no editor, inclusive published=false.
-  if (!(await saveProjectCurrent())) return;
+  if (!(await saveCurrent())) return;
+  const revision = editRevision;
   setSaving('Publicando alterações do projeto...');
   try {
     const currentId = state.currentProject?.id;
@@ -538,6 +667,11 @@ async function publishProjectCurrent() {
     await api('POST', '/api/git/push');
     await loadProjects();
     await refreshGit();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'Projeto publicado, mas há edições mais recentes que ainda não foram salvas.');
+      return;
+    }
     setSaved(true, `${isPublished ? 'Publicado' : 'Ocultado'} ✓ ${label}`);
   } catch (err) {
     setSaved(false, (err as Error).message);
@@ -787,25 +921,54 @@ function todayClient() {
   return `${d.getFullYear()}-${m}-${dd}`;
 }
 
+let saveInFlight: Promise<boolean> | null = null;
+
 async function saveCurrent(): Promise<boolean> {
+  if (saveInFlight) {
+    const pending = saveInFlight;
+    const completed = await pending;
+    if (saveInFlight === pending) saveInFlight = null;
+    if (!completed) return false;
+    // If the user edited during the previous request, serialize a second save
+    // after it finishes instead of allowing two writes to race on disk.
+    return hasUnsavedChanges() ? saveCurrent() : true;
+  }
+
+  const task = performSaveCurrent();
+  saveInFlight = task;
+  try {
+    return await task;
+  } finally {
+    if (saveInFlight === task) saveInFlight = null;
+  }
+}
+
+async function performSaveCurrent(): Promise<boolean> {
   if (state.projectMode) return saveProjectCurrent();
   if (!state.current) return false;
+  const revision = editRevision;
   const meta = currentMeta();
+  const body = currentBody();
   try {
-    await api('POST', '/api/post/save', {
+    state.current = await api<Post>('POST', '/api/post/save', {
       id: state.current.id,
       file: meta,
-      body: currentBody(),
+      body,
       // Só mudamos a data se o usuário editou o campo de data. O servidor
       // ignora a data enviada quando isso é false, então até um cliente
       // velho/equivocado não avança a data de publicação.
       changeDate: meta.pubDate !== state.current.file.pubDate,
     });
+    await loadList();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'O conteúdo anterior foi salvo; há edições mais recentes ainda não salvas.');
+      return false;
+    }
     state.dirty = { title: false, body: false, meta: false };
     state.tagsDirty = false;
     clearAutosave();
     setSaved(true);
-    await loadList();
     return true;
   } catch (err) {
     setSaved(false, (err as Error).message);
@@ -818,21 +981,31 @@ async function saveCurrent(): Promise<boolean> {
 // ------------------------------------------------------------------
 async function publishCurrent() {
   if (state.projectMode) return publishProjectCurrent();
-  if (!state.current) return;
+  if (!state.current || !(await saveCurrent())) return;
+  const revision = editRevision;
   const meta = { ...currentMeta(), draft: false };
+  const body = currentBody();
   fieldDraft.checked = false;
   setSaving('Publicando...');
   try {
     const res = await api<{ subject: string }>('POST', '/api/publish', {
       id: state.current.id,
       file: meta,
-      body: currentBody(),
+      body,
       changeDate: meta.pubDate !== state.current.file.pubDate,
     });
-    setSaved(true, `Publicado ✓ ${res.subject}`);
-    clearAutosave();
+    state.current.file = { ...state.current.file, ...meta };
     await loadList();
     await refreshGit();
+    if (revision !== editRevision) {
+      writeAutosave();
+      setSaved(false, 'Publicado, mas há edições mais recentes que ainda não foram salvas.');
+      return;
+    }
+    state.dirty = { title: false, body: false, meta: false };
+    state.tagsDirty = false;
+    clearAutosave();
+    setSaved(true, `Publicado ✓ ${res.subject}`);
   } catch (err) {
     setSaved(false, (err as Error).message);
     setSaving('');
@@ -1180,37 +1353,44 @@ $('#btn-image')!.addEventListener('click', () => {
 });
 
 $('#file-image')!.addEventListener('change', async (e) => {
-  const file = (e.target as HTMLInputElement).files?.[0];
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
   if (!file) return;
-  const form = new FormData();
-  form.append('file', file);
-  let endpoint: string;
-  if (state.projectMode) {
-    const doc = state.currentProjectDoc;
-    if (!doc) {
-      setSaved(false, 'Abra o documento de um projeto antes de adicionar imagens.');
-      (e.target as HTMLInputElement).value = '';
-      return;
+  try {
+    if (!file.type.startsWith('image/') || file.size === 0 || file.size > 15 * 1024 * 1024) {
+      throw new Error('Escolha uma imagem válida de até 15 MB.');
     }
-    form.append('projectId', doc.projectId);
-    form.append('kind', doc.kind);
-    form.append('id', doc.id);
-    endpoint = '/api/project-document/image';
-  } else {
-    if (!state.current) return;
-    endpoint = `/api/post/${encodeURIComponent(state.current.id)}/image`;
+    const uploadFile = await prepareImageForUpload(file);
+    const form = new FormData();
+    form.append('file', uploadFile);
+    let endpoint: string;
+    if (state.projectMode) {
+      const doc = state.currentProjectDoc;
+      if (!doc) throw new Error('Abra o documento de um projeto antes de adicionar imagens.');
+      form.append('projectId', doc.projectId);
+      form.append('kind', doc.kind);
+      form.append('id', doc.id);
+      endpoint = '/api/project-document/image';
+    } else {
+      if (!state.current) throw new Error('Abra um post antes de adicionar imagens.');
+      endpoint = `/api/post/${encodeURIComponent(state.current.id)}/image`;
+    }
+    setSaved(false, 'Enviando imagem...');
+    const res = await fetch(endpoint, { method: 'POST', body: form });
+    const data = await res.json() as { name?: string; alt?: string; error?: string };
+    if (!res.ok || !data.name) throw new Error(data.error ?? 'Não foi possível enviar a imagem.');
+    // Insere a referência no Markdown na posição do cursor.
+    const snippet = `![${(data.alt ?? file.name.replace(/\.[^.]+$/, '')).replace(/\]/g, '\\]')}](${data.name})`;
+    const position = cmView?.state.selection.main.from;
+    if (cmView && position !== undefined) {
+      cmView.dispatch({ changes: { from: position, insert: snippet }, selection: { anchor: position + snippet.length } });
+    }
+    setSaved(false, 'Imagem inserida; salve o documento para guardar a referência.');
+  } catch (error) {
+    setSaved(false, (error as Error).message);
+  } finally {
+    input.value = '';
   }
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    body: form,
-  });
-  const data = await res.json();
-  if (!res.ok) return setSaved(false, data.error);
-  // Insere a referência no Markdown na posição do cursor.
-  const snippet = `![${data.alt ?? file.name}](${data.name})`;
-  cmView?.dispatch({ changes: { from: cmView.state.selection.main.from, insert: snippet }, selection: { anchor: cmView.state.selection.main.from + snippet.length } });
-  (e.target as HTMLInputElement).value = '';
-  setSaved(false, '');
 });
 
 // ------------------------------------------------------------------
@@ -1372,8 +1552,11 @@ function setSaving(msg: string) {
 // ------------------------------------------------------------------
 const LS_KEY = 'writer:unsaved';
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+let editRevision = 0;
 
 function scheduleAutosave() {
+  // Every user edit advances a revision so a slow save cannot clear newer changes.
+  editRevision += 1;
   if (autosaveTimer) clearTimeout(autosaveTimer);
   autosaveTimer = setTimeout(writeAutosave, 900);
 }
