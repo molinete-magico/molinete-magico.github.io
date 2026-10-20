@@ -519,21 +519,24 @@ async function prepareImageForUpload(file: File): Promise<File> {
   } finally { bitmap.close(); }
 }
 async function uploadInlineImage(file: File) {
-  const prepared = await prepareImageForUpload(file);
-  const form = new FormData(); form.append('file', prepared);
-  if (state.kind === 'post' && state.currentPost) {
-    const image = await api<{name: string; alt: string}>('POST', '/api/post/' + encodeURIComponent(state.currentPost.id) + '/image', form);
-    return image;
+  try {
+    const prepared = await prepareImageForUpload(file);
+    const form = new FormData(); form.append('file', prepared);
+    if (state.kind === 'post' && state.currentPost) {
+      return await api<{name: string; alt: string}>('POST', '/api/post/' + encodeURIComponent(state.currentPost.id) + '/image', form);
+    }
+    if (state.kind === 'project' && state.currentProject) {
+      return await api<{name: string; alt: string}>('POST', '/api/project/' + encodeURIComponent(state.currentProject.id) + '/image', form);
+    }
+    if (state.currentDoc && state.currentProject) {
+      form.append('projectId', state.currentDoc.projectId); form.append('kind', state.currentDoc.kind); form.append('id', state.currentDoc.id);
+      return await api<{name: string; alt: string}>('POST', '/api/project-document/image', form);
+    }
+    return null;
+  } catch (err) {
+    status((err as Error).message, 'error');
+    return null;
   }
-  if (state.kind === 'project' && state.currentProject) {
-    const image = await api<{name: string; alt: string}>('POST', '/api/project/' + encodeURIComponent(state.currentProject.id) + '/image', form);
-    return image;
-  }
-  if (state.currentDoc && state.currentProject) {
-    form.append('projectId', state.currentDoc.projectId); form.append('kind', state.currentDoc.kind); form.append('id', state.currentDoc.id);
-    return await api<{name: string; alt: string}>('POST', '/api/project-document/image', form);
-  }
-  return null;
 }
 function resolveImageUrl(src: string) {
   if (!src || /^(?:[a-z]+:|\/\/|\/|#)/i.test(src)) return src;
