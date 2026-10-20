@@ -3,9 +3,9 @@ import test from 'node:test';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { postsRoot } from './fs.ts';
+import { postsRoot, projectsRoot } from './fs.ts';
 import { app } from './index.ts';
-import { parseFrontmatter, readPostImage, resolvePostFile } from './content.ts';
+import { parseFrontmatter, readPostImage, readProjectDocument, resolvePostFile, saveImage } from './content.ts';
 
 test('Writer rejects API requests from a foreign browser origin', async () => {
   const response = await app.request('/api/posts', {
@@ -58,6 +58,46 @@ test('Writer rejects image folders that are symlinks outside the posts root', as
   } finally {
     await fs.rm(linkedFolder, { recursive: true, force: true });
     await fs.rm(flatPost, { force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('Writer does not move a post into a symlinked image folder outside content', async () => {
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'writer-upload-audit-'));
+  const id = `writer-upload-audit-${process.pid}`;
+  const flatPost = path.join(postsRoot(), `${id}.md`);
+  const linkedFolder = path.join(postsRoot(), id);
+  try {
+    await fs.writeFile(flatPost, '---\\ntitle: test\\n---\\nbody\\n');
+    await fs.symlink(outside, linkedFolder, 'dir');
+    await assert.rejects(
+      saveImage(id, 'upload.png', Buffer.from('not-an-image')),
+      /fora da pasta de conteúdo permitida/,
+    );
+    await fs.access(flatPost);
+    await assert.rejects(fs.access(path.join(outside, 'index.md')));
+  } finally {
+    await fs.rm(linkedFolder, { recursive: true, force: true });
+    await fs.rm(flatPost, { force: true });
+    await fs.rm(outside, { recursive: true, force: true });
+  }
+});
+
+test('Writer rejects project documents that are symlinks outside projects', async () => {
+  const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'writer-document-audit-'));
+  const id = `writer-document-audit-${process.pid}`;
+  const projectFolder = path.join(projectsRoot(), id);
+  try {
+    await fs.mkdir(projectFolder, { recursive: true });
+    await fs.writeFile(path.join(projectFolder, 'project.md'), '---\\ntitle: test\\ntype: story\\n---\\n');
+    await fs.writeFile(path.join(outside, 'document.md'), 'secret');
+    await fs.symlink(path.join(outside, 'document.md'), path.join(projectFolder, 'document.md'));
+    await assert.rejects(
+      readProjectDocument(id, 'document', 'document'),
+      /fora da pasta de conteúdo permitida/,
+    );
+  } finally {
+    await fs.rm(projectFolder, { recursive: true, force: true });
     await fs.rm(outside, { recursive: true, force: true });
   }
 });
