@@ -1,82 +1,203 @@
 ---
-// Botão que alterna entre os temas escuro (padrão) e claro.
-// O estado é persistido em localStorage; o script `is:inline` do
-// layout já aplicou o tema antes do primeiro paint, então aqui
-// apenas sincronizamos a visualização do botão.
-const labels = {
-  dark: 'Ativar tema escuro',
-  light: 'Ativar tema claro',
-};
+const themes = [
+  { id: 'dark', label: 'Terminal verde · escuro', group: 'Seus temas', swatches: ['#050708', '#0d3f2e', '#3ecf8e'] },
+  { id: 'light', label: 'Terminal verde · claro', group: 'Seus temas', swatches: ['#f3f5f2', '#bfd5ca', '#185238'] },
+  { id: 'paper', label: 'Papel', group: 'Seus temas', swatches: ['#f4efe4', '#ddd2bd', '#795c3a'] },
+  { id: 'monochrome', label: 'Preto e branco', group: 'Seus temas', swatches: ['#080808', '#292929', '#f5f5f5'] },
+  { id: 'graphite', label: 'Grafite', group: 'Seus temas', swatches: ['#17191d', '#30343b', '#c4cbd5'] },
+  { id: 'nord', label: 'Nord', group: 'Comunidade web', swatches: ['#2e3440', '#434c5e', '#88c0d0'] },
+  { id: 'dracula', label: 'Dracula', group: 'Comunidade web', swatches: ['#282a36', '#44475a', '#bd93f9'] },
+  { id: 'solarized-dark', label: 'Solarized Dark', group: 'Comunidade web', swatches: ['#002b36', '#073642', '#2aa198'] },
+  { id: 'solarized-light', label: 'Solarized Light', group: 'Comunidade web', swatches: ['#fdf6e3', '#eee8d5', '#268bd2'] },
+  { id: 'tokyo-night', label: 'Tokyo Night', group: 'Comunidade web', swatches: ['#1a1b26', '#24283b', '#7aa2f7'] },
+  { id: 'catppuccin-mocha', label: 'Catppuccin Mocha', group: 'Comunidade web', swatches: ['#1e1e2e', '#313244', '#cba6f7'] },
+  { id: 'gruvbox-dark', label: 'Gruvbox Dark', group: 'Comunidade web', swatches: ['#282828', '#3c3836', '#fabd2f'] },
+  { id: 'monokai', label: 'Monokai', group: 'Comunidade web', swatches: ['#272822', '#3e3d32', '#a6e22e'] },
+  { id: 'rose-pine', label: 'Rosé Pine', group: 'Comunidade web', swatches: ['#191724', '#26233a', '#ebbcba'] },
+  { id: 'oceanic', label: 'Oceanic', group: 'Comunidade web', swatches: ['#102a43', '#243b53', '#48cae4'] },
+];
 ---
 
-<button
-  class="theme-toggle"
-  type="button"
-  aria-label={labels.dark}
-  title={labels.dark}
-  data-theme-toggle
->
-  <!-- Sol (visível no tema escuro) -->
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    aria-hidden="true"
+<div class="theme-picker">
+  <button
+    class="theme-toggle"
+    type="button"
+    aria-label="Escolher tema"
+    title="Escolher tema"
+    aria-haspopup="true"
+    aria-expanded="false"
+    aria-controls="theme-menu"
+    data-theme-toggle
   >
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-  </svg>
-  <!-- Lua (visível no tema claro) -->
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-  </svg>
-</button>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41-1.41" />
+    </svg>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+    </svg>
+  </button>
+
+  <div class="theme-menu" id="theme-menu" role="menu" aria-label="Temas do site" hidden>
+    {themes.map((theme) => (
+      <button
+        class="theme-option"
+        type="button"
+        role="menuitemradio"
+        aria-checked="false"
+        data-theme-option={theme.id}
+        data-theme-group={theme.group}
+      >
+        <span class="theme-swatches" aria-hidden="true">
+          {theme.swatches.map((color) => <span style={`background:${color}`}></span>)}
+        </span>
+        <span class="theme-option-label">{theme.label}</span>
+        <span class="theme-check" aria-hidden="true">✓</span>
+      </button>
+    ))}
+  </div>
+</div>
 
 <script>
-  const button = document.querySelector('[data-theme-toggle]');
+  const picker = document.querySelector<HTMLElement>('.theme-picker');
+  const toggle = picker?.querySelector<HTMLButtonElement>('[data-theme-toggle]');
+  const menu = picker?.querySelector<HTMLElement>('#theme-menu');
+  const options = Array.from(picker?.querySelectorAll<HTMLButtonElement>('[data-theme-option]') ?? []);
+  const lightThemes = new Set(['light', 'paper', 'solarized-light']);
+  const validThemes = new Set(options.map((option) => option.dataset.themeOption).filter(Boolean));
 
-  // Lê o tema atualmente aplicado (definido pelo script no <head>)
-  // e sincroniza rótulo e ícones.
-  function sync(current: string) {
-    const next = current === 'dark' ? 'light' : 'dark';
-    button?.setAttribute('aria-label', `Ativar tema ${next}`);
-    button?.setAttribute('title', `Ativar tema ${next}`);
-    button?.classList.toggle('theme-dark', current === 'dark');
+  function applyTheme(theme: string) {
+    if (!validThemes.has(theme)) theme = 'dark';
+    document.documentElement.dataset.theme = theme;
+    try { localStorage.setItem('theme', theme); } catch { /* storage may be unavailable */ }
+    options.forEach((option) => {
+      const selected = option.dataset.themeOption === theme;
+      option.setAttribute('aria-checked', String(selected));
+      option.classList.toggle('is-selected', selected);
+    });
+    const isLight = lightThemes.has(theme);
+    toggle?.classList.toggle('theme-dark', !isLight);
+    toggle?.setAttribute('aria-label', 'Escolher tema');
+    toggle?.setAttribute('title', `Tema atual: ${options.find((option) => option.dataset.themeOption === theme)?.querySelector('.theme-option-label')?.textContent?.trim() ?? theme}. Clique para escolher outro tema.`);
   }
 
-  button?.addEventListener('click', () => {
-    const current =
-      document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = current;
-    localStorage.setItem('theme', current);
-    sync(current);
+  function setMenuOpen(open: boolean) {
+    if (!toggle || !menu) return;
+    menu.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    if (open) {
+      const selected = options.find((option) => option.getAttribute('aria-checked') === 'true');
+      (selected ?? options[0])?.focus();
+    }
+  }
+
+  toggle?.addEventListener('click', () => setMenuOpen(menu?.hidden ?? true));
+  options.forEach((option) => option.addEventListener('click', () => {
+    const theme = option.dataset.themeOption;
+    if (theme) applyTheme(theme);
+    setMenuOpen(false);
+    toggle?.focus();
+  }));
+  document.addEventListener('click', (event) => {
+    if (picker && !picker.contains(event.target as Node)) setMenuOpen(false);
+  });
+  picker?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      setMenuOpen(false);
+      toggle?.focus();
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      const focusedIndex = options.indexOf(document.activeElement as HTMLButtonElement);
+      if (focusedIndex < 0) return;
+      event.preventDefault();
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      options[(focusedIndex + delta + options.length) % options.length]?.focus();
+    }
   });
 
-  sync(document.documentElement.dataset.theme ?? 'dark');
+  const savedTheme = (() => {
+    try { return localStorage.getItem('theme'); } catch { return null; }
+  })();
+  applyTheme(savedTheme ?? document.documentElement.dataset.theme ?? 'dark');
 </script>
 
 <style>
-  .theme-toggle svg {
-    display: none;
+  .theme-picker {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
   }
 
-  /* No tema escuro mostramos o sol, no claro a lua */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.2rem;
+    min-height: 2rem;
+    gap: .35rem;
+  }
+
+  .theme-toggle svg { display: none; }
   .theme-toggle.theme-dark svg:first-child,
-  .theme-toggle:not(.theme-dark) svg:last-child {
-    display: block;
+  .theme-toggle:not(.theme-dark) svg:last-child { display: block; }
+
+  .theme-menu {
+    position: absolute;
+    top: calc(100% + .55rem);
+    right: 0;
+    z-index: 100;
+    width: min(19rem, calc(100vw - 2rem));
+    max-height: min(70vh, 32rem);
+    overflow-y: auto;
+    padding: .35rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .28);
+  }
+
+  .theme-menu[hidden] { display: none; }
+
+  .theme-option {
+    display: flex;
+    align-items: center;
+    gap: .65rem;
+    width: 100%;
+    padding: .55rem .6rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-primary);
+    text-align: left;
+    font: inherit;
+    font-size: .78rem;
+    cursor: pointer;
+  }
+
+  .theme-option[data-theme-group="Comunidade web"]:first-of-type {
+    margin-top: .35rem;
+  }
+
+  .theme-option:hover,
+  .theme-option:focus-visible,
+  .theme-option.is-selected {
+    border-color: var(--border-strong);
+    background: var(--bg-soft);
+    outline-offset: -2px;
+  }
+
+  .theme-swatches {
+    display: inline-flex;
+    flex: 0 0 2.7rem;
+    height: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--border-rest);
+  }
+
+  .theme-swatches span { flex: 1; min-width: 0; }
+  .theme-option-label { flex: 1; }
+  .theme-check { visibility: hidden; color: var(--accent); font-weight: 700; }
+  .theme-option.is-selected .theme-check { visibility: visible; }
+
+  @media (max-width: 600px) {
+    .theme-menu { right: -2.5rem; }
   }
 </style>
