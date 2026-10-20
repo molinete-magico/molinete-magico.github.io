@@ -2624,3 +2624,31 @@ body {
 .preview.prose strong { color: var(--text-primary); }
 .preview.prose blockquote { border-left: 4px solid var(--accent); background: var(--bg-elevated); padding: var(--space-3) var(--space-4); color: var(--text-secondary); }
 .preview.prose code { font-family: var(--font-mono); font-size: .86em; background: var(--code-bg); color: var(--text-primary); padding: .15em .4em; }
+
+
+/* Ajustes finais de contraste e margens para espelhar global.css do blog. */
+button.primary { color: var(--bg); }
+button.primary:hover:not(:disabled) { color: var(--bg); }
+.preview.prose p, .preview.prose ul, .preview.prose ol,
+.preview.prose blockquote, .preview.prose pre, .preview.prose table {
+  margin: var(--space-4) 0 0;
+  max-width: 100%;
+}
+.preview.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-6) auto 0;
+  border: 1px solid var(--border-rest);
+}
+.preview.prose table {
+  display: block;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border: 1px solid var(--border-rest);
+}
+.preview.prose th, .preview.prose td {
+  padding: var(--space-3);
+  line-height: 1.6;
+  vertical-align: top;
+}
