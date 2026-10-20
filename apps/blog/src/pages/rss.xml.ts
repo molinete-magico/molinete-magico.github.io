@@ -15,7 +15,7 @@ export const GET = async (context: APIContext) => {
   const BASE = import.meta.env.BASE_URL;
   // O canal do feed e os links dos itens vivem sob o subcaminho do
   // site (ex.: https://molinete-magico.github.io/blog/).
-  const siteUrl = context.site ?? 'https://abms-ns.github.io';
+  const siteUrl = context.site ?? 'https://molinete-magico.github.io';
   return rss({
     title: 'arquivo pessoal',
     description:
