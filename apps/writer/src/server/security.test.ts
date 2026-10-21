@@ -3,7 +3,7 @@ import test from 'node:test';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { postsRoot, projectsRoot } from './fs.ts';
+import { postsRoot, projectsRoot, repoRoot, setRepoRoot } from './fs.ts';
 import { app } from './index.ts';
 import { parseFrontmatter, readPostImage, readProjectDocument, resolvePostFile, saveImage } from './content.ts';
 
@@ -118,4 +118,73 @@ test('Writer leaves Markdown without front matter untouched', () => {
 
 test('Writer rejects malformed YAML front matter instead of silently discarding it', () => {
   assert.throws(() => parseFrontmatter('---\ntitle: [sem fechamento\n---\nCorpo'), /unexpected|flow collection|expected/i);
+});
+
+
+test('Writer save API round-trips long Markdown in an isolated workspace', async () => {
+  const originalRoot = repoRoot();
+  const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'writer-save-roundtrip-'));
+  const postFolder = path.join(workspace, 'content', 'posts', 'roundtrip-test');
+  await fs.mkdir(postFolder, { recursive: true });
+  await fs.mkdir(path.join(workspace, 'content', 'projects'), { recursive: true });
+  await fs.writeFile(path.join(postFolder, 'index.md'), [
+    '---',
+    'title: Original title',
+    'description: Original description',
+    'pubDate: "2020-04-05"',
+    'tags:',
+    '  - original',
+    'draft: true',
+    '---',
+    '',
+    'Conteúdo original.',
+    '',
+  ].join('\\n'), 'utf-8');
+
+  const longBody = Array.from({ length: 80 }, (_, index) => [
+    '## Seção ' + (index + 1),
+    '',
+    'Texto longo com acentuação (ação, história), referência [' + (index + 1) + '] e **ênfase**.',
+    '',
+    '```ts',
+    'const section' + (index + 1) + ' = "preservar exatamente";',
+    '```',
+  ].join('\\n')).join('\\n\\n');
+
+  try {
+    setRepoRoot(workspace);
+    const saveResponse = await app.request('/api/post/save', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: 'roundtrip-test',
+        file: {
+          title: 'Round-trip test',
+          description: 'Conteúdo de teste',
+          pubDate: '2099-12-31',
+          tags: ['teste', 'markdown'],
+          draft: true,
+        },
+        body: longBody,
+        changeDate: false,
+      }),
+    });
+    assert.equal(saveResponse.status, 200);
+    const saved = await saveResponse.json() as { body: string; file: { pubDate: string; title: string } };
+    assert.equal(saved.body, longBody);
+    assert.equal(saved.file.title, 'Round-trip test');
+    assert.equal(saved.file.pubDate, '2020-04-05');
+
+    const reloadResponse = await app.request('/api/post/roundtrip-test');
+    assert.equal(reloadResponse.status, 200);
+    const reloaded = await reloadResponse.json() as { body: string; file: { pubDate: string } };
+    assert.equal(reloaded.body, longBody);
+    assert.equal(reloaded.file.pubDate, '2020-04-05');
+
+    const diskContent = await fs.readFile(path.join(postFolder, 'index.md'), 'utf-8');
+    assert.ok(diskContent.includes('const section80 = "preservar exatamente";'));
+  } finally {
+    setRepoRoot(originalRoot);
+    await fs.rm(workspace, { recursive: true, force: true });
+  }
 });
