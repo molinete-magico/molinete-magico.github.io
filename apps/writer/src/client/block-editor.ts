@@ -342,7 +342,7 @@ export class BlockEditor {
     });
     this.canvas.addEventListener('dragover', (event) => {
       if (!event.dataTransfer?.types.includes('application/x-writer-block')) return;
-      const target = (event.target as HTMLElement).closest<HTMLElement>(':scope > *');
+      const target = this.topLevelBlockFrom(event.target);
       if (!target || !this.canvas.contains(target)) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = 'move';
@@ -392,6 +392,12 @@ export class BlockEditor {
 
   private topLevelBlocks(): HTMLElement[] {
     return Array.from(this.canvas.children).filter((node): node is HTMLElement => node instanceof HTMLElement);
+  }
+
+  private topLevelBlockFrom(target: EventTarget | null): HTMLElement | null {
+    let element = target instanceof HTMLElement ? target : target instanceof Node ? target.parentElement : null;
+    while (element && element.parentElement !== this.canvas) element = element.parentElement;
+    return element;
   }
 
   private refreshBlockControls(): void {
