@@ -578,7 +578,7 @@ function bindSlashMenu() {
     }
     const text = node.textContent ?? '';
     const prefix = text.slice(0, selection.anchorOffset);
-    const match = /(?:^|\\s)\\/([a-z]*)$/i.exec(prefix);
+    const match = /(?:^|\s)\/([a-z]*)$/i.exec(prefix);
     if (!match) {
       menu.hidden = true;
       return;
