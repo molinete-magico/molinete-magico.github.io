@@ -20,12 +20,12 @@ const app = $('#app')!;
 const state: {
   posts: PostListItem[]; projects: ProjectListItem[]; currentPost: Post | null;
   currentProject: Project | null; currentDoc: ProjectDocument | null;
-  kind: OpenItem | null; editor: BlockEditor | null; dirty: boolean; saving: boolean;
+  kind: OpenItem | null; editor: BlockEditor | null; dirty: boolean; saving: boolean; editRevision: number;
   palette: Palette; focus: boolean; preview: boolean; git: GitStatus | null; tags: string[];
   bannerAvailable: boolean;
 } = {
   posts: [], projects: [], currentPost: null, currentProject: null, currentDoc: null,
-  kind: null, editor: null, dirty: false, saving: false,
+  kind: null, editor: null, dirty: false, saving: false, editRevision: 0,
   palette: (['site', 'paper', 'mono', 'graphite'] as Palette[]).includes(storageGet('writer-v2-palette') as Palette) ? storageGet('writer-v2-palette') as Palette : 'site',
   focus: false, preview: false, git: null, tags: [], bannerAvailable: false,
 };
@@ -167,6 +167,7 @@ function activeTitle() {
   return state.currentDoc?.file.title ?? '';
 }
 function markDirty() {
+  state.editRevision += 1;
   state.dirty = true;
   status('Alterações não salvas', 'warn');
   persistRecovery();
@@ -577,6 +578,7 @@ function currentPostMeta(): PostMeta {
 async function saveCurrent(): Promise<boolean> {
   if (state.saving) { status('Salvamento em andamento…', 'warn'); return false; }
   if (!state.kind) return false;
+  const saveRevision = state.editRevision;
   state.saving = true; status('Salvando…', 'warn');
   try {
     const title = ($('#doc-title') as HTMLInputElement).value.trim() || 'Sem título';
@@ -594,8 +596,6 @@ async function saveCurrent(): Promise<boolean> {
     } else {
       throw new Error('Não foi possível identificar o documento atual para salvar.');
     }
-    state.dirty = false;
-    clearRecovery();
   } catch (err) {
     status(formatError(err), 'error');
     return false;
@@ -604,13 +604,26 @@ async function saveCurrent(): Promise<boolean> {
   }
 
   if ($('#crumb-title')) $('#crumb-title')!.textContent = activeTitle();
+  let catalogWarning = '';
   try {
     await loadCatalog();
     renderDocumentTree();
-    status('Salvo com sucesso');
   } catch (err) {
-    status('Conteúdo salvo, mas a biblioteca não pôde ser atualizada: ' + formatError(err), 'warn');
+    catalogWarning = 'Conteúdo salvo, mas a biblioteca não pôde ser atualizada: ' + formatError(err);
   }
+
+  // Nunca marcar como salvo nem apagar a recuperação se houve novas edições
+  // enquanto a requisição ou a atualização da biblioteca estava em andamento.
+  if (state.editRevision !== saveRevision) {
+    state.dirty = true;
+    persistRecovery();
+    status(catalogWarning || 'O conteúdo anterior foi salvo, mas há edições mais recentes ainda não salvas.', 'warn');
+    return false;
+  }
+
+  state.dirty = false;
+  clearRecovery();
+  status(catalogWarning || 'Salvo com sucesso', catalogWarning ? 'warn' : 'ok');
   return true;
 }
 async function publishCurrent() {
