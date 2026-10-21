@@ -322,6 +322,126 @@ export class BlockEditor {
     });
   }
 
+  private rememberSelection(): void {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (this.canvas.contains(range.commonAncestorContainer)) this.savedRange = range.cloneRange();
+  }
+
+  private restoreSelection(): boolean {
+    const selection = window.getSelection();
+    if (!selection || !this.savedRange || !this.canvas.contains(this.savedRange.commonAncestorContainer)) return false;
+    this.canvas.focus();
+    selection.removeAllRanges();
+    selection.addRange(this.savedRange);
+    return true;
+  }
+
+  private topLevelBlocks(): HTMLElement[] {
+    return Array.from(this.canvas.children).filter((node): node is HTMLElement => node instanceof HTMLElement);
+  }
+
+  private refreshBlockControls(): void {
+    if (!this.blockControls || !this.canvas.isConnected) return;
+    this.blockControls.replaceChildren();
+    const rootRect = this.root.getBoundingClientRect();
+    this.topLevelBlocks().forEach((block, index) => {
+      const rect = block.getBoundingClientRect();
+      if (rect.height === 0 && !block.textContent?.trim()) return;
+      const handle = document.createElement('button');
+      handle.type = 'button';
+      handle.className = 'block-editor-block-handle';
+      handle.textContent = '⋮⋮';
+      handle.title = 'Ações do bloco';
+      handle.setAttribute('aria-label', `Ações do bloco ${index + 1}`);
+      handle.dataset.blockIndex = String(index);
+      handle.style.top = `${rect.top - rootRect.top + this.root.scrollTop + Math.min(8, rect.height / 2)}px`;
+      handle.addEventListener('mousedown', (event) => event.preventDefault());
+      this.blockControls.append(handle);
+    });
+    if (!this.blockMenu.hidden) {
+      const index = Number(this.blockMenu.dataset.blockIndex);
+      if (Number.isInteger(index) && index >= 0 && index < this.topLevelBlocks().length) {
+        const block = this.topLevelBlocks()[index];
+        const rect = block.getBoundingClientRect();
+        this.blockMenu.style.top = `${rect.top - rootRect.top + this.root.scrollTop + 24}px`;
+      } else {
+        this.closeBlockMenu();
+      }
+    }
+  }
+
+  private handleBlockControlClick(event: Event): void {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
+    if (!button) return;
+    const index = Number(button.dataset.blockIndex);
+    const blocks = this.topLevelBlocks();
+    if (!Number.isInteger(index) || !blocks[index]) return;
+    this.blockMenu.dataset.blockIndex = String(index);
+    this.blockMenu.innerHTML = [
+      '<button type="button" role="menuitem" data-block-action="up">Mover para cima</button>',
+      '<button type="button" role="menuitem" data-block-action="down">Mover para baixo</button>',
+      '<button type="button" role="menuitem" data-block-action="duplicate">Duplicar bloco</button>',
+      '<button type="button" role="menuitem" data-block-action="delete">Excluir bloco</button>',
+    ].join('');
+    this.blockMenu.style.top = `${Number.parseFloat(button.style.top) + 24}px`;
+    this.blockMenu.hidden = false;
+    this.blockMenu.querySelector<HTMLButtonElement>('button')?.focus();
+  }
+
+  private handleBlockMenuClick(event: Event): void {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-action]');
+    if (!button) return;
+    const index = Number(this.blockMenu.dataset.blockIndex);
+    const blocks = this.topLevelBlocks();
+    const block = blocks[index];
+    if (!block) return;
+    const action = button.dataset.blockAction;
+    if (action === 'up' && index > 0) {
+      this.canvas.insertBefore(block, blocks[index - 1]);
+      this.focusBlock(block, false);
+    } else if (action === 'down' && index < blocks.length - 1) {
+      this.canvas.insertBefore(blocks[index + 1], block);
+      this.focusBlock(block, false);
+    } else if (action === 'duplicate') {
+      const copy = block.cloneNode(true) as HTMLElement;
+      block.after(copy);
+      this.focusBlock(copy, true);
+    } else if (action === 'delete') {
+      block.remove();
+      if (!this.canvas.children.length) {
+        const paragraph = document.createElement('p');
+        paragraph.append(document.createElement('br'));
+        this.canvas.append(paragraph);
+        this.focusBlock(paragraph, true);
+      } else {
+        const next = this.canvas.children[Math.min(index, this.canvas.children.length - 1)] as HTMLElement;
+        this.focusBlock(next, true);
+      }
+    }
+    this.closeBlockMenu();
+    this.rememberSelection();
+    this.refreshBlockControls();
+    this.emitChange();
+  }
+
+  private focusBlock(block: HTMLElement, atStart: boolean): void {
+    this.canvas.focus();
+    const range = document.createRange();
+    range.selectNodeContents(block);
+    range.collapse(atStart);
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    this.savedRange = range.cloneRange();
+  }
+
+  private closeBlockMenu(): void {
+    this.blockMenu.hidden = true;
+    this.blockMenu.replaceChildren();
+  }
+
   setMarkdown(markdown: string): void {
     const html = marked.parse(markdown || '', { async: false });
     const sanitized = DOMPurify.sanitize(typeof html === 'string' ? html : String(html));
@@ -331,6 +451,7 @@ export class BlockEditor {
       image.dataset.markdownSrc = markdownSrc;
       if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
     });
+    this.refreshBlockControls();
   }
 
   getMarkdown(): string {
