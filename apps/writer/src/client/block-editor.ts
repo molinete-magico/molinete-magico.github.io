@@ -162,6 +162,44 @@ export class BlockEditor {
         this.emitChange();
       }
     });
+    // Cola apenas texto, evitando importar estilos/HTML do Word, Google Docs ou páginas web.
+    // As quebras de linha são convertidas em blocos e <br>, preservando a estrutura do texto.
+    this.canvas.addEventListener('paste', (event: ClipboardEvent) => {
+      if (this.composing) return;
+      const text = event.clipboardData?.getData('text/plain');
+      if (text === undefined || text === null) return;
+      event.preventDefault();
+
+      const normalized = text.replace(/\r\n?/g, '\n');
+      if (!normalized) return;
+
+      const fragment = document.createDocumentFragment();
+      const paragraphs = normalized.split(/\\n{2,}/);
+      for (const paragraphText of paragraphs) {
+        const paragraph = document.createElement('p');
+        const lines = paragraphText.split('\\n');
+        lines.forEach((line, index) => {
+          if (index > 0) paragraph.append(document.createElement('br'));
+          if (line) paragraph.append(document.createTextNode(line));
+        });
+        if (!paragraph.hasChildNodes()) paragraph.append(document.createElement('br'));
+        fragment.append(paragraph);
+      }
+
+      const selection = window.getSelection();
+      let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      if (!range || !this.canvas.contains(range.commonAncestorContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(this.canvas);
+        range.collapse(false);
+      }
+      range.deleteContents();
+      range.insertNode(fragment);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      this.emitChange();
+    });
     this.canvas.addEventListener('keydown', (event) => this.handleMarkdownShortcut(event));
     this.root.querySelectorAll<HTMLButtonElement>('[data-command]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
