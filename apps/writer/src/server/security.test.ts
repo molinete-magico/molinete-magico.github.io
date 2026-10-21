@@ -188,3 +188,37 @@ test('Writer save API round-trips long Markdown in an isolated workspace', async
     await fs.rm(workspace, { recursive: true, force: true });
   }
 });
+
+
+test('Writer image upload API persists an image and returns a stable filename', async () => {
+  const originalRoot = repoRoot();
+  const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'writer-image-roundtrip-'));
+  const postFolder = path.join(workspace, 'content', 'posts', 'image-roundtrip');
+  await fs.mkdir(postFolder, { recursive: true });
+  await fs.mkdir(path.join(workspace, 'content', 'projects'), { recursive: true });
+  await fs.writeFile(path.join(postFolder, 'index.md'), [
+    '---', 'title: Image round-trip', 'description: Test', 'pubDate: "2020-04-05"', 'draft: true', '---', '', 'Post de teste', '',
+  ].join('\n'), 'utf-8');
+  const imageBytes = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3]);
+
+  try {
+    setRepoRoot(workspace);
+    const form = new FormData();
+    form.set('file', new File([imageBytes], 'mapa-área.png', { type: 'image/png' }));
+    const response = await app.request('/api/post/image-roundtrip/image', { method: 'POST', body: form });
+    assert.equal(response.status, 201);
+    const result = await response.json() as { name: string; alt: string };
+    assert.equal(result.name, 'mapa-area.png');
+    assert.equal(result.alt, 'mapa-area');
+
+    const savedBytes = await fs.readFile(path.join(postFolder, result.name));
+    assert.deepEqual(savedBytes, imageBytes);
+    const readResponse = await app.request('/api/post-image?post=image-roundtrip&name=mapa-area.png');
+    assert.equal(readResponse.status, 200);
+    assert.equal(readResponse.headers.get('content-type'), 'image/png');
+    assert.deepEqual(Buffer.from(await readResponse.arrayBuffer()), imageBytes);
+  } finally {
+    setRepoRoot(originalRoot);
+    await fs.rm(workspace, { recursive: true, force: true });
+  }
+});
