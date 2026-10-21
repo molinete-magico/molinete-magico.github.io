@@ -226,17 +226,52 @@ export class BlockEditor {
       }
 
       range.deleteContents();
-      const fragment = document.createDocumentFragment();
-      const lines = normalized.split('\n');
-      lines.forEach((line, index) => {
-        if (index > 0) fragment.append(document.createElement('br'));
-        if (line) fragment.append(document.createTextNode(line));
-      });
+      let current = range.startContainer instanceof HTMLElement
+        ? range.startContainer
+        : range.startContainer.parentElement;
+      while (current && current.parentElement !== this.canvas) current = current.parentElement;
+      const canSplitParagraph = current && /^(P|H1|H2|H3|H4)$/.test(current.tagName);
 
-      const lastInsertedNode = fragment.lastChild;
-      if (lastInsertedNode) {
+      const makeTextFragment = (value: string): DocumentFragment => {
+        const fragment = document.createDocumentFragment();
+        value.split('\n').forEach((line, index) => {
+          if (index > 0) fragment.append(document.createElement('br'));
+          if (line) fragment.append(document.createTextNode(line));
+        });
+        if (!fragment.childNodes.length) fragment.append(document.createElement('br'));
+        return fragment;
+      };
+
+      if (canSplitParagraph && normalized.includes('\n')) {
+        const block = current!;
+        const trailingRange = document.createRange();
+        trailingRange.setStart(range.startContainer, range.startOffset);
+        trailingRange.setEnd(block, block.childNodes.length);
+        const trailing = trailingRange.extractContents();
+        const paragraphs = normalized.split(/\n{2,}/);
+        let insertionPoint = block;
+        paragraphs.forEach((paragraphText, index) => {
+          if (index === 0) {
+            const fragment = makeTextFragment(paragraphText);
+            const lastNode = fragment.lastChild!;
+            range.insertNode(fragment);
+            range.setStartAfter(lastNode);
+          } else {
+            const paragraph = document.createElement('p');
+            const fragment = makeTextFragment(paragraphText);
+            const lastNode = fragment.lastChild!;
+            paragraph.append(fragment);
+            insertionPoint.after(paragraph);
+            insertionPoint = paragraph;
+            range.setStartAfter(lastNode);
+          }
+        });
+        insertionPoint.append(trailing);
+      } else {
+        const fragment = makeTextFragment(normalized);
+        const lastNode = fragment.lastChild!;
         range.insertNode(fragment);
-        range.setStartAfter(lastInsertedNode);
+        range.setStartAfter(lastNode);
       }
       range.collapse(true);
       selection?.removeAllRanges();
