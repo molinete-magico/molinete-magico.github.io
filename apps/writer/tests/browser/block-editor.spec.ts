@@ -64,7 +64,7 @@ test('ordered list serialization preserves an explicit zero start and item value
 test('undo and redo shortcuts restore the previous and next editor snapshots', async ({ page }) => {
   const canvas = page.locator('.block-editor-canvas');
   await canvas.evaluate((element) => {
-    element.innerHTML = '<p>alpha</p>';
+    window.writerEditor.setMarkdown('alpha');
     const text = element.querySelector('p')!.firstChild!;
     const range = document.createRange();
     range.setStart(text, text.textContent!.length);
