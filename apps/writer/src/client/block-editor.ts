@@ -351,6 +351,7 @@ export class BlockEditor {
       event.preventDefault();
       const selection = window.getSelection();
       this.imageRange = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+      if (this.imageRange) this.savedRange = this.imageRange.cloneRange();
     });
     imageUploadButton.addEventListener('click', () => imageFileInput.click());
     imageFileInput.addEventListener('change', async () => {
