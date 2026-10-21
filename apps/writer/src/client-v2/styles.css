@@ -233,3 +233,17 @@ textarea:focus-visible {
   background: #c7d8cc;
   color: #202721;
 }
+
+
+/* Block controls: unobtrusive until a block is hovered or focused. */
+.block-editor-enhanced { position: relative; }
+.block-editor-block-controls { position: absolute; inset: 0 auto auto 0; width: 1px; height: 100%; z-index: 12; pointer-events: none; }
+.block-editor-block-handle { position: absolute; left: -2.1rem; width: 1.75rem; min-height: 1.7rem; padding: .1rem .2rem; border: 1px solid transparent; background: transparent; color: var(--text-muted, #888); font: 600 .8rem/1 var(--font-mono, monospace); cursor: pointer; opacity: 0; pointer-events: auto; }
+.block-editor-block-handle.is-visible, .block-editor-block-handle:hover, .block-editor-block-handle:focus-visible { opacity: 1; border-color: var(--border-strong, #666); background: var(--bg-elevated, #111); color: var(--text-primary, #eee); }
+.block-editor-block-menu { position: absolute; left: 0; z-index: 20; display: grid; min-width: 11rem; padding: .25rem; border: 1px solid var(--border-strong, #555); background: var(--bg-elevated, #111); box-shadow: 0 8px 24px rgba(0,0,0,.22); }
+.block-editor-block-menu[hidden] { display: none; }
+.block-editor-block-menu button { padding: .5rem .65rem; border: 0; background: transparent; color: var(--text-primary, #eee); text-align: left; font: inherit; cursor: pointer; }
+.block-editor-block-menu button:hover, .block-editor-block-menu button:focus-visible { background: var(--bg-soft, #222); outline: 1px solid var(--border-strong, #555); }
+.block-editor-canvas > * { scroll-margin-block: 5rem; }
+.block-editor-canvas > p:focus, .block-editor-canvas > h1:focus, .block-editor-canvas > h2:focus, .block-editor-canvas > h3:focus { outline: none; }
+@media (max-width: 760px) { .block-editor-block-handle { left: -.35rem; width: 1.3rem; background: var(--bg-elevated, #111); opacity: .8; } .block-editor-block-menu { left: 1rem; } }
