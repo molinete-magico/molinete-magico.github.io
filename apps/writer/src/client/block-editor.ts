@@ -403,6 +403,7 @@ export class BlockEditor {
       const to = target ? blocks.indexOf(target) : -1;
       if (from < 0 || to < 0 || from === to) return;
       event.preventDefault();
+      this.flushHistory();
       const moving = blocks[from];
       const rect = blocks[to].getBoundingClientRect();
       const after = event.clientY >= rect.top + rect.height / 2;
@@ -518,6 +519,7 @@ export class BlockEditor {
       }
     }
     this.closeBlockMenu();
+    this.rememberSelection();
     this.refreshBlockControls();
     this.onChange(this.getMarkdown());
   }
@@ -604,6 +606,7 @@ export class BlockEditor {
     const blocks = this.topLevelBlocks();
     const block = blocks[index];
     if (!block) return;
+    this.flushHistory();
     const action = button.dataset.blockAction;
     if (action === 'up' && index > 0) {
       this.canvas.insertBefore(block, blocks[index - 1]);
@@ -786,6 +789,7 @@ export class BlockEditor {
       const targetIndex = event.key === 'ArrowUp' ? index - 1 : index + 1;
       if (index >= 0 && targetIndex >= 0 && targetIndex < blocks.length) {
         event.preventDefault();
+        this.flushHistory();
         if (event.key === 'ArrowUp') this.canvas.insertBefore(blocks[index], blocks[targetIndex]);
         else this.canvas.insertBefore(blocks[targetIndex], blocks[index]);
         this.emitChange();
@@ -817,6 +821,7 @@ export class BlockEditor {
         beforeCaret.setEnd(selection.anchorNode, selection.anchorOffset);
         if (beforeCaret.toString().length === 0) {
           event.preventDefault();
+          this.flushHistory();
           const previous = blocks[index - 1];
           const isEmpty = !(current.textContent ?? '').trim() && !current.querySelector('img, table, hr');
           if (isEmpty) {
@@ -847,6 +852,7 @@ export class BlockEditor {
         const isEmptyCode = currentBlock.tagName === 'PRE';
         if (listItem && list && (list.tagName === 'UL' || list.tagName === 'OL')) {
           event.preventDefault();
+          this.flushHistory();
           const paragraph = document.createElement('p');
           paragraph.append(document.createElement('br'));
           if (list.children.length > 1) {
@@ -861,6 +867,7 @@ export class BlockEditor {
         }
         if (isHeading || isEmptyCode) {
           event.preventDefault();
+          this.flushHistory();
           const paragraph = document.createElement('p');
           paragraph.append(document.createElement('br'));
           currentBlock.replaceWith(paragraph);
@@ -872,6 +879,7 @@ export class BlockEditor {
       const quote = currentBlock?.closest('blockquote');
       if (currentBlock && quote && this.canvas.contains(quote) && !(currentBlock.textContent ?? '').trim()) {
         event.preventDefault();
+        this.flushHistory();
         const paragraph = document.createElement('p');
         paragraph.append(document.createElement('br'));
         const hasEarlierQuoteContent = Array.from(quote.childNodes).some((node) => {
@@ -926,9 +934,11 @@ export class BlockEditor {
     let target: HTMLElement;
 
     if (heading) {
+      this.flushHistory();
       target = document.createElement(`h${heading[1].length}`);
       block.replaceWith(target);
     } else if (unordered || ordered) {
+      this.flushHistory();
       const list = document.createElement(ordered ? 'ol' : 'ul');
       const item = document.createElement('li');
       item.append(document.createElement('br'));
@@ -936,6 +946,7 @@ export class BlockEditor {
       block.replaceWith(list);
       target = item;
     } else if (quote) {
+      this.flushHistory();
       const quoteBlock = document.createElement('blockquote');
       const paragraph = document.createElement('p');
       paragraph.append(document.createElement('br'));
@@ -943,6 +954,7 @@ export class BlockEditor {
       block.replaceWith(quoteBlock);
       target = paragraph;
     } else {
+      this.flushHistory();
       const pre = document.createElement('pre');
       const code = document.createElement('code');
       code.append(document.createElement('br'));
