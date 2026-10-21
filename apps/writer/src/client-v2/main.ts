@@ -402,7 +402,7 @@ function renderWorkspace() {
   $('#focus-toggle')!.removeAttribute('disabled');
   $('#palette-toggle')!.removeAttribute('disabled');
   const main = $('#v2-main')!;
-  main.innerHTML = '<section class="workspace"><div class="workspace-bar"><button class="text-button" id="back-library">← Biblioteca</button><div class="crumbs"><span id="crumb-parent">POST</span><span>/</span><span id="crumb-title">Sem título</span></div><div class="workspace-actions"><button class="button" id="outline-toggle" aria-pressed="false">Estrutura</button><button class="button" id="details-toggle" aria-pressed="false">Detalhes</button><button class="button" id="preview-toggle" aria-pressed="false">Prévia</button><button class="button" id="save-document">Salvar</button><button class="button button-primary" id="publish-document">Publicar</button></div></div><div class="workspace-layout"><aside class="document-sidebar" id="document-sidebar"><div class="sidebar-label">NAVEGAÇÃO</div><div id="document-tree"></div><div class="sidebar-actions" id="document-actions"></div></aside><section class="writing-stage"><div class="document-meta"><label class="title-field"><span class="eyebrow">TÍTULO DO DOCUMENTO</span><input id="doc-title" placeholder="Dê um nome a esta ideia" autocomplete="off"></label><div id="post-fields" class="metadata-grid"><label>Descrição<input id="meta-description" placeholder="Uma frase sobre o post"></label><label>Data de publicação<input id="meta-date" type="date"></label><label class="checkbox-field"><input id="meta-draft" type="checkbox"><span>Manter como rascunho</span></label><label>Tags <input id="meta-tags" placeholder="separe tags por vírgula"></label><div class="banner-tools"><label class="file-label">Banner <input id="post-banner-file" type="file" accept="image/*"></label><label>Enquadramento <input id="banner-position" type="range" min="0" max="100" value="50"></label><label>Exibição <select id="banner-fit"><option value="cover">Recortar</option><option value="fill">Imagem inteira</option></select></label><img id="post-banner-preview" class="banner-preview" alt="Prévia do banner do post" hidden></div></div><div id="project-fields" class="metadata-grid" hidden><label>Descrição<input id="project-description" placeholder="Sobre este projeto"></label><label>Tipo<select id="project-type"><option value="story">História</option><option value="rpg">Sistema de RPG</option></select></label><label>Ordem<input id="project-order" type="number" step="1"></label><label class="checkbox-field"><input id="project-published" type="checkbox"><span>Visível no site</span></label><label class="checkbox-field"><input id="project-homepage" type="checkbox"><span>Mostrar página inicial</span></label><label>Imagem de capa <input id="project-cover" placeholder="Caminho/URL da imagem"></label><label class="file-label">Enviar capa/banner <input id="project-cover-file" type="file" accept="image/*"></label><label>Posição do banner <input id="project-banner-position" type="range" min="0" max="100" value="50"></label><img id="project-banner-preview" class="banner-preview" alt="Prévia do banner do projeto" hidden></div><div id="document-fields" class="metadata-grid" hidden><label>Ordem<input id="document-order" type="number" step="1"></label><label class="checkbox-field"><input id="document-published" type="checkbox"><span>Capítulo publicado</span></label></div></div><div class="editor-label-row"><span class="eyebrow">EDITOR EM BLOCOS</span><span class="editor-hint">Digite / para inserir um bloco · Ctrl/⌘ + S para salvar</span></div><div id="block-host" class="block-host"></div><div id="slash-menu" class="slash-menu" hidden><button data-insert-block="h1">Título 1</button><button data-insert-block="h2">Título 2</button><button data-insert-block="h3">Título 3</button><button data-insert-block="blockquote">Citação</button><button data-insert-block="pre">Código</button><button data-insert-block="ul">Lista</button><button data-insert-block="hr">Divisor</button></div><section id="preview-pane" class="preview-pane" hidden><div class="sidebar-label">PRÉVIA PUBLICADA</div><article id="preview-content" class="prose"></article></section></section></div></section>';
+  main.innerHTML = '<section class="workspace"><div class="workspace-bar"><button class="text-button" id="back-library">← Biblioteca</button><div class="crumbs"><span id="crumb-parent">POST</span><span>/</span><span id="crumb-title">Sem título</span></div><div class="workspace-actions"><button class="button" id="outline-toggle" aria-pressed="false">Estrutura</button><button class="button" id="details-toggle" aria-pressed="false">Detalhes</button><button class="button" id="preview-toggle" aria-pressed="false">Prévia</button><button class="button" id="save-document">Salvar</button><button class="button button-primary" id="publish-document">Publicar</button></div></div><div class="workspace-layout"><aside class="document-sidebar" id="document-sidebar"><div class="sidebar-label">NAVEGAÇÃO</div><div id="document-tree"></div><div class="sidebar-actions" id="document-actions"></div><div class="heading-outline-section"><div class="sidebar-label">TÍTULOS DO DOCUMENTO</div><nav id="heading-outline" aria-label="Títulos do documento"><p class="tree-note">Adicione títulos para criar um sumário.</p></nav></div></aside><section class="writing-stage"><div class="document-meta"><label class="title-field"><span class="eyebrow">TÍTULO DO DOCUMENTO</span><input id="doc-title" placeholder="Dê um nome a esta ideia" autocomplete="off"></label><div id="post-fields" class="metadata-grid"><label>Descrição<input id="meta-description" placeholder="Uma frase sobre o post"></label><label>Data de publicação<input id="meta-date" type="date"></label><label class="checkbox-field"><input id="meta-draft" type="checkbox"><span>Manter como rascunho</span></label><label>Tags <input id="meta-tags" placeholder="separe tags por vírgula"></label><div class="banner-tools"><label class="file-label">Banner <input id="post-banner-file" type="file" accept="image/*"></label><label>Enquadramento <input id="banner-position" type="range" min="0" max="100" value="50"></label><label>Exibição <select id="banner-fit"><option value="cover">Recortar</option><option value="fill">Imagem inteira</option></select></label><img id="post-banner-preview" class="banner-preview" alt="Prévia do banner do post" hidden></div></div><div id="project-fields" class="metadata-grid" hidden><label>Descrição<input id="project-description" placeholder="Sobre este projeto"></label><label>Tipo<select id="project-type"><option value="story">História</option><option value="rpg">Sistema de RPG</option></select></label><label>Ordem<input id="project-order" type="number" step="1"></label><label class="checkbox-field"><input id="project-published" type="checkbox"><span>Visível no site</span></label><label class="checkbox-field"><input id="project-homepage" type="checkbox"><span>Mostrar página inicial</span></label><label>Imagem de capa <input id="project-cover" placeholder="Caminho/URL da imagem"></label><label class="file-label">Enviar capa/banner <input id="project-cover-file" type="file" accept="image/*"></label><label>Posição do banner <input id="project-banner-position" type="range" min="0" max="100" value="50"></label><img id="project-banner-preview" class="banner-preview" alt="Prévia do banner do projeto" hidden></div><div id="document-fields" class="metadata-grid" hidden><label>Ordem<input id="document-order" type="number" step="1"></label><label class="checkbox-field"><input id="document-published" type="checkbox"><span>Capítulo publicado</span></label></div></div><div class="editor-label-row"><span class="eyebrow">EDITOR EM BLOCOS</span><span class="editor-hint">Digite / para inserir um bloco · Ctrl/⌘ + S para salvar</span></div><div id="block-host" class="block-host"></div><div id="writing-stats" class="writing-stats" aria-live="polite"><span id="word-count">0 palavras</span><span id="character-count">0 caracteres</span><span id="reading-time">1 min de leitura</span><label>Meta <input id="word-goal" type="number" min="0" step="50" placeholder="palavras" aria-label="Meta de palavras"></label><span id="goal-progress"></span></div><div id="slash-menu" class="slash-menu" role="listbox" aria-label="Inserir bloco" hidden><button role="option" data-insert-block="h1">Título 1</button><button role="option" data-insert-block="h2">Título 2</button><button role="option" data-insert-block="h3">Título 3</button><button role="option" data-insert-block="blockquote">Citação</button><button role="option" data-insert-block="pre">Código</button><button role="option" data-insert-block="ul">Lista</button><button role="option" data-insert-block="ol">Lista numerada</button><button role="option" data-insert-block="hr">Divisor</button></div><section id="preview-pane" class="preview-pane" hidden><div class="sidebar-label">PRÉVIA PUBLICADA</div><article id="preview-content" class="prose"></article></section></section></div></section>';
   $('#back-library')!.addEventListener('click', () => { if (confirmLeave()) showLibrary(); });
   $('#save-document')!.addEventListener('click', () => void saveCurrent());
   $('#publish-document')!.addEventListener('click', () => void publishCurrent());
@@ -444,12 +444,29 @@ function renderWorkspace() {
     button.addEventListener('click', () => insertBlock(button.dataset.insertBlock!));
   });
   const host = $('#block-host')!;
-  state.editor = new BlockEditor(host, () => markDirty(), uploadInlineImage, resolveImageUrl);
+  state.editor = new BlockEditor(host, () => { markDirty(); renderHeadingOutline(); updateWritingStats(); }, uploadInlineImage, resolveImageUrl);
   $('#block-host .block-editor-toolbar')?.classList.add('v2-block-toolbar');
   bindSlashMenu();
+  const goal = $('#word-goal') as HTMLInputElement | null;
+  if (goal) {
+    goal.value = storageGet('writer-v2-word-goal') ?? '';
+    goal.addEventListener('input', () => { storageSet('writer-v2-word-goal', goal.value); updateWritingStats(); });
+  }
+  $('#heading-outline')?.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-heading-index]');
+    if (!button) return;
+    const headings = $('#block-host .block-editor-canvas')?.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6');
+    const heading = headings?.[Number(button.dataset.headingIndex)];
+    if (heading) {
+      heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      heading.setAttribute('tabindex', '-1');
+      heading.focus({ preventScroll: true });
+    }
+  });
   document.documentElement.classList.toggle('writer-focus', state.focus);
   fillMetadata();
   renderDocumentTree();
+  renderHeadingOutline(); updateWritingStats();
   status('Documento aberto');
 }
 function fillMetadata() {
@@ -535,6 +552,36 @@ function renderDocumentTree() {
     state.currentProject.documents.map((d) => '<button class="tree-item ' + (state.currentDoc?.id === d.id && state.currentDoc?.kind === d.kind ? 'selected' : '') + '" data-doc-kind="' + d.kind + '" data-doc-id="' + esc(d.id) + '"><span>' + (d.kind === 'chapter' ? '§' : d.kind === 'supplement' ? '＋' : '≡') + '</span><span>' + esc(d.title) + '</span></button>').join('');
   actions.innerHTML = '<button class="text-button" data-create-doc="chapter">+ Novo capítulo</button><button class="text-button" data-create-doc="supplement">+ Novo suplemento</button>';
 }
+function renderHeadingOutline() {
+  const outline = $('#heading-outline');
+  const canvas = $('#block-host .block-editor-canvas');
+  if (!outline || !canvas) return;
+  const headings = Array.from(canvas.querySelectorAll<HTMLElement>('h1,h2,h3,h4,h5,h6'));
+  if (!headings.length) {
+    outline.innerHTML = '<p class="tree-note">Adicione títulos para criar um sumário.</p>';
+    return;
+  }
+  outline.innerHTML = headings.map((heading, index) => {
+    const level = Number(heading.tagName.slice(1));
+    const title = heading.textContent?.trim() || 'Título sem texto';
+    return '<button type="button" class="heading-outline-item level-' + level + '" data-heading-index="' + index + '" title="' + esc(title) + '">' + esc(title) + '</button>';
+  }).join('');
+}
+function updateWritingStats() {
+  const body = bodyNow();
+  const text = body.replace(/!?(?:\[[^\]]*\])\([^)]*\)/g, ' ').replace(/<[^>]+>/g, ' ').replace(/[\`*_>#~|]/g, ' ');
+  const words = text.trim() ? text.trim().split(/\s+/u).length : 0;
+  const chars = body.length;
+  const minutes = Math.max(1, Math.ceil(words / 220));
+  const goalInput = $('#word-goal') as HTMLInputElement | null;
+  const goal = Math.max(0, Number(goalInput?.value) || 0);
+  const wordNode = $('#word-count'); if (wordNode) wordNode.textContent = words + (words === 1 ? ' palavra' : ' palavras');
+  const charNode = $('#character-count'); if (charNode) charNode.textContent = chars + (chars === 1 ? ' caractere' : ' caracteres');
+  const timeNode = $('#reading-time'); if (timeNode) timeNode.textContent = minutes + ' min de leitura';
+  const progress = $('#goal-progress');
+  if (progress) progress.textContent = goal > 0 ? words + '/' + goal + ' (' + Math.min(100, Math.round(words / goal * 100)) + '%)' : '';
+}
+
 async function handleTreeClick(event: Event) {
   const target = event.target as HTMLElement;
   const projectButton = target.closest<HTMLButtonElement>('[data-open-project]');
@@ -595,6 +642,7 @@ function bindSlashMenu() {
         blockquote: 'quote citação',
         pre: 'code código',
         ul: 'list lista marcadores',
+        ol: 'ordered numbered list lista numerada ordenada',
         hr: 'divider divisor separador',
       };
       const searchable = kind + ' ' + label + ' ' + (aliases[kind] ?? '');
