@@ -443,14 +443,19 @@ export class BlockEditor {
 
   private captureHistorySnapshot(): BlockEditorHistorySnapshot {
     const selection = window.getSelection();
-    const anchor = selection?.anchorNode && this.canvas.contains(selection.anchorNode) ? selection.anchorNode : this.canvas;
-    const focus = selection?.focusNode && this.canvas.contains(selection.focusNode) ? selection.focusNode : this.canvas;
+    const liveSelectionInside = Boolean(selection?.anchorNode && selection.focusNode &&
+      this.canvas.contains(selection.anchorNode) && this.canvas.contains(selection.focusNode));
+    const fallbackRange = this.savedRange && this.canvas.contains(this.savedRange.commonAncestorContainer)
+      ? this.savedRange
+      : null;
+    const anchor = liveSelectionInside ? selection!.anchorNode! : fallbackRange?.startContainer ?? this.canvas;
+    const focus = liveSelectionInside ? selection!.focusNode! : fallbackRange?.endContainer ?? anchor;
     return {
       html: this.canvas.innerHTML,
       anchorPath: this.nodePath(anchor),
-      anchorOffset: selection?.anchorNode === anchor ? selection.anchorOffset : this.canvas.childNodes.length,
+      anchorOffset: liveSelectionInside ? selection!.anchorOffset : fallbackRange?.startOffset ?? this.canvas.childNodes.length,
       focusPath: this.nodePath(focus),
-      focusOffset: selection?.focusNode === focus ? selection.focusOffset : this.canvas.childNodes.length,
+      focusOffset: liveSelectionInside ? selection!.focusOffset : fallbackRange?.endOffset ?? this.canvas.childNodes.length,
     };
   }
 
