@@ -131,6 +131,7 @@ export class BlockEditor {
   private savedRange: Range | null = null;
   private blockControls: HTMLDivElement;
   private blockMenu: HTMLDivElement;
+  private draggedBlockIndex = -1;
   private composing = false;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
@@ -328,6 +329,45 @@ export class BlockEditor {
       this.emitChange();
     });
     this.blockControls.addEventListener('click', (event) => this.handleBlockControlClick(event));
+    this.blockControls.addEventListener('dragstart', (event) => {
+      const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
+      if (!handle || !event.dataTransfer) return;
+      this.draggedBlockIndex = Number(handle.dataset.blockIndex);
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('application/x-writer-block', String(this.draggedBlockIndex));
+    });
+    this.blockControls.addEventListener('dragend', () => {
+      this.draggedBlockIndex = -1;
+      this.canvas.querySelectorAll('.block-drop-before, .block-drop-after').forEach((node) => node.classList.remove('block-drop-before', 'block-drop-after'));
+    });
+    this.canvas.addEventListener('dragover', (event) => {
+      if (!event.dataTransfer?.types.includes('application/x-writer-block')) return;
+      const target = (event.target as HTMLElement).closest<HTMLElement>(':scope > *');
+      if (!target || !this.canvas.contains(target)) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      this.canvas.querySelectorAll('.block-drop-before, .block-drop-after').forEach((node) => node.classList.remove('block-drop-before', 'block-drop-after'));
+      const rect = target.getBoundingClientRect();
+      target.classList.add(event.clientY < rect.top + rect.height / 2 ? 'block-drop-before' : 'block-drop-after');
+    });
+    this.canvas.addEventListener('drop', (event) => {
+      if (!event.dataTransfer?.types.includes('application/x-writer-block')) return;
+      const target = (event.target as HTMLElement).closest<HTMLElement>(':scope > *');
+      const blocks = this.topLevelBlocks();
+      const from = this.draggedBlockIndex;
+      const to = target ? blocks.indexOf(target) : -1;
+      if (from < 0 || to < 0 || from === to) return;
+      event.preventDefault();
+      const moving = blocks[from];
+      const rect = blocks[to].getBoundingClientRect();
+      const after = event.clientY >= rect.top + rect.height / 2;
+      if (after) blocks[to].after(moving);
+      else this.canvas.insertBefore(moving, blocks[to]);
+      this.draggedBlockIndex = -1;
+      this.canvas.querySelectorAll('.block-drop-before, .block-drop-after').forEach((node) => node.classList.remove('block-drop-before', 'block-drop-after'));
+      this.refreshBlockControls();
+      this.emitChange();
+    });
     this.blockMenu.addEventListener('click', (event) => this.handleBlockMenuClick(event));
     this.root.addEventListener('click', (event) => {
       if (!this.blockMenu.hidden && !this.blockMenu.contains(event.target as Node) && !this.blockControls.contains(event.target as Node)) this.closeBlockMenu();
@@ -363,6 +403,7 @@ export class BlockEditor {
       if (rect.height === 0 && !block.textContent?.trim()) return;
       const handle = document.createElement('button');
       handle.type = 'button';
+      handle.draggable = true;
       handle.className = 'block-editor-block-handle';
       handle.textContent = '⋮⋮';
       handle.title = 'Ações do bloco';
