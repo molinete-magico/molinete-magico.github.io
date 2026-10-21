@@ -118,5 +118,5 @@ test('selection toolbar appears for selected text and formats it as Markdown', a
   const toolbar = page.getByRole('toolbar', { name: 'Formatação da seleção' });
   await expect(toolbar).toBeVisible();
   await toolbar.getByRole('button', { name: 'Negrito' }).click();
-  await expect.poll(() => canvas.evaluate((element) => (window as any).writerEditor?.getMarkdown?.() ?? element.innerHTML)).toContain('strong');
+  await expect(canvas.locator('b, strong')).toHaveText('selected');
 });
