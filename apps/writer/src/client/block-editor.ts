@@ -21,7 +21,7 @@ function escapeHtml(value: string): string {
 
 function inlineMarkdown(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) {
-    return (node.textContent ?? '').replace(/\\/g, '\\\\').replace(/([*_\[\]\\])/g, '\\$1');
+    return (node.textContent ?? '').replace(/\/g, '\\').replace(/([*_{}()#+\-.!|>])/g, '\\$1').replace(/\[/g, '\\[').replace(/\]/g, '\\]').replace(/`/g, '\\`');
   }
   if (!(node instanceof HTMLElement)) return '';
   const children = Array.from(node.childNodes).map(inlineMarkdown).join('');
@@ -32,7 +32,13 @@ function inlineMarkdown(node: Node): string {
     case 'I': return `*${children}*`;
     case 'DEL':
     case 'S': return `~~${children}~~`;
-    case 'CODE': return `\u0060${(node.textContent ?? '').replace(/\u0060/g, '\\u0060')}\u0060`;
+    case 'CODE': {
+      const content = node.textContent ?? '';
+      const longestRun = Math.max(0, ...Array.from(content.matchAll(/`+/g), (match) => match[0].length));
+      const delimiter = '`'.repeat(longestRun + 1);
+      const padding = content.startsWith('`') || content.endsWith('`') ? ' ' : '';
+      return `${delimiter}${padding}${content}${padding}${delimiter}`;
+    }
     case 'A': {
       const href = node.getAttribute('href') ?? '';
       return href ? `[${children}](${href.replace(/\)/g, '%29')})` : children;
@@ -85,7 +91,7 @@ function blockMarkdown(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) return (node.textContent ?? '').trim();
   if (!(node instanceof HTMLElement)) return '';
   const children = Array.from(node.childNodes).map(blockMarkdown);
-  const inline = Array.from(node.childNodes).map(inlineMarkdown).join('').trim();
+  const inline = Array.from(node.childNodes).map(inlineMarkdown).join('');
   switch (node.tagName) {
     case 'H1': return `# ${inline}`;
     case 'H2': return `## ${inline}`;
@@ -563,22 +569,22 @@ export class BlockEditor {
     ]);
     const flushInline = () => {
       if (inlineNodes.length === 0) return;
-      const paragraph = inlineNodes.map(inlineMarkdown).join('').trim();
-      if (paragraph) output.push(paragraph);
+      const paragraph = inlineNodes.map(inlineMarkdown).join('');
+      if (paragraph.trim()) output.push(paragraph);
       inlineNodes = [];
     };
 
     for (const node of Array.from(this.canvas.childNodes)) {
       if (node instanceof HTMLElement && blockTags.has(node.tagName)) {
         flushInline();
-        const markdown = blockMarkdown(node).trim();
-        if (markdown) output.push(markdown);
+        const markdown = blockMarkdown(node);
+        if (markdown.trim()) output.push(markdown);
       } else {
         inlineNodes.push(node);
       }
     }
     flushInline();
-    return output.join('\n\n').trim();
+    return output.join('\n\n').replace(/^\n+|\n+$/g, '');
   }
 
   insertBlock(kind: string, removeSlashCommand = false): void {
