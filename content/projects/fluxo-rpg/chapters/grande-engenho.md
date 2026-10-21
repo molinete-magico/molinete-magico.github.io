@@ -45,25 +45,25 @@ Dentro do Grande Engenho, os estudantes são divididos em quatro casas: Espadas,
 
 Cada casa representa uma maneira diferente de compreender e praticar os duelos\.
 
-### ⚔ Espadas
+### ⚔ Espadas \(Preto e Prata\)
 
 Para Espadas, um duelo exige decisões firmes, iniciativa e disposição para enfrentar o adversário diretamente\. Seus integrantes valorizam a execução e a capacidade de sustentar as próprias escolhas sob pressão\.
 
 A casa mantém uma antiga rivalidade com Paus, marcada por provocações, disputas e divergências sobre o que significa ser um bom duelista\.
 
-###  ♥ Copas
+###  ♥ Copas \(Vermelho e Dourado\)
 
 Copas entende que um duelo não envolve apenas dois adversários, mas também intenções, vínculos e consequências\. Seus integrantes valorizam a compreensão do oponente e a capacidade de influenciar o rumo de um confronto\.
 
 São conhecidos por organizar as festas e celebrações da academia, mantendo viva a vida social entre os estudantes\.
 
-###  ◇ Ouros
+###  ◇ Ouros \(Amarelo e Dourado\)
 
 Para Ouros, vencer significa construir uma posição favorável por meio do planejamento, da administração de recursos e da avaliação de riscos\. Seus integrantes procuram transformar oportunidades em vantagens concretas\.
 
 A casa também possui um sistema próprio de trocas entre estudantes, uma tradição que faz parte de sua identidade dentro do Grande Engenho\.
 
-###  ♣ Paus
+###  ♣ Paus \(Azul e Prata\)
 
 Paus acredita que as possibilidades de um duelo vão além das estratégias convencionais\. Seus integrantes valorizam a criatividade, a adaptação e a busca por soluções inesperadas\.
 
