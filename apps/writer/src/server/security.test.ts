@@ -198,7 +198,7 @@ test('Writer image upload API persists an image and returns a stable filename', 
   await fs.mkdir(path.join(workspace, 'content', 'projects'), { recursive: true });
   await fs.writeFile(path.join(postFolder, 'index.md'), [
     '---', 'title: Image round-trip', 'description: Test', 'pubDate: "2020-04-05"', 'draft: true', '---', '', 'Post de teste', '',
-  ].join('\\n'), 'utf-8');
+  ].join('\n'), 'utf-8');
   const imageBytes = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3]);
 
   try {
