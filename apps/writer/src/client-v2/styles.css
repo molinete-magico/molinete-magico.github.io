@@ -247,3 +247,9 @@ textarea:focus-visible {
 .block-editor-canvas > * { scroll-margin-block: 5rem; }
 .block-editor-canvas > p:focus, .block-editor-canvas > h1:focus, .block-editor-canvas > h2:focus, .block-editor-canvas > h3:focus { outline: none; }
 @media (max-width: 760px) { .block-editor-block-handle { left: -.35rem; width: 1.3rem; background: var(--bg-elevated, #111); opacity: .8; } .block-editor-block-menu { left: 1rem; } }
+
+.slash-menu { position: absolute; z-index: 30; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(21rem, calc(100% - 1rem)); max-width: calc(100% - 1rem); max-height: min(18rem, 45vh); overflow-y: auto; margin: 0; padding: .3rem; border: 1px solid var(--border-strong); background: var(--bg-elevated); box-shadow: 0 8px 28px rgba(0,0,0,.25); }
+.slash-menu[hidden] { display: none; }
+.slash-menu button { min-width: 0; padding: .55rem .65rem; border: 1px solid transparent; background: transparent; color: var(--text-primary); text-align: left; }
+.slash-menu button[hidden] { display: none; }
+.slash-menu button.is-selected, .slash-menu button:hover, .slash-menu button:focus-visible { border-color: var(--border-strong); background: var(--bg-soft); outline: none; }
