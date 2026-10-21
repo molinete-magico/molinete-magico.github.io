@@ -412,6 +412,110 @@ export class BlockEditor {
     });
   }
 
+  private nodePath(node: Node): number[] {
+    const path: number[] = [];
+    let current: Node = node;
+    while (current !== this.canvas) {
+      const parent = current.parentNode;
+      if (!parent) return [];
+      path.unshift(Array.prototype.indexOf.call(parent.childNodes, current) as number);
+      current = parent;
+    }
+    return path;
+  }
+
+  private nodeAtPath(path: number[]): Node | null {
+    let current: Node = this.canvas;
+    for (const index of path) {
+      const next = current.childNodes[index];
+      if (!next) return null;
+      current = next;
+    }
+    return current;
+  }
+
+  private captureHistorySnapshot(): BlockEditorHistorySnapshot {
+    const selection = window.getSelection();
+    const anchor = selection?.anchorNode && this.canvas.contains(selection.anchorNode) ? selection.anchorNode : this.canvas;
+    const focus = selection?.focusNode && this.canvas.contains(selection.focusNode) ? selection.focusNode : this.canvas;
+    return {
+      html: this.canvas.innerHTML,
+      anchorPath: this.nodePath(anchor),
+      anchorOffset: selection?.anchorNode === anchor ? selection.anchorOffset : this.canvas.childNodes.length,
+      focusPath: this.nodePath(focus),
+      focusOffset: selection?.focusNode === focus ? selection.focusOffset : this.canvas.childNodes.length,
+    };
+  }
+
+  private commitHistorySnapshot(): void {
+    const snapshot = this.captureHistorySnapshot();
+    const current = this.history[this.historyIndex];
+    if (current?.html === snapshot.html) {
+      this.history[this.historyIndex] = snapshot;
+      return;
+    }
+    this.history = this.history.slice(0, this.historyIndex + 1);
+    this.history.push(snapshot);
+    if (this.history.length > 100) this.history.shift();
+    this.historyIndex = this.history.length - 1;
+  }
+
+  private flushHistory(): void {
+    if (this.historyTimer) {
+      clearTimeout(this.historyTimer);
+      this.historyTimer = null;
+    }
+    this.commitHistorySnapshot();
+  }
+
+  private scheduleHistorySnapshot(): void {
+    if (this.historyTimer) clearTimeout(this.historyTimer);
+    this.historyTimer = setTimeout(() => {
+      this.historyTimer = null;
+      this.commitHistorySnapshot();
+    }, 350);
+  }
+
+  private resetHistory(): void {
+    if (this.historyTimer) clearTimeout(this.historyTimer);
+    this.historyTimer = null;
+    this.history = [this.captureHistorySnapshot()];
+    this.historyIndex = 0;
+  }
+
+  private restoreHistory(direction: 'undo' | 'redo'): void {
+    this.flushHistory();
+    const nextIndex = direction === 'undo' ? this.historyIndex - 1 : this.historyIndex + 1;
+    if (nextIndex < 0 || nextIndex >= this.history.length) return;
+    this.historyIndex = nextIndex;
+    const snapshot = this.history[nextIndex];
+    this.canvas.innerHTML = snapshot.html;
+    this.canvas.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+      const markdownSrc = image.dataset.markdownSrc ?? image.getAttribute('src') ?? '';
+      image.dataset.markdownSrc = markdownSrc;
+      if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
+    });
+    const anchor = this.nodeAtPath(snapshot.anchorPath) ?? this.canvas;
+    const focus = this.nodeAtPath(snapshot.focusPath) ?? anchor;
+    const selection = window.getSelection();
+    if (selection) {
+      const anchorOffset = Math.min(snapshot.anchorOffset, anchor.nodeType === Node.TEXT_NODE ? (anchor.textContent ?? '').length : anchor.childNodes.length);
+      const focusOffset = Math.min(snapshot.focusOffset, focus.nodeType === Node.TEXT_NODE ? (focus.textContent ?? '').length : focus.childNodes.length);
+      selection.removeAllRanges();
+      try {
+        selection.setBaseAndExtent(anchor, anchorOffset, focus, focusOffset);
+      } catch {
+        const range = document.createRange();
+        range.setStart(anchor, anchorOffset);
+        range.collapse(true);
+        selection.addRange(range);
+      }
+    }
+    this.closeBlockMenu();
+    this.refreshBlockControls();
+    this.onChange(this.getMarkdown());
+  }
+
   private rememberSelection(): void {
     const selection = window.getSelection();
     if (!selection?.rangeCount) return;
