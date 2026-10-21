@@ -1806,3 +1806,8 @@ button.primary:hover:not(:disabled) {
 .block-editor-canvas > * { scroll-margin-block: 5rem; }
 .block-editor-canvas > p:focus, .block-editor-canvas > h1:focus, .block-editor-canvas > h2:focus, .block-editor-canvas > h3:focus { outline: none; }
 @media (max-width: 760px) { .block-editor-block-handle { left: -.35rem; width: 1.3rem; background: var(--bg-elevated, #111); opacity: .8; } .block-editor-block-menu { left: 1rem; } }
+
+.block-editor-block-handle { cursor: grab; touch-action: none; }
+.block-editor-block-handle:active { cursor: grabbing; }
+.block-editor-canvas > .block-drop-before { border-top: 2px solid var(--accent, #5a9); }
+.block-editor-canvas > .block-drop-after { border-bottom: 2px solid var(--accent, #5a9); }
