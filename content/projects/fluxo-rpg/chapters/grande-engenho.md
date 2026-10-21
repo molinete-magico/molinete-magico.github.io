@@ -6,23 +6,25 @@ order: 0
 
 # O que é o Grande Engenho?
 
-O grande engenho é a academia de duelistas localizada numa pequena ilhota perto de Fernando de Noronha onde a campanha Fluxo RPG: Craquelos vai ocorrer.
+O grande engenho é a academia de duelistas localizada numa pequena ilhota perto de Fernando de Noronha onde a campanha Fluxo RPG: Craquelos vai ocorrer\.
 
-Nessa academia os estudantes já são bruxos iniciados (ou seja, já tem a formação em uma escola de bruxo/já tem experiência) e vão aprender, praticar e se especializar em diplomacia, geografia, estatística, probabilidade, cálculo, relações internacionais e ,obviamente, duelos.
+Nessa academia os estudantes já são bruxos iniciados \(ou seja, já tem a formação em uma escola de bruxo/já tem experiência\) e vão aprender, praticar e se especializar em diplomacia, geografia, estatística, probabilidade, cálculo, relações internacionais e ,obviamente, duelos\.
 
-Todos os anos, a academia recebe cerca de 300 estudantes, que inicialmente são filtrados até sobrarem 75. Todos os anos a filtragem muda, sendo impossível saber qual será o método do ano que estão entrando.
+Todos os anos, a academia recebe cerca de 300 estudantes, que inicialmente são filtrados até sobrarem 75\. Todos os anos a filtragem muda, sendo impossível saber qual será o método do ano que estão entrando\.
 
 ## Mapa
 
 > 
 > 
-> [https://molinete-magico.github.io/blog/mapas/grande-engenho.html](https://molinete-magico.github.io/blog/mapas/grande-engenho.html)
+> [https://molinete\-magico\.github\.io/blog/mapas/grande\-engenho\.html](https://molinete-magico.github.io/blog/mapas/grande-engenho.html)
+> 
+> 
 
 ## Uniformes
 
-Os uniformes do colégio são mais usados em situações mais sérias/celebrações. Dentro do campus, é opcional usar seus uniformes (apesar de ser bem visto você utilizar seu uniforme).  
-  
-O uniforme tem três variações:
+Os uniformes do colégio são mais usados em situações mais sérias/celebrações\. Dentro do campus, é opcional usar seus uniformes \(apesar de ser bem visto você utilizar seu uniforme\)\.
+
+O uniforme tem duas variações:
 
 ### Masculino
 
@@ -32,9 +34,37 @@ O uniforme tem três variações:
 
 ![caeac](caeac.webp)
 
-Todos os alunos tem direito a receber uma unidade dos dois uniformes, selecionando previamente se querem os dois, ou apenas um deles.  
-Na versão sem colete da roupa masculina, é recomendável que se utilize uma gravata com as cores de sua casa.
+Todos os alunos tem direito a receber uma unidade dos dois uniformes, selecionando previamente se querem os dois, ou apenas um deles\.  
+Na versão sem colete da roupa masculina, é recomendável que se utilize uma gravata com as cores de sua casa\.
 
-Na versão feminina, existe a possibilidade de fechar as fendas do vestido para uma aparência mais modesta.
+Na versão feminina, existe a possibilidade de fechar as fendas do vestido para uma aparência mais modesta\.
 
-CasasDentro do Grande Engenho, os estudantes são divididos em quatro casas: Espadas, Copas, Ouros e Paus. Diferentemente das escolas de bruxos comuns, essa divisão é uma tradição própria das academias de duelistas.Cada casa representa uma maneira diferente de compreender e praticar os duelos.⚔ EspadasPara Espadas, um duelo exige decisões firmes, iniciativa e disposição para enfrentar o adversário diretamente. Seus integrantes valorizam a execução e a capacidade de sustentar as próprias escolhas sob pressão.A casa mantém uma antiga rivalidade com Paus, marcada por provocações, disputas e divergências sobre o que significa ser um bom duelista.♥ CopasCopas entende que um duelo não envolve apenas dois adversários, mas também intenções, vínculos e consequências. Seus integrantes valorizam a compreensão do oponente e a capacidade de influenciar o rumo de um confronto.São conhecidos por organizar as festas e celebrações da academia, mantendo viva a vida social entre os estudantes.◇ OurosPara Ouros, vencer significa construir uma posição favorável por meio do planejamento, da administração de recursos e da avaliação de riscos. Seus integrantes procuram transformar oportunidades em vantagens concretas.A casa também possui um sistema próprio de trocas entre estudantes.♣ PausPaus acredita que as possibilidades de um duelo vão além das estratégias convencionais. Seus integrantes valorizam a criatividade, a adaptação e a busca por soluções inesperadas.Essa postura frequentemente entra em conflito com a filosofia de Espadas, cuja preferência pelo confronto direto é alvo constante das provocações de Paus.
+## Casas
+
+Dentro do Grande Engenho, os estudantes são divididos em quatro casas: Espadas, Copas, Ouros e Paus\. 
+
+Cada casa representa uma maneira diferente de compreender e praticar os duelos\.
+
+### ⚔ Espadas
+
+Para Espadas, um duelo exige decisões firmes, iniciativa e disposição para enfrentar o adversário diretamente\. Seus integrantes valorizam a execução e a capacidade de sustentar as próprias escolhas sob pressão\.
+
+A casa mantém uma antiga rivalidade com Paus, marcada por provocações, disputas e divergências sobre o que significa ser um bom duelista\.
+
+###  ♥ Copas
+
+Copas entende que um duelo não envolve apenas dois adversários, mas também intenções, vínculos e consequências\. Seus integrantes valorizam a compreensão do oponente e a capacidade de influenciar o rumo de um confronto\.
+
+São conhecidos por organizar as festas e celebrações da academia, mantendo viva a vida social entre os estudantes\.
+
+###  ◇ Ouros
+
+Para Ouros, vencer significa construir uma posição favorável por meio do planejamento, da administração de recursos e da avaliação de riscos\. Seus integrantes procuram transformar oportunidades em vantagens concretas\.
+
+A casa também possui um sistema próprio de trocas entre estudantes, uma tradição que faz parte de sua identidade dentro do Grande Engenho\.
+
+###  ♣ Paus
+
+Paus acredita que as possibilidades de um duelo vão além das estratégias convencionais\. Seus integrantes valorizam a criatividade, a adaptação e a busca por soluções inesperadas\.
+
+Essa postura frequentemente entra em conflito com a filosofia de Espadas, cuja preferência pelo confronto direto é alvo constante das provocações de Paus\.
