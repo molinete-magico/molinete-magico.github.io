@@ -238,6 +238,7 @@ export class BlockEditor {
         range.collapse(false);
       }
 
+      this.flushHistory();
       range.deleteContents();
       let current = range.startContainer instanceof HTMLElement
         ? range.startContainer
@@ -296,6 +297,7 @@ export class BlockEditor {
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => {
         const command = button.dataset.command as FormatCommand;
+        this.flushHistory();
         this.restoreSelection();
         this.canvas.focus();
         document.execCommand(command, false);
@@ -304,6 +306,7 @@ export class BlockEditor {
     });
     const blockType = this.root.querySelector<HTMLSelectElement>('[data-block-type]')!;
     blockType.addEventListener('change', () => {
+      this.flushHistory();
       this.restoreSelection();
       this.canvas.focus();
       const value = blockType.value;
@@ -324,6 +327,7 @@ export class BlockEditor {
       this.rememberSelection();
       const url = window.prompt('URL do link');
       if (!url) return;
+      this.flushHistory();
       this.restoreSelection();
       this.canvas.focus();
       document.execCommand('createLink', false, url);
@@ -335,6 +339,7 @@ export class BlockEditor {
       const url = window.prompt('URL ou caminho da imagem');
       if (!url) return;
       const alt = window.prompt('Texto alternativo (opcional)') ?? '';
+      this.flushHistory();
       this.restoreSelection();
       this.canvas.focus();
       document.execCommand('insertHTML', false, `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`);
@@ -362,6 +367,7 @@ export class BlockEditor {
     });
     this.root.querySelector('[data-action="hr"]')!.addEventListener('mousedown', (event) => event.preventDefault());
     this.root.querySelector('[data-action="hr"]')!.addEventListener('click', () => {
+      this.flushHistory();
       this.restoreSelection();
       this.canvas.focus();
       document.execCommand('insertHTML', false, '<hr><p><br></p>');
@@ -651,6 +657,7 @@ export class BlockEditor {
       if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
     });
     this.refreshBlockControls();
+    this.resetHistory();
   }
 
   getMarkdown(): string {
@@ -684,6 +691,7 @@ export class BlockEditor {
   }
 
   insertBlock(kind: string, removeSlashCommand = false): void {
+    this.flushHistory();
     this.restoreSelection();
     const selection = window.getSelection();
     if (!selection?.rangeCount) {
@@ -782,6 +790,16 @@ export class BlockEditor {
         else this.canvas.insertBefore(blocks[targetIndex], blocks[index]);
         this.emitChange();
       }
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+      event.preventDefault();
+      this.restoreHistory(event.shiftKey ? 'redo' : 'undo');
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+      event.preventDefault();
+      this.restoreHistory('redo');
       return;
     }
     if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -942,6 +960,7 @@ export class BlockEditor {
   }
 
   private insertUploadedImage(uploaded: UploadedImage): void {
+    this.flushHistory();
     const image = document.createElement('img');
     image.dataset.markdownSrc = uploaded.name;
     image.src = this.resolveImageUrl ? this.resolveImageUrl(uploaded.name) : uploaded.name;
@@ -1009,6 +1028,7 @@ export class BlockEditor {
   private emitChange(): void {
     this.rememberSelection();
     this.refreshBlockControls();
+    this.scheduleHistorySnapshot();
     this.onChange(this.getMarkdown());
   }
 }
