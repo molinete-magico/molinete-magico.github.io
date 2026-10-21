@@ -258,3 +258,4 @@ textarea:focus-visible {
 .block-editor-block-handle:active { cursor: grabbing; }
 .block-editor-canvas > .block-drop-before { border-top: 2px solid var(--accent, #5a9); }
 .block-editor-canvas > .block-drop-after { border-bottom: 2px solid var(--accent, #5a9); }
+.block-editor-block-menu[hidden] { display: none; }
