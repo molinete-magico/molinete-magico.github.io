@@ -244,6 +244,7 @@ async function restoreRecoveryIfMatches() {
   } catch { storageRemove('writer-v2-recovery'); }
 }
 function clearRecovery() {
+  if (recoveryTimer) { clearTimeout(recoveryTimer); recoveryTimer = null; }
   const raw = storageGet('writer-v2-recovery');
   if (!raw) return;
   try {
