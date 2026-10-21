@@ -162,30 +162,18 @@ export class BlockEditor {
         this.emitChange();
       }
     });
-    // Cola apenas texto, evitando importar estilos/HTML do Word, Google Docs ou páginas web.
-    // As quebras de linha são convertidas em blocos e <br>, preservando a estrutura do texto.
+    // Cola texto simples para evitar estilos externos e manter a posição do cursor.
+    // Cada quebra vira <br>; isso evita inserir parágrafos dentro de outros parágrafos
+    // e preserva linhas em branco sem criar uma árvore DOM inválida.
     this.canvas.addEventListener('paste', (event: ClipboardEvent) => {
       if (this.composing) return;
-      const text = event.clipboardData?.getData('text/plain');
-      if (text === undefined || text === null) return;
+      const clipboard = event.clipboardData;
+      if (!clipboard) return;
+      const text = clipboard.getData('text/plain');
+      if (!text) return;
+
       event.preventDefault();
-
       const normalized = text.replace(/\r\n?/g, '\n');
-      if (!normalized) return;
-
-      const fragment = document.createDocumentFragment();
-      const paragraphs = normalized.split(/\\n{2,}/);
-      for (const paragraphText of paragraphs) {
-        const paragraph = document.createElement('p');
-        const lines = paragraphText.split('\\n');
-        lines.forEach((line, index) => {
-          if (index > 0) paragraph.append(document.createElement('br'));
-          if (line) paragraph.append(document.createTextNode(line));
-        });
-        if (!paragraph.hasChildNodes()) paragraph.append(document.createElement('br'));
-        fragment.append(paragraph);
-      }
-
       const selection = window.getSelection();
       let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
       if (!range || !this.canvas.contains(range.commonAncestorContainer)) {
@@ -193,9 +181,21 @@ export class BlockEditor {
         range.selectNodeContents(this.canvas);
         range.collapse(false);
       }
+
       range.deleteContents();
-      range.insertNode(fragment);
-      range.collapse(false);
+      const fragment = document.createDocumentFragment();
+      const lines = normalized.split('\n');
+      lines.forEach((line, index) => {
+        if (index > 0) fragment.append(document.createElement('br'));
+        if (line) fragment.append(document.createTextNode(line));
+      });
+
+      const lastInsertedNode = fragment.lastChild;
+      if (lastInsertedNode) {
+        range.insertNode(fragment);
+        range.setStartAfter(lastInsertedNode);
+      }
+      range.collapse(true);
       selection?.removeAllRanges();
       selection?.addRange(range);
       this.emitChange();
