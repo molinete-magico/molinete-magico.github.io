@@ -59,3 +59,41 @@ test('ordered list serialization preserves an explicit zero start and item value
   });
   expect(markdown).toBe('0. zero\n1. one');
 });
+
+
+test('undo and redo shortcuts restore the previous and next editor snapshots', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    element.innerHTML = '<p>alpha</p>';
+    const text = element.querySelector('p')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, text.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.keyboard.type(' beta');
+  await expect(page.locator('#markdown')).toHaveText('alpha beta');
+  await page.waitForTimeout(450);
+  await page.keyboard.press('Control+z');
+  await expect(page.locator('#markdown')).toHaveText('alpha');
+  await page.keyboard.press('Control+Shift+z');
+  await expect(page.locator('#markdown')).toHaveText('alpha beta');
+});
+
+test('nested unordered lists serialize with stable indentation', async ({ page }) => {
+  const markdown = await page.locator('.block-editor-canvas').evaluate((element) => {
+    element.innerHTML = '<ul><li>Parent<ul><li>Child</li><li>Second child</li></ul></li><li>Sibling</li></ul>';
+    return window.writerEditor.getMarkdown();
+  });
+  expect(markdown).toBe('- Parent\\n  - Child\\n  - Second child\\n- Sibling');
+});
+
+test('image Markdown survives editor load and serialization', async ({ page }) => {
+  const markdown = await page.locator('.block-editor-canvas').evaluate((element) => {
+    window.writerEditor.setMarkdown('Before\\n\\n![mapa da área](/content/posts/demo/mapa-area.png)\\n\\nAfter');
+    return window.writerEditor.getMarkdown();
+  });
+  expect(markdown).toBe('Before\\n\\n![mapa da área](/content/posts/demo/mapa-area.png)\\n\\nAfter');
+});
