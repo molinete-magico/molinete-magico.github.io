@@ -112,7 +112,6 @@ test('Enter splits a paragraph and Backspace at the start joins it again', async
     selection.addRange(range);
   });
   await page.keyboard.press('Enter');
-  await page.keyboard.type('beta');
   await expect(page.locator('#markdown')).toHaveText('alpha\n\nbeta');
   await page.keyboard.press('Home');
   await page.keyboard.press('Backspace');
