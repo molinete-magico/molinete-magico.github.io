@@ -122,6 +122,14 @@ function blockMarkdown(node: Node): string {
   }
 }
 
+type BlockEditorHistorySnapshot = {
+  html: string;
+  anchorPath: number[];
+  anchorOffset: number;
+  focusPath: number[];
+  focusOffset: number;
+};
+
 export interface UploadedImage {
   name: string;
   alt: string;
@@ -139,6 +147,9 @@ export class BlockEditor {
   private blockMenu: HTMLDivElement;
   private draggedBlockIndex = -1;
   private hoveredBlockIndex = -1;
+  private history: BlockEditorHistorySnapshot[] = [];
+  private historyIndex = -1;
+  private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private composing = false;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
