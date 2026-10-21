@@ -39,7 +39,7 @@ test('pasting multiline text preserves the selected insertion point and trailing
       cancelable: true,
     }));
   });
-  await expect(page.locator('#markdown')).toHaveText('start one  \ntwo');
+  await expect(page.locator('#markdown')).toHaveText('start one  \ntwo tail');
   await expect(canvas).toContainText('start');
   await expect(canvas).toContainText('two');
 });
