@@ -213,7 +213,7 @@ test('Writer image upload API persists an image and returns a stable filename', 
 
     const savedBytes = await fs.readFile(path.join(postFolder, result.name));
     assert.deepEqual(savedBytes, imageBytes);
-    const readResponse = await app.request('/api/post-image?post=image-roundtrip&image=mapa-area.png');
+    const readResponse = await app.request('/api/post-image?post=image-roundtrip&name=mapa-area.png');
     assert.equal(readResponse.status, 200);
     assert.equal(readResponse.headers.get('content-type'), 'image/png');
     assert.deepEqual(Buffer.from(await readResponse.arrayBuffer()), imageBytes);
