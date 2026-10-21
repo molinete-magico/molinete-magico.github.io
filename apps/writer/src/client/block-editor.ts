@@ -21,7 +21,7 @@ function escapeHtml(value: string): string {
 
 function inlineMarkdown(node: Node): string {
   if (node.nodeType === Node.TEXT_NODE) {
-    return (node.textContent ?? '').replace(/\/g, '\\').replace(/([*_{}()#+\-.!|>])/g, '\\$1').replace(/\[/g, '\\[').replace(/\]/g, '\\]').replace(/`/g, '\\`');
+    return (node.textContent ?? '').replace(/\\/g, '\\\\').replace(/([*_{}()#+\-.!|>])/g, '\\$1').replace(/\[/g, '\\[').replace(/\]/g, '\\]').replace(/`/g, '\\`');
   }
   if (!(node instanceof HTMLElement)) return '';
   const children = Array.from(node.childNodes).map(inlineMarkdown).join('');
