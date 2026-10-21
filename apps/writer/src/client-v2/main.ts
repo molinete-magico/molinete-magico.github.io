@@ -561,36 +561,103 @@ async function handleDocumentAction(event: Event) {
 }
 function bindSlashMenu() {
   const canvas = $('#block-host .block-editor-canvas');
-  if (!canvas) return;
-  canvas.addEventListener('keyup', (event) => {
+  const menu = $('#slash-menu');
+  const stage = $('.writing-stage');
+  if (!canvas || !menu || !stage) return;
+
+  let activeIndex = 0;
+  const visibleButtons = () => Array.from(menu.querySelectorAll<HTMLButtonElement>('[data-insert-block]'))
+    .filter((button) => !button.hidden);
+
+  const update = () => {
     const selection = window.getSelection();
-    const text = selection?.anchorNode?.textContent ?? '';
-    const offset = selection?.anchorOffset ?? 0;
-    const prefix = text.slice(0, offset);
-    const open = event.key === '/' && /(?:^|\s)\/$/.test(prefix);
-    $('#slash-menu')!.hidden = !open;
+    const node = selection?.anchorNode;
+    if (!selection || !node || node.nodeType !== Node.TEXT_NODE || !canvas.contains(node)) {
+      menu.hidden = true;
+      return;
+    }
+    const text = node.textContent ?? '';
+    const prefix = text.slice(0, selection.anchorOffset);
+    const match = /(?:^|\\s)\\/([a-z]*)$/i.exec(prefix);
+    if (!match) {
+      menu.hidden = true;
+      return;
+    }
+
+    const query = match[1].toLowerCase();
+    menu.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => {
+      const kind = (button.dataset.insertBlock ?? '').toLowerCase();
+      const label = (button.textContent ?? '').toLowerCase();
+      const aliases: Record<string, string> = {
+        h1: 'heading title título cabeçalho',
+        h2: 'heading title título cabeçalho',
+        h3: 'heading title título cabeçalho',
+        blockquote: 'quote citação',
+        pre: 'code código',
+        ul: 'list lista marcadores',
+        hr: 'divider divisor separador',
+      };
+      const searchable = kind + ' ' + label + ' ' + (aliases[kind] ?? '');
+      button.hidden = Boolean(query) && !searchable.includes(query);
+    });
+    const visible = visibleButtons();
+    if (!visible.length) {
+      menu.hidden = true;
+      return;
+    }
+    activeIndex = Math.min(activeIndex, visible.length - 1);
+    menu.hidden = false;
+    visible.forEach((button, index) => {
+      button.classList.toggle('is-selected', index === activeIndex);
+      button.setAttribute('aria-selected', String(index === activeIndex));
+    });
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const caret = range.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    menu.style.position = 'absolute';
+    menu.style.left = Math.max(0, caret.left - stageRect.left) + 'px';
+    menu.style.top = Math.max(0, caret.bottom - stageRect.top + 8) + 'px';
+  };
+
+  canvas.addEventListener('input', update);
+  canvas.addEventListener('keyup', update);
+  canvas.addEventListener('click', update);
+  canvas.addEventListener('keydown', (event) => {
+    if (menu.hidden) return;
+    const visible = visibleButtons();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      menu.hidden = true;
+      return;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeIndex = (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + visible.length) % visible.length;
+      visible.forEach((button, index) => {
+        button.classList.toggle('is-selected', index === activeIndex);
+        button.setAttribute('aria-selected', String(index === activeIndex));
+      });
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      visible[activeIndex]?.click();
+    }
+  });
+
+  menu.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => {
+      state.editor?.insertBlock(button.dataset.insertBlock ?? '', true);
+      menu.hidden = true;
+    });
   });
 }
 function insertBlock(kind: string) {
-  const canvas = $('#block-host .block-editor-canvas');
-  if (!canvas) return;
-  const selection = window.getSelection();
-  if (selection?.isCollapsed && selection.anchorNode?.nodeType === Node.TEXT_NODE) {
-    const node = selection.anchorNode as Text;
-    const offset = selection.anchorOffset;
-    if (node.data.slice(0, offset).endsWith('/')) {
-      node.deleteData(offset - 1, 1);
-      selection.collapse(node, offset - 1);
-    }
-  }
-  canvas.focus();
-  const commands: Record<string, string> = { h1: 'formatBlock', h2: 'formatBlock', h3: 'formatBlock', blockquote: 'formatBlock', pre: 'formatBlock', ul: 'insertUnorderedList' };
-  if (kind === 'hr') document.execCommand('insertHTML', false, '<hr><p><br></p>');
-  else if (kind === 'h1' || kind === 'h2' || kind === 'h3' || kind === 'blockquote' || kind === 'pre') document.execCommand(commands[kind], false, kind === 'blockquote' ? 'blockquote' : kind);
-  else if (kind === 'ul') document.execCommand('insertUnorderedList', false);
-  $('#slash-menu')!.hidden = true;
-  state.editor?.focus();
-  markDirty();
+  state.editor?.insertBlock(kind, true);
+  const menu = $('#slash-menu');
+  if (menu) menu.hidden = true;
 }
 function renderPreview() {
   const pane = $('#preview-content');
