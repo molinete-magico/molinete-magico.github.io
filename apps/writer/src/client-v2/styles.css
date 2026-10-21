@@ -253,3 +253,8 @@ textarea:focus-visible {
 .slash-menu button { min-width: 0; padding: .55rem .65rem; border: 1px solid transparent; background: transparent; color: var(--text-primary); text-align: left; }
 .slash-menu button[hidden] { display: none; }
 .slash-menu button.is-selected, .slash-menu button:hover, .slash-menu button:focus-visible { border-color: var(--border-strong); background: var(--bg-soft); outline: none; }
+
+.block-editor-block-handle { cursor: grab; touch-action: none; }
+.block-editor-block-handle:active { cursor: grabbing; }
+.block-editor-canvas > .block-drop-before { border-top: 2px solid var(--accent, #5a9); }
+.block-editor-canvas > .block-drop-after { border-bottom: 2px solid var(--accent, #5a9); }
