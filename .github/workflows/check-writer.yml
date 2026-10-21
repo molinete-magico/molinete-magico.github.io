@@ -14,7 +14,7 @@ on:
       - ".github/workflows/check-writer.yml"
       - ".github/workflows/deploy-blog.yml"
   push:
-    branches: [feat/writer-projects]
+    branches: [feat/writer-projects, feat/writer-block-editor-overhaul]
     paths:
       - "apps/writer/**"
       - "apps/blog/**"
@@ -51,6 +51,8 @@ jobs:
         run: npm run test --workspace=apps/writer
 
       - name: Audit dependency advisories
+        id: dependency_audit
+        continue-on-error: true
         run: npm audit --audit-level=low
 
       - name: Smoke test Astro dev server
@@ -87,4 +89,16 @@ jobs:
         env:
           BASE_PATH: /blog
         run: node scripts/check-built-site.mjs
+
+      # Run builds even when the audit finds advisories, then keep the audit blocking
+      # through a final gate so CI exposes both dependency and application failures.
+      - name: Enforce dependency audit result
+        if: always()
+        env:
+          AUDIT_OUTCOME: ${{ steps.dependency_audit.outcome }}
+        run: |
+          if [ "$AUDIT_OUTCOME" != "success" ]; then
+            echo "::error::Dependency audit failed; resolve the reported advisories before merging."
+            exit 1
+          fi
 

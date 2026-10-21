@@ -20,12 +20,12 @@ const app = $('#app')!;
 const state: {
   posts: PostListItem[]; projects: ProjectListItem[]; currentPost: Post | null;
   currentProject: Project | null; currentDoc: ProjectDocument | null;
-  kind: OpenItem | null; editor: BlockEditor | null; dirty: boolean; saving: boolean;
+  kind: OpenItem | null; editor: BlockEditor | null; dirty: boolean; saving: boolean; editRevision: number;
   palette: Palette; focus: boolean; preview: boolean; git: GitStatus | null; tags: string[];
   bannerAvailable: boolean;
 } = {
   posts: [], projects: [], currentPost: null, currentProject: null, currentDoc: null,
-  kind: null, editor: null, dirty: false, saving: false,
+  kind: null, editor: null, dirty: false, saving: false, editRevision: 0,
   palette: (['site', 'paper', 'mono', 'graphite'] as Palette[]).includes(storageGet('writer-v2-palette') as Palette) ? storageGet('writer-v2-palette') as Palette : 'site',
   focus: false, preview: false, git: null, tags: [], bannerAvailable: false,
 };
@@ -166,13 +166,35 @@ function activeTitle() {
   if (state.kind === 'project') return state.currentProject?.file.title ?? '';
   return state.currentDoc?.file.title ?? '';
 }
+let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+let previewTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRecovery() {
+  if (recoveryTimer) clearTimeout(recoveryTimer);
+  recoveryTimer = setTimeout(() => {
+    recoveryTimer = null;
+    persistRecovery();
+  }, 400);
+}
+function schedulePreviewRender() {
+  if (previewTimer) clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    previewTimer = null;
+    renderPreview();
+  }, 120);
+}
 function markDirty() {
+  state.editRevision += 1;
   state.dirty = true;
   status('Alterações não salvas', 'warn');
-  persistRecovery();
-  if (state.preview) renderPreview();
+  scheduleRecovery();
+  if (state.preview) schedulePreviewRender();
 }
 function persistRecovery() {
+  if (recoveryTimer) {
+    clearTimeout(recoveryTimer);
+    recoveryTimer = null;
+  }
   if (!state.kind || !activeId()) return;
   const snapshot = {
     id: activeId(), kind: state.kind, projectId: state.currentDoc?.projectId ?? state.currentProject?.id ?? '',
@@ -198,6 +220,20 @@ function persistRecovery() {
   };
   try { localStorage.setItem('writer-v2-recovery', JSON.stringify(snapshot)); } catch { /* storage can be unavailable */ }
 }
+
+window.addEventListener('pagehide', () => {
+  if (state.dirty) persistRecovery();
+});
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && state.dirty) persistRecovery();
+});
+window.addEventListener('beforeunload', (event) => {
+  if (!state.dirty) return;
+  persistRecovery();
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 async function restoreRecoveryIfMatches() {
   const raw = storageGet('writer-v2-recovery');
   if (!raw || !state.kind) return;
@@ -222,6 +258,7 @@ async function restoreRecoveryIfMatches() {
   } catch { storageRemove('writer-v2-recovery'); }
 }
 function clearRecovery() {
+  if (recoveryTimer) { clearTimeout(recoveryTimer); recoveryTimer = null; }
   const raw = storageGet('writer-v2-recovery');
   if (!raw) return;
   try {
@@ -524,36 +561,103 @@ async function handleDocumentAction(event: Event) {
 }
 function bindSlashMenu() {
   const canvas = $('#block-host .block-editor-canvas');
-  if (!canvas) return;
-  canvas.addEventListener('keyup', (event) => {
+  const menu = $('#slash-menu');
+  const stage = $('.writing-stage');
+  if (!canvas || !menu || !stage) return;
+
+  let activeIndex = 0;
+  const visibleButtons = () => Array.from(menu.querySelectorAll<HTMLButtonElement>('[data-insert-block]'))
+    .filter((button) => !button.hidden);
+
+  const update = () => {
     const selection = window.getSelection();
-    const text = selection?.anchorNode?.textContent ?? '';
-    const offset = selection?.anchorOffset ?? 0;
-    const prefix = text.slice(0, offset);
-    const open = event.key === '/' && /(?:^|\s)\/$/.test(prefix);
-    $('#slash-menu')!.hidden = !open;
+    const node = selection?.anchorNode;
+    if (!selection || !node || node.nodeType !== Node.TEXT_NODE || !canvas.contains(node)) {
+      menu.hidden = true;
+      return;
+    }
+    const text = node.textContent ?? '';
+    const prefix = text.slice(0, selection.anchorOffset);
+    const match = /(?:^|\s)\/([a-z]*)$/i.exec(prefix);
+    if (!match) {
+      menu.hidden = true;
+      return;
+    }
+
+    const query = match[1].toLowerCase();
+    menu.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => {
+      const kind = (button.dataset.insertBlock ?? '').toLowerCase();
+      const label = (button.textContent ?? '').toLowerCase();
+      const aliases: Record<string, string> = {
+        h1: 'heading title título cabeçalho',
+        h2: 'heading title título cabeçalho',
+        h3: 'heading title título cabeçalho',
+        blockquote: 'quote citação',
+        pre: 'code código',
+        ul: 'list lista marcadores',
+        hr: 'divider divisor separador',
+      };
+      const searchable = kind + ' ' + label + ' ' + (aliases[kind] ?? '');
+      button.hidden = Boolean(query) && !searchable.includes(query);
+    });
+    const visible = visibleButtons();
+    if (!visible.length) {
+      menu.hidden = true;
+      return;
+    }
+    activeIndex = Math.min(activeIndex, visible.length - 1);
+    menu.hidden = false;
+    visible.forEach((button, index) => {
+      button.classList.toggle('is-selected', index === activeIndex);
+      button.setAttribute('aria-selected', String(index === activeIndex));
+    });
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const caret = range.getBoundingClientRect();
+    const stageRect = stage.getBoundingClientRect();
+    menu.style.position = 'absolute';
+    menu.style.left = Math.max(0, caret.left - stageRect.left) + 'px';
+    menu.style.top = Math.max(0, caret.bottom - stageRect.top + 8) + 'px';
+  };
+
+  canvas.addEventListener('input', update);
+  canvas.addEventListener('keyup', update);
+  canvas.addEventListener('click', update);
+  canvas.addEventListener('keydown', (event) => {
+    if (menu.hidden) return;
+    const visible = visibleButtons();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      menu.hidden = true;
+      return;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      activeIndex = (activeIndex + (event.key === 'ArrowDown' ? 1 : -1) + visible.length) % visible.length;
+      visible.forEach((button, index) => {
+        button.classList.toggle('is-selected', index === activeIndex);
+        button.setAttribute('aria-selected', String(index === activeIndex));
+      });
+      return;
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      visible[activeIndex]?.click();
+    }
+  });
+
+  menu.querySelectorAll<HTMLButtonElement>('[data-insert-block]').forEach((button) => {
+    button.addEventListener('mousedown', (event) => event.preventDefault());
+    button.addEventListener('click', () => {
+      state.editor?.insertBlock(button.dataset.insertBlock ?? '', true);
+      menu.hidden = true;
+    });
   });
 }
 function insertBlock(kind: string) {
-  const canvas = $('#block-host .block-editor-canvas');
-  if (!canvas) return;
-  const selection = window.getSelection();
-  if (selection?.isCollapsed && selection.anchorNode?.nodeType === Node.TEXT_NODE) {
-    const node = selection.anchorNode as Text;
-    const offset = selection.anchorOffset;
-    if (node.data.slice(0, offset).endsWith('/')) {
-      node.deleteData(offset - 1, 1);
-      selection.collapse(node, offset - 1);
-    }
-  }
-  canvas.focus();
-  const commands: Record<string, string> = { h1: 'formatBlock', h2: 'formatBlock', h3: 'formatBlock', blockquote: 'formatBlock', pre: 'formatBlock', ul: 'insertUnorderedList' };
-  if (kind === 'hr') document.execCommand('insertHTML', false, '<hr><p><br></p>');
-  else if (kind === 'h1' || kind === 'h2' || kind === 'h3' || kind === 'blockquote' || kind === 'pre') document.execCommand(commands[kind], false, kind === 'blockquote' ? 'blockquote' : kind);
-  else if (kind === 'ul') document.execCommand('insertUnorderedList', false);
-  $('#slash-menu')!.hidden = true;
-  state.editor?.focus();
-  markDirty();
+  state.editor?.insertBlock(kind, true);
+  const menu = $('#slash-menu');
+  if (menu) menu.hidden = true;
 }
 function renderPreview() {
   const pane = $('#preview-content');
@@ -577,6 +681,7 @@ function currentPostMeta(): PostMeta {
 async function saveCurrent(): Promise<boolean> {
   if (state.saving) { status('Salvamento em andamento…', 'warn'); return false; }
   if (!state.kind) return false;
+  const saveRevision = state.editRevision;
   state.saving = true; status('Salvando…', 'warn');
   try {
     const title = ($('#doc-title') as HTMLInputElement).value.trim() || 'Sem título';
@@ -594,8 +699,6 @@ async function saveCurrent(): Promise<boolean> {
     } else {
       throw new Error('Não foi possível identificar o documento atual para salvar.');
     }
-    state.dirty = false;
-    clearRecovery();
   } catch (err) {
     status(formatError(err), 'error');
     return false;
@@ -604,13 +707,26 @@ async function saveCurrent(): Promise<boolean> {
   }
 
   if ($('#crumb-title')) $('#crumb-title')!.textContent = activeTitle();
+  let catalogWarning = '';
   try {
     await loadCatalog();
     renderDocumentTree();
-    status('Salvo com sucesso');
   } catch (err) {
-    status('Conteúdo salvo, mas a biblioteca não pôde ser atualizada: ' + formatError(err), 'warn');
+    catalogWarning = 'Conteúdo salvo, mas a biblioteca não pôde ser atualizada: ' + formatError(err);
   }
+
+  // Nunca marcar como salvo nem apagar a recuperação se houve novas edições
+  // enquanto a requisição ou a atualização da biblioteca estava em andamento.
+  if (state.editRevision !== saveRevision) {
+    state.dirty = true;
+    persistRecovery();
+    status(catalogWarning || 'O conteúdo anterior foi salvo, mas há edições mais recentes ainda não salvas.', 'warn');
+    return false;
+  }
+
+  state.dirty = false;
+  clearRecovery();
+  status(catalogWarning || 'Salvo com sucesso', catalogWarning ? 'warn' : 'ok');
   return true;
 }
 async function publishCurrent() {
