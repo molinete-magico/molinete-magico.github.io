@@ -164,3 +164,23 @@ test('Tab nests a list item under the previous item', async ({ page }) => {
   await expect(canvas.locator('ul > li > ul > li')).toHaveText('child');
   await expect(page.locator('#markdown')).toHaveText('- parent\n  - child');
 });
+
+
+test('Shift+Tab moves a nested list item back to its parent list', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('- parent\n  - child\n- sibling');
+    const child = element.querySelector('ul ul li')!;
+    const text = child.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, text.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    element.focus();
+  });
+  await page.keyboard.press('Shift+Tab');
+  await expect(canvas.locator('ul > li')).toHaveCount(3);
+  await expect(page.locator('#markdown')).toHaveText('- parent\n- child\n- sibling');
+});
