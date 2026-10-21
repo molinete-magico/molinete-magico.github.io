@@ -199,15 +199,11 @@ export class BlockEditor {
     this.canvas.addEventListener('compositionstart', () => { this.composing = true; });
     this.canvas.addEventListener('compositionend', () => {
       this.composing = false;
-      this.rememberSelection();
-      this.refreshBlockControls();
       this.emitChange();
     });
     this.canvas.addEventListener('input', () => {
       if (!this.composing) {
         this.handleInlineMarkdownShortcut();
-        this.rememberSelection();
-        this.refreshBlockControls();
         this.emitChange();
       }
     });
@@ -282,8 +278,6 @@ export class BlockEditor {
       range.collapse(true);
       selection?.removeAllRanges();
       selection?.addRange(range);
-      this.rememberSelection();
-      this.refreshBlockControls();
       this.emitChange();
     });
     this.canvas.addEventListener('keydown', (event) => this.handleMarkdownShortcut(event));
@@ -294,8 +288,6 @@ export class BlockEditor {
         this.restoreSelection();
         this.canvas.focus();
         document.execCommand(command, false);
-        this.rememberSelection();
-        this.refreshBlockControls();
         this.emitChange();
       });
     });
@@ -314,8 +306,6 @@ export class BlockEditor {
           current.append(code);
         }
       }
-      this.rememberSelection();
-      this.refreshBlockControls();
       this.emitChange();
     });
     this.root.querySelector('[data-action="link"]')!.addEventListener('mousedown', (event) => event.preventDefault());
@@ -326,8 +316,6 @@ export class BlockEditor {
       this.restoreSelection();
       this.canvas.focus();
       document.execCommand('createLink', false, url);
-      this.rememberSelection();
-      this.refreshBlockControls();
       this.emitChange();
     });
     this.root.querySelector('[data-action="image"]')!.addEventListener('mousedown', (event) => event.preventDefault());
@@ -339,8 +327,6 @@ export class BlockEditor {
       this.restoreSelection();
       this.canvas.focus();
       document.execCommand('insertHTML', false, `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`);
-      this.rememberSelection();
-      this.refreshBlockControls();
       this.emitChange();
     });
     const imageUploadButton = this.root.querySelector<HTMLButtonElement>('[data-action="upload-image"]')!;
@@ -368,8 +354,6 @@ export class BlockEditor {
       this.restoreSelection();
       this.canvas.focus();
       document.execCommand('insertHTML', false, '<hr><p><br></p>');
-      this.rememberSelection();
-      this.refreshBlockControls();
       this.emitChange();
     });
     this.blockControls.addEventListener('click', (event) => this.handleBlockControlClick(event));
@@ -409,7 +393,6 @@ export class BlockEditor {
       else this.canvas.insertBefore(moving, blocks[to]);
       this.draggedBlockIndex = -1;
       this.canvas.querySelectorAll('.block-drop-before, .block-drop-after').forEach((node) => node.classList.remove('block-drop-before', 'block-drop-after'));
-      this.refreshBlockControls();
       this.emitChange();
     });
     this.blockMenu.addEventListener('click', (event) => this.handleBlockMenuClick(event));
@@ -524,8 +507,6 @@ export class BlockEditor {
       }
     }
     this.closeBlockMenu();
-    this.rememberSelection();
-    this.refreshBlockControls();
     this.emitChange();
   }
 
@@ -684,7 +665,6 @@ export class BlockEditor {
         event.preventDefault();
         if (event.key === 'ArrowUp') this.canvas.insertBefore(blocks[index], blocks[targetIndex]);
         else this.canvas.insertBefore(blocks[targetIndex], blocks[index]);
-        this.refreshBlockControls();
         this.emitChange();
       }
       return;
