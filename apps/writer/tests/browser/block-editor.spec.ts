@@ -105,7 +105,7 @@ test('Enter splits a paragraph and Backspace at the start joins it again', async
     window.writerEditor.setMarkdown('alpha beta');
     const text = element.querySelector('p')!.firstChild!;
     const range = document.createRange();
-    range.setStart(text, 5);
+    range.setStart(text, 6);
     range.collapse(true);
     const selection = window.getSelection()!;
     selection.removeAllRanges();
