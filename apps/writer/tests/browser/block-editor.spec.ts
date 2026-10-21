@@ -144,3 +144,23 @@ test('strikethrough keyboard shortcut serializes as Markdown', async ({ page }) 
   await page.keyboard.press('Control+Shift+x');
   await expect(page.locator('#markdown')).toHaveText('~~selected~~ text');
 });
+
+
+test('Tab nests a list item under the previous item', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('- parent\n- child');
+    const child = element.querySelectorAll('li')[1];
+    const text = child.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, text.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    element.focus();
+  });
+  await page.keyboard.press('Tab');
+  await expect(canvas.locator('ul > li > ul > li')).toHaveText('child');
+  await expect(page.locator('#markdown')).toHaveText('- parent\n  - child');
+});
