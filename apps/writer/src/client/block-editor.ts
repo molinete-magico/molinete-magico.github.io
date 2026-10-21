@@ -352,7 +352,7 @@ export class BlockEditor {
     });
     this.canvas.addEventListener('drop', (event) => {
       if (!event.dataTransfer?.types.includes('application/x-writer-block')) return;
-      const target = (event.target as HTMLElement).closest<HTMLElement>(':scope > *');
+      const target = this.topLevelBlockFrom(event.target);
       const blocks = this.topLevelBlocks();
       const from = this.draggedBlockIndex;
       const to = target ? blocks.indexOf(target) : -1;
@@ -416,7 +416,6 @@ export class BlockEditor {
       handle.setAttribute('aria-label', `Ações do bloco ${index + 1}`);
       handle.dataset.blockIndex = String(index);
       handle.style.top = `${rect.top - rootRect.top + this.root.scrollTop + Math.min(8, rect.height / 2)}px`;
-      handle.addEventListener('mousedown', (event) => event.preventDefault());
       this.blockControls.append(handle);
     });
     if (!this.blockMenu.hidden) {
