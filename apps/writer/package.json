@@ -9,7 +9,7 @@
     "build:client": "npm run build:client:legacy && npm run build:client:v2",
     "build": "npm run build:client && node build.mjs",
     "start": "node dist/writer.cjs",
-    "test": "tsx --test src/server/security.test.ts",
+    "test": "tsx --test src/server/security.test.ts src/client/list-numbering.test.ts",
     "build:client:legacy": "esbuild src/client/main.ts --bundle --outdir=dist/client --format=esm --target=es2020 --minify",
     "build:client:v2": "esbuild src/client-v2/main.ts --bundle --outdir=dist/client/v2 --format=esm --target=es2020 --minify"
   },

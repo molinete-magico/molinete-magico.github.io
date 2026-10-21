@@ -1,5 +1,6 @@
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { orderedListItemNumber, orderedListStart } from './list-numbering.js';
 
 type FormatCommand =
   | 'bold'
@@ -55,12 +56,12 @@ function inlineMarkdown(node: Node): string {
 
 function listMarkdown(list: HTMLElement, depth = 0): string {
   const ordered = list.tagName === 'OL';
-  let nextNumber = ordered ? Math.max(1, Number.parseInt(list.getAttribute('start') ?? '1', 10) || 1) : 1;
+  let nextNumber = ordered ? orderedListStart(list.getAttribute('start')) : 1;
   return Array.from(list.children)
     .filter((child) => child.tagName === 'LI')
     .map((li) => {
       const itemNumber = ordered
-        ? (Number.parseInt(li.getAttribute('value') ?? '', 10) || nextNumber)
+        ? orderedListItemNumber(li.getAttribute('value'), nextNumber)
         : 0;
       if (ordered) nextNumber = itemNumber + 1;
       const content = Array.from(li.childNodes)
