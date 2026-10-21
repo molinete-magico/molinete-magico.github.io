@@ -23,7 +23,7 @@ test('typing updates the Markdown output without splitting a paragraph', async (
 test('pasting multiline text preserves the selected insertion point and trailing text', async ({ page }) => {
   const canvas = page.locator('.block-editor-canvas');
   await canvas.evaluate((element) => {
-    element.innerHTML = '<p>start end</p>';
+    element.innerHTML = '<p>start end tail</p>';
     const text = element.querySelector('p')!.firstChild!;
     const range = document.createRange();
     range.setStart(text, 6);
