@@ -5,7 +5,6 @@ import { orderedListItemNumber, orderedListStart } from './list-numbering.js';
 type FormatCommand =
   | 'bold'
   | 'italic'
-  | 'underline'
   | 'strikeThrough'
   | 'insertUnorderedList'
   | 'insertOrderedList'
@@ -168,7 +167,6 @@ export class BlockEditor {
       <div class="block-editor-toolbar" role="toolbar" aria-label="Formatação do documento">
         <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><strong>B</strong></button>
         <button type="button" data-command="italic" title="Itálico (Ctrl+I)" aria-label="Itálico"><em>I</em></button>
-        <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)" aria-label="Sublinhado"><u>U</u></button>
         <button type="button" data-command="strikeThrough" title="Tachado (Ctrl+Shift+X)" aria-label="Tachado"><s>S</s></button>
         <select data-block-type aria-label="Tipo de bloco">
           <option value="p">Parágrafo</option>
@@ -900,15 +898,6 @@ export class BlockEditor {
     if (this.composing) return;
     const selection = window.getSelection();
 
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'u') {
-      event.preventDefault();
-      this.flushHistory();
-      this.restoreSelection();
-      this.canvas.focus();
-      document.execCommand('underline', false);
-      this.emitChange();
-      return;
-    }
     if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'x') {
       event.preventDefault();
       this.flushHistory();
