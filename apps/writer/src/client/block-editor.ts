@@ -561,7 +561,7 @@ export class BlockEditor {
     if (removeSlashCommand && anchor?.nodeType === Node.TEXT_NODE && selection) {
       const text = anchor as Text;
       const before = text.data.slice(0, selection.anchorOffset);
-      const match = /(?:^|\\s)(\\/[a-z]*)$/i.exec(before);
+      const match = /(?:^|\s)(\/[a-z]*)$/i.exec(before);
       if (match) {
         const start = selection.anchorOffset - match[1].length;
         text.deleteData(start, match[1].length);
