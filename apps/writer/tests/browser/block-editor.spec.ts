@@ -102,10 +102,10 @@ test('image Markdown survives editor load and serialization', async ({ page }) =
 test('Enter splits a paragraph and Backspace at the start joins it again', async ({ page }) => {
   const canvas = page.locator('.block-editor-canvas');
   await canvas.evaluate((element) => {
-    window.writerEditor.setMarkdown('alpha beta');
+    window.writerEditor.setMarkdown('alphabeta');
     const text = element.querySelector('p')!.firstChild!;
     const range = document.createRange();
-    range.setStart(text, 6);
+    range.setStart(text, 5);
     range.collapse(true);
     const selection = window.getSelection()!;
     selection.removeAllRanges();
