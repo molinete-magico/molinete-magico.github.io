@@ -5,6 +5,7 @@ on:
     branches: [chore/regenerate-hono-lockfile]
     paths:
       - "package-lock.json"
+      - "apps/writer/package.json"
       - ".github/workflows/regenerate-hono-lockfile.yml"
 
 permissions:
