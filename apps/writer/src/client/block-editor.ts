@@ -645,6 +645,37 @@ export class BlockEditor {
       return;
     }
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+    if (event.key === 'Backspace' && selection?.isCollapsed && selection.anchorNode) {
+      const node = selection.anchorNode;
+      let current = node instanceof HTMLElement ? node : node.parentElement;
+      while (current && current.parentElement !== this.canvas) current = current.parentElement;
+      const blocks = this.topLevelBlocks();
+      const index = current ? blocks.indexOf(current) : -1;
+      const supported = (element: HTMLElement | undefined) => Boolean(element && /^(P|H1|H2|H3|H4)$/.test(element.tagName));
+      if (index > 0 && current && supported(current) && supported(blocks[index - 1])) {
+        const beforeCaret = document.createRange();
+        beforeCaret.selectNodeContents(current);
+        beforeCaret.setEnd(selection.anchorNode, selection.anchorOffset);
+        if (beforeCaret.toString().length === 0) {
+          event.preventDefault();
+          const previous = blocks[index - 1];
+          const isEmpty = !(current.textContent ?? '').trim() && !current.querySelector('img, table, hr');
+          if (isEmpty) {
+            current.remove();
+            this.focusBlock(previous, false);
+          } else {
+            if ((previous.textContent ?? '').trim() && (current.textContent ?? '').trim()) previous.append(document.createTextNode(' '));
+            while (current.firstChild) previous.append(current.firstChild);
+            current.remove();
+            this.focusBlock(previous, false);
+          }
+          this.emitChange();
+          return;
+        }
+      }
+    }
+
     if (event.key === 'Enter' && !event.shiftKey && selection?.isCollapsed && selection.anchorNode) {
       const anchor = selection.anchorNode;
       const currentBlock = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)
