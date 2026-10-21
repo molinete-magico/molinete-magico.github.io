@@ -484,6 +484,83 @@ export class BlockEditor {
     return output.join('\n\n').trim();
   }
 
+  insertBlock(kind: string, removeSlashCommand = false): void {
+    this.restoreSelection();
+    const selection = window.getSelection();
+    if (!selection?.rangeCount) {
+      const end = document.createRange();
+      end.selectNodeContents(this.canvas);
+      end.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(end);
+    }
+
+    let anchor = selection?.anchorNode ?? null;
+    if (removeSlashCommand && anchor?.nodeType === Node.TEXT_NODE && selection) {
+      const text = anchor as Text;
+      const before = text.data.slice(0, selection.anchorOffset);
+      const match = /(?:^|\\s)(\\/[a-z]*)$/i.exec(before);
+      if (match) {
+        const start = selection.anchorOffset - match[1].length;
+        text.deleteData(start, match[1].length);
+        selection.collapse(text, start);
+        anchor = text;
+      }
+    }
+
+    let current = anchor instanceof HTMLElement ? anchor : anchor?.parentElement ?? null;
+    while (current && current.parentElement !== this.canvas) current = current.parentElement;
+    if (!current || current === this.canvas) {
+      current = document.createElement('p');
+      current.append(document.createElement('br'));
+      this.canvas.append(current);
+    }
+
+    if (kind === 'hr') {
+      const divider = document.createElement('hr');
+      const paragraph = document.createElement('p');
+      paragraph.append(document.createElement('br'));
+      current.after(divider, paragraph);
+      this.focusBlock(paragraph, true);
+    } else if (kind === 'ul' || kind === 'ol') {
+      const list = document.createElement(kind);
+      const item = document.createElement('li');
+      while (current.firstChild) item.append(current.firstChild);
+      if (!item.hasChildNodes()) item.append(document.createElement('br'));
+      list.append(item);
+      current.replaceWith(list);
+      this.focusBlock(item, false);
+    } else if (kind === 'blockquote') {
+      const quote = document.createElement('blockquote');
+      const paragraph = document.createElement('p');
+      while (current.firstChild) paragraph.append(current.firstChild);
+      if (!paragraph.hasChildNodes()) paragraph.append(document.createElement('br'));
+      quote.append(paragraph);
+      current.replaceWith(quote);
+      this.focusBlock(paragraph, false);
+    } else if (kind === 'pre') {
+      const pre = document.createElement('pre');
+      const code = document.createElement('code');
+      code.textContent = current.textContent ?? '';
+      if (!code.textContent) code.append(document.createElement('br'));
+      pre.append(code);
+      current.replaceWith(pre);
+      this.focusBlock(code, false);
+    } else if (/^h[1-3]$/.test(kind) || kind === 'p') {
+      const block = document.createElement(kind);
+      while (current.firstChild) block.append(current.firstChild);
+      if (!block.hasChildNodes()) block.append(document.createElement('br'));
+      current.replaceWith(block);
+      this.focusBlock(block, false);
+    } else {
+      return;
+    }
+
+    this.closeBlockMenu();
+    this.refreshBlockControls();
+    this.emitChange();
+  }
+
   focus(): void {
     this.canvas.focus();
   }
