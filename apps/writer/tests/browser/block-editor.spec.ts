@@ -87,13 +87,13 @@ test('nested unordered lists serialize with stable indentation', async ({ page }
     element.innerHTML = '<ul><li>Parent<ul><li>Child</li><li>Second child</li></ul></li><li>Sibling</li></ul>';
     return window.writerEditor.getMarkdown();
   });
-  expect(markdown).toBe('- Parent\\n  - Child\\n  - Second child\\n- Sibling');
+  expect(markdown).toBe('- Parent\n  - Child\n  - Second child\n- Sibling');
 });
 
 test('image Markdown survives editor load and serialization', async ({ page }) => {
   const markdown = await page.locator('.block-editor-canvas').evaluate((element) => {
-    window.writerEditor.setMarkdown('Before\\n\\n![mapa da área](/content/posts/demo/mapa-area.png)\\n\\nAfter');
+    window.writerEditor.setMarkdown('Before\n\n![mapa da área](/content/posts/demo/mapa-area.png)\n\nAfter');
     return window.writerEditor.getMarkdown();
   });
-  expect(markdown).toBe('Before\\n\\n![mapa da área](/content/posts/demo/mapa-area.png)\\n\\nAfter');
+  expect(markdown).toBe('Before\n\n![mapa da área](/content/posts/demo/mapa-area.png)\n\nAfter');
 });
