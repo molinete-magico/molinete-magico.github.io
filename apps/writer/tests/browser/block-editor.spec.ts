@@ -144,3 +144,61 @@ test('strikethrough keyboard shortcut serializes as Markdown', async ({ page }) 
   await page.keyboard.press('Control+Shift+x');
   await expect(page.locator('#markdown')).toHaveText('~~selected~~ text');
 });
+
+
+test('Tab nests a list item under the previous item', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('- parent\n- child');
+    const child = element.querySelectorAll('li')[1];
+    const text = child.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, text.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    element.focus();
+  });
+  await page.keyboard.press('Tab');
+  await expect(canvas.locator('ul > li > ul > li')).toHaveText('child');
+  await expect(page.locator('#markdown')).toHaveText('- parent\n  - child');
+});
+
+
+test('Shift+Tab moves a nested list item back to its parent list', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('- parent\n  - child\n- sibling');
+    const child = element.querySelector('ul ul li')!;
+    const text = child.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, text.textContent!.length);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    element.focus();
+  });
+  await page.keyboard.press('Shift+Tab');
+  await expect(canvas.locator('ul > li')).toHaveCount(3);
+  await expect(page.locator('#markdown')).toHaveText('- parent\n- child\n- sibling');
+});
+
+
+test('Alt+Shift+ArrowDown reorders a top-level block', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('first\n\nsecond');
+    const text = element.querySelector('p')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, 1);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+    element.focus();
+  });
+  await page.keyboard.press('Alt+Shift+ArrowDown');
+  await expect(page.locator('#markdown')).toHaveText('second\n\nfirst');
+});

@@ -948,6 +948,43 @@ export class BlockEditor {
       this.restoreHistory('redo');
       return;
     }
+    if (event.key === 'Tab' && selection?.isCollapsed && selection.anchorNode) {
+      const anchor = selection.anchorNode;
+      const item = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)?.closest('li');
+      const list = item?.parentElement;
+      if (item && list && (list.tagName === 'UL' || list.tagName === 'OL') && this.canvas.contains(item)) {
+        const parentItem = list.parentElement?.closest('li') ?? null;
+        const previousItem = item.previousElementSibling;
+        if (event.shiftKey) {
+          if (parentItem && parentItem.parentElement && (parentItem.parentElement.tagName === 'UL' || parentItem.parentElement.tagName === 'OL')) {
+            event.preventDefault();
+            this.flushHistory();
+            const parentList = parentItem.parentElement;
+            parentItem.after(item);
+            if (!list.querySelector(':scope > li')) list.remove();
+            // Keep any sub-list attached to the moved item; only move its list item.
+            if (parentList !== item.parentElement) parentItem.after(item);
+            this.emitChange();
+          }
+        } else if (previousItem && previousItem.tagName === 'LI') {
+          event.preventDefault();
+          this.flushHistory();
+          let nested = Array.from(previousItem.children).find((child) => child.tagName === list.tagName) as HTMLElement | undefined;
+          if (!nested) {
+            nested = document.createElement(list.tagName.toLowerCase());
+            const directLists = Array.from(previousItem.children).filter((child) => child.tagName === 'UL' || child.tagName === 'OL');
+            const lastList = directLists[directLists.length - 1];
+            if (lastList) lastList.after(nested);
+            else previousItem.append(nested);
+          }
+          nested.append(item);
+          if (!list.querySelector(':scope > li')) list.remove();
+          this.emitChange();
+        }
+        return;
+      }
+    }
+
     if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     if (event.key === 'Backspace' && selection?.isCollapsed && selection.anchorNode) {
