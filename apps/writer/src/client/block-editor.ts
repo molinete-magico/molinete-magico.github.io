@@ -283,7 +283,33 @@ export class BlockEditor {
   }
 
   getMarkdown(): string {
-    return Array.from(this.canvas.childNodes).map(blockMarkdown).filter((part) => part.length > 0).join('\n\n').trim();
+    // contenteditable can leave inline nodes directly under the canvas (for example
+    // after pasting text or pressing Enter in different browsers). Treat consecutive
+    // inline nodes as one paragraph instead of accidentally separating every word.
+    const output: string[] = [];
+    let inlineNodes: Node[] = [];
+    const blockTags = new Set([
+      'P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+      'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'TABLE', 'HR',
+    ]);
+    const flushInline = () => {
+      if (inlineNodes.length === 0) return;
+      const paragraph = inlineNodes.map(inlineMarkdown).join('').trim();
+      if (paragraph) output.push(paragraph);
+      inlineNodes = [];
+    };
+
+    for (const node of Array.from(this.canvas.childNodes)) {
+      if (node instanceof HTMLElement && blockTags.has(node.tagName)) {
+        flushInline();
+        const markdown = blockMarkdown(node).trim();
+        if (markdown) output.push(markdown);
+      } else {
+        inlineNodes.push(node);
+      }
+    }
+    flushInline();
+    return output.join('\n\n').trim();
   }
 
   focus(): void {
