@@ -56,6 +56,9 @@ jobs:
       - name: Test Writer browser interactions
         run: npm run test:writer:browser
 
+      - name: Test Writer save race and recovery in the real app
+        run: npm run test:writer:e2e
+
       - name: Audit dependency advisories
         id: dependency_audit
         continue-on-error: true
