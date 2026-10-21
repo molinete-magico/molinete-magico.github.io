@@ -81,7 +81,7 @@ test('updates writing statistics and builds a clickable heading outline', async 
     element.innerHTML = '<h1>Introduction</h1><h2>First chapter</h2><p>Four words are here</p>';
     element.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: 'test' }));
   });
-  await expect(page.locator('#word-count')).toContainText('6 palavras');
+  await expect(page.locator('#word-count')).toContainText('7 palavras');
   await expect(page.locator('#character-count')).not.toBeEmpty();
   await expect(page.locator('#heading-outline .heading-outline-item')).toHaveCount(2);
   await expect(page.locator('#heading-outline')).toContainText('Introduction');
