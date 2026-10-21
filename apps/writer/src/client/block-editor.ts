@@ -132,6 +132,7 @@ export class BlockEditor {
   private blockControls: HTMLDivElement;
   private blockMenu: HTMLDivElement;
   private draggedBlockIndex = -1;
+  private hoveredBlockIndex = -1;
   private composing = false;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
@@ -179,11 +180,13 @@ export class BlockEditor {
       let block = target;
       while (block && block.parentElement !== this.canvas) block = block.parentElement;
       const index = block ? this.topLevelBlocks().indexOf(block) : -1;
+      this.hoveredBlockIndex = index;
       this.blockControls.querySelectorAll<HTMLButtonElement>('[data-block-index]').forEach((handle) => {
         handle.classList.toggle('is-visible', Number(handle.dataset.blockIndex) === index);
       });
     });
     this.canvas.addEventListener('pointerleave', () => {
+      this.hoveredBlockIndex = -1;
       this.blockControls.querySelectorAll('.block-editor-block-handle').forEach((handle) => handle.classList.remove('is-visible'));
     });
     this.canvas.addEventListener('scroll', () => this.refreshBlockControls(), { passive: true });
@@ -415,6 +418,7 @@ export class BlockEditor {
       handle.title = 'Ações do bloco';
       handle.setAttribute('aria-label', `Ações do bloco ${index + 1}`);
       handle.dataset.blockIndex = String(index);
+      handle.classList.toggle('is-visible', index === this.hoveredBlockIndex);
       handle.style.top = `${rect.top - rootRect.top + this.root.scrollTop + Math.min(8, rect.height / 2)}px`;
       this.blockControls.append(handle);
     });
