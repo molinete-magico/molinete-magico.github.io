@@ -133,6 +133,7 @@ test('strikethrough keyboard shortcut serializes as Markdown', async ({ page }) 
   const canvas = page.locator('.block-editor-canvas');
   await canvas.evaluate((element) => {
     window.writerEditor.setMarkdown('selected text');
+    element.focus();
     const text = element.querySelector('p')!.firstChild!;
     const range = document.createRange();
     range.setStart(text, 0);
