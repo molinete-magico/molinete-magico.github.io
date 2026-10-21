@@ -29,7 +29,7 @@ test('Writer rejects a post symlink that resolves outside the posts directory', 
   const id = `.writer-audit-${process.pid}`;
   const link = path.join(postsRoot(), id);
   try {
-    await fs.writeFile(path.join(outside, 'index.md'), '---\\ntitle: outside\\n---\\n');
+    await fs.writeFile(path.join(outside, 'index.md'), '---\ntitle: outside\n---\n');
     await fs.symlink(outside, link, 'dir');
     await assert.rejects(
       resolvePostFile(id),
@@ -49,7 +49,7 @@ test('Writer rejects image folders that are symlinks outside the posts root', as
   const linkedFolder = path.join(postsRoot(), id);
   try {
     await fs.writeFile(path.join(outside, 'secret.png'), 'not-an-image');
-    await fs.writeFile(flatPost, '---\\ntitle: test\\n---\\nbody\\n');
+    await fs.writeFile(flatPost, '---\ntitle: test\n---\nbody\n');
     await fs.symlink(outside, linkedFolder, 'dir');
     await assert.rejects(
       readPostImage(id, 'secret.png'),
@@ -68,7 +68,7 @@ test('Writer does not move a post into a symlinked image folder outside content'
   const flatPost = path.join(postsRoot(), `${id}.md`);
   const linkedFolder = path.join(postsRoot(), id);
   try {
-    await fs.writeFile(flatPost, '---\\ntitle: test\\n---\\nbody\\n');
+    await fs.writeFile(flatPost, '---\ntitle: test\n---\nbody\n');
     await fs.symlink(outside, linkedFolder, 'dir');
     await assert.rejects(
       saveImage(id, 'upload.png', Buffer.from('not-an-image')),
@@ -89,7 +89,7 @@ test('Writer rejects project documents that are symlinks outside projects', asyn
   const projectFolder = path.join(projectsRoot(), id);
   try {
     await fs.mkdir(projectFolder, { recursive: true });
-    await fs.writeFile(path.join(projectFolder, 'project.md'), '---\\ntitle: test\\ntype: story\\n---\\n');
+    await fs.writeFile(path.join(projectFolder, 'project.md'), '---\ntitle: test\ntype: story\n---\n');
     await fs.writeFile(path.join(outside, 'document.md'), 'secret');
     await fs.symlink(path.join(outside, 'document.md'), path.join(projectFolder, 'document.md'));
     await assert.rejects(
@@ -139,7 +139,7 @@ test('Writer save API round-trips long Markdown in an isolated workspace', async
     '',
     'Conteúdo original.',
     '',
-  ].join('\\n'), 'utf-8');
+  ].join('\n'), 'utf-8');
 
   const longBody = Array.from({ length: 80 }, (_, index) => [
     '## Seção ' + (index + 1),
@@ -149,7 +149,7 @@ test('Writer save API round-trips long Markdown in an isolated workspace', async
     '```ts',
     'const section' + (index + 1) + ' = "preservar exatamente";',
     '```',
-  ].join('\\n')).join('\\n\\n');
+  ].join('\n')).join('\n\n');
 
   try {
     setRepoRoot(workspace);
