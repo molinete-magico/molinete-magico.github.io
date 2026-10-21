@@ -55,12 +55,16 @@ function inlineMarkdown(node: Node): string {
 
 function listMarkdown(list: HTMLElement, depth = 0): string {
   const ordered = list.tagName === 'OL';
-  let nextNumber = ordered ? Math.max(1, Number.parseInt(list.getAttribute('start') ?? '1', 10) || 1) : 1;
+  const startAttribute = list.getAttribute('start');
+  const parsedStart = startAttribute === null ? 1 : Number.parseInt(startAttribute, 10);
+  let nextNumber = ordered && Number.isFinite(parsedStart) ? parsedStart : 1;
   return Array.from(list.children)
     .filter((child) => child.tagName === 'LI')
     .map((li) => {
+      const valueAttribute = li.getAttribute('value');
+      const parsedValue = valueAttribute === null ? Number.NaN : Number.parseInt(valueAttribute, 10);
       const itemNumber = ordered
-        ? (Number.parseInt(li.getAttribute('value') ?? '', 10) || nextNumber)
+        ? (Number.isFinite(parsedValue) ? parsedValue : nextNumber)
         : 0;
       if (ordered) nextNumber = itemNumber + 1;
       const content = Array.from(li.childNodes)
