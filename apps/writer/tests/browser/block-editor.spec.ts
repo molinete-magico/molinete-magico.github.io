@@ -97,3 +97,50 @@ test('image Markdown survives editor load and serialization', async ({ page }) =
   });
   expect(markdown).toBe('Before\n\n![mapa da área](/content/posts/demo/mapa-area.png)\n\nAfter');
 });
+
+
+test('Enter splits a paragraph and Backspace at the start joins it again', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('alpha beta');
+    const text = element.querySelector('p')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, 5);
+    range.collapse(true);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('beta');
+  await expect(page.locator('#markdown')).toHaveText('alpha\n\nbeta');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Backspace');
+  await expect(page.locator('#markdown')).toHaveText('alpha beta');
+});
+
+test('block action menu converts a paragraph to a heading without losing its text', async ({ page }) => {
+  await page.locator('.block-editor-canvas').evaluate((element) => {
+    window.writerEditor.setMarkdown('Keep this heading text');
+  });
+  await page.getByRole('button', { name: 'Ações do bloco 1' }).click();
+  await page.getByRole('menuitem', { name: 'Converter em título 2' }).click();
+  await expect(page.locator('.block-editor-canvas h2')).toHaveText('Keep this heading text');
+  await expect(page.locator('#markdown')).toHaveText('## Keep this heading text');
+});
+
+test('strikethrough keyboard shortcut serializes as Markdown', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('selected text');
+    const text = element.querySelector('p')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, 0);
+    range.setEnd(text, 8);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  await page.keyboard.press('Control+Shift+x');
+  await expect(page.locator('#markdown')).toHaveText('~~selected~~ text');
+});
