@@ -5,6 +5,8 @@ import { orderedListItemNumber, orderedListStart } from './list-numbering.js';
 type FormatCommand =
   | 'bold'
   | 'italic'
+  | 'underline'
+  | 'strikeThrough'
   | 'insertUnorderedList'
   | 'insertOrderedList'
   | 'formatBlock'
@@ -165,7 +167,9 @@ export class BlockEditor {
     this.root.innerHTML = `
       <div class="block-editor-toolbar" role="toolbar" aria-label="Formatação do documento">
         <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><strong>B</strong></button>
-        <button type="button" data-command="italic" title="Itálico (Ctrl+I)"><em>I</em></button>
+        <button type="button" data-command="italic" title="Itálico (Ctrl+I)" aria-label="Itálico"><em>I</em></button>
+        <button type="button" data-command="underline" title="Sublinhado (Ctrl+U)" aria-label="Sublinhado"><u>U</u></button>
+        <button type="button" data-command="strikeThrough" title="Tachado (Ctrl+Shift+X)" aria-label="Tachado"><s>S</s></button>
         <select data-block-type aria-label="Tipo de bloco">
           <option value="p">Parágrafo</option>
           <option value="h1">Título 1</option>
@@ -604,6 +608,15 @@ export class BlockEditor {
       '<button type="button" role="menuitem" data-block-action="down">Mover para baixo</button>',
       '<button type="button" role="menuitem" data-block-action="duplicate">Duplicar bloco</button>',
       '<button type="button" role="menuitem" data-block-action="delete">Excluir bloco</button>',
+      '<hr aria-hidden="true">',
+      '<button type="button" role="menuitem" data-block-action="convert-p">Converter em parágrafo</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-h1">Converter em título 1</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-h2">Converter em título 2</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-h3">Converter em título 3</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-blockquote">Converter em citação</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-pre">Converter em código</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-ul">Converter em lista com marcadores</button>',
+      '<button type="button" role="menuitem" data-block-action="convert-ol">Converter em lista numerada</button>',
     ].join('');
     this.blockMenu.style.top = `${Number.parseFloat(button.style.top) + 24}px`;
     this.blockMenu.hidden = false;
@@ -619,6 +632,13 @@ export class BlockEditor {
     if (!block) return;
     this.flushHistory();
     const action = button.dataset.blockAction;
+    if (action?.startsWith('convert-')) {
+      const kind = action.slice('convert-'.length);
+      this.focusBlock(block, true);
+      this.closeBlockMenu();
+      this.insertBlock(kind);
+      return;
+    }
     if (action === 'up' && index > 0) {
       this.canvas.insertBefore(block, blocks[index - 1]);
       this.focusBlock(block, false);
@@ -879,6 +899,37 @@ export class BlockEditor {
   private handleMarkdownShortcut(event: KeyboardEvent): void {
     if (this.composing) return;
     const selection = window.getSelection();
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'u') {
+      event.preventDefault();
+      this.flushHistory();
+      this.restoreSelection();
+      this.canvas.focus();
+      document.execCommand('underline', false);
+      this.emitChange();
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'x') {
+      event.preventDefault();
+      this.flushHistory();
+      this.restoreSelection();
+      this.canvas.focus();
+      document.execCommand('strikeThrough', false);
+      this.emitChange();
+      return;
+    }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.rememberSelection();
+      const url = window.prompt('URL do link');
+      if (!url) return;
+      this.flushHistory();
+      this.restoreSelection();
+      this.canvas.focus();
+      document.execCommand('createLink', false, url);
+      this.emitChange();
+      return;
+    }
 
     // Alt/Option + Shift + Arrow moves the current top-level block without requiring drag-and-drop.
     if (event.altKey && event.shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown') && selection?.anchorNode) {
