@@ -489,13 +489,62 @@ export class BlockEditor {
   }
 
   private handleMarkdownShortcut(event: KeyboardEvent): void {
-    if (this.composing || event.ctrlKey || event.metaKey || event.altKey) return;
-
+    if (this.composing) return;
     const selection = window.getSelection();
+
+    // Alt/Option + Shift + Arrow moves the current top-level block without requiring drag-and-drop.
+    if (event.altKey && event.shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown') && selection?.anchorNode) {
+      const node = selection.anchorNode;
+      let block = node instanceof HTMLElement ? node : node.parentElement;
+      while (block && block.parentElement !== this.canvas) block = block.parentElement;
+      const blocks = this.topLevelBlocks();
+      const index = block ? blocks.indexOf(block) : -1;
+      const targetIndex = event.key === 'ArrowUp' ? index - 1 : index + 1;
+      if (index >= 0 && targetIndex >= 0 && targetIndex < blocks.length) {
+        event.preventDefault();
+        if (event.key === 'ArrowUp') this.canvas.insertBefore(blocks[index], blocks[targetIndex]);
+        else this.canvas.insertBefore(blocks[targetIndex], blocks[index]);
+        this.refreshBlockControls();
+        this.emitChange();
+      }
+      return;
+    }
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.key === 'Enter' && !event.shiftKey && selection?.isCollapsed && selection.anchorNode) {
       const anchor = selection.anchorNode;
       const currentBlock = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)
-        ?.closest('p, div, h1, h2, h3, h4');
+        ?.closest('p, div, h1, h2, h3, h4, li, pre');
+      const isEmpty = !(currentBlock?.textContent ?? '').trim() &&
+        !(currentBlock?.querySelector('img, table, ul, ol, hr') );
+      if (currentBlock && isEmpty && this.canvas.contains(currentBlock)) {
+        const listItem = currentBlock.closest('li');
+        const list = listItem?.parentElement;
+        const isHeading = /^H[1-4]$/.test(currentBlock.tagName);
+        const isEmptyCode = currentBlock.tagName === 'PRE';
+        if (listItem && list && (list.tagName === 'UL' || list.tagName === 'OL')) {
+          event.preventDefault();
+          const paragraph = document.createElement('p');
+          paragraph.append(document.createElement('br'));
+          if (list.children.length > 1) {
+            listItem.remove();
+            list.after(paragraph);
+          } else {
+            list.replaceWith(paragraph);
+          }
+          this.focusBlock(paragraph, true);
+          this.emitChange();
+          return;
+        }
+        if (isHeading || isEmptyCode) {
+          event.preventDefault();
+          const paragraph = document.createElement('p');
+          paragraph.append(document.createElement('br'));
+          currentBlock.replaceWith(paragraph);
+          this.focusBlock(paragraph, true);
+          this.emitChange();
+          return;
+        }
+      }
       const quote = currentBlock?.closest('blockquote');
       if (currentBlock && quote && this.canvas.contains(quote) && !(currentBlock.textContent ?? '').trim()) {
         event.preventDefault();
@@ -652,6 +701,8 @@ export class BlockEditor {
   }
 
   private emitChange(): void {
+    this.rememberSelection();
+    this.refreshBlockControls();
     this.onChange(this.getMarkdown());
   }
 }
