@@ -91,8 +91,15 @@ function blockMarkdown(node: Node): string {
     case 'H2': return `## ${inline}`;
     case 'H3': return `### ${inline}`;
     case 'H4': return `#### ${inline}`;
-    case 'P':
-    case 'DIV': return inline;
+    case 'P': return inline;
+    case 'DIV': {
+      const hasBlockChildren = Array.from(node.children).some((child) =>
+        ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'UL', 'OL', 'BLOCKQUOTE', 'PRE', 'TABLE', 'HR'].includes(child.tagName),
+      );
+      return hasBlockChildren
+        ? Array.from(node.childNodes).map(blockMarkdown).filter(Boolean).join('\n\n')
+        : inline;
+    }
     case 'UL':
     case 'OL': return listMarkdown(node);
     case 'LI': return `- ${inline}`;
