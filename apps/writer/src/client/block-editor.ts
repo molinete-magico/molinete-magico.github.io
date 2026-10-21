@@ -152,6 +152,7 @@ export class BlockEditor {
   private savedRange: Range | null = null;
   private blockControls: HTMLDivElement;
   private blockMenu: HTMLDivElement;
+  private selectionToolbar: HTMLDivElement;
   private draggedBlockIndex = -1;
   private hoveredBlockIndex = -1;
   private history: BlockEditorHistorySnapshot[] = [];
@@ -169,6 +170,8 @@ export class BlockEditor {
         <button type="button" data-command="bold" title="Negrito (Ctrl+B)"><strong>B</strong></button>
         <button type="button" data-command="italic" title="Itálico (Ctrl+I)" aria-label="Itálico"><em>I</em></button>
         <button type="button" data-command="strikeThrough" title="Tachado (Ctrl+Shift+X)" aria-label="Tachado"><s>S</s></button>
+        <button type="button" data-history-action="undo" title="Desfazer (Ctrl+Z)" aria-label="Desfazer">↶</button>
+        <button type="button" data-history-action="redo" title="Refazer (Ctrl+Shift+Z)" aria-label="Refazer">↷</button>
         <select data-block-type aria-label="Tipo de bloco">
           <option value="p">Parágrafo</option>
           <option value="h1">Título 1</option>
@@ -197,9 +200,15 @@ export class BlockEditor {
     this.blockMenu.className = 'block-editor-block-menu';
     this.blockMenu.hidden = true;
     this.blockMenu.setAttribute('role', 'menu');
-    this.root.append(this.blockControls, this.blockMenu);
-    this.canvas.addEventListener('keyup', () => { this.rememberSelection(); this.refreshBlockControls(); });
-    this.canvas.addEventListener('mouseup', () => this.rememberSelection());
+    this.selectionToolbar = document.createElement('div');
+    this.selectionToolbar.className = 'block-editor-selection-toolbar';
+    this.selectionToolbar.hidden = true;
+    this.selectionToolbar.setAttribute('role', 'toolbar');
+    this.selectionToolbar.setAttribute('aria-label', 'Formatação da seleção');
+    this.selectionToolbar.innerHTML = '<button type="button" data-inline-format="bold" aria-label="Negrito" title="Negrito"><strong>B</strong></button><button type="button" data-inline-format="italic" aria-label="Itálico" title="Itálico"><em>I</em></button><button type="button" data-inline-format="strikeThrough" aria-label="Tachado" title="Tachado"><s>S</s></button><button type="button" data-inline-format="link" aria-label="Inserir link" title="Inserir link">Link</button>';
+    this.root.append(this.blockControls, this.blockMenu, this.selectionToolbar);
+    this.canvas.addEventListener('keyup', () => { this.rememberSelection(); this.refreshBlockControls(); this.refreshSelectionToolbar(); });
+    this.canvas.addEventListener('mouseup', () => { this.rememberSelection(); this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('pointerover', (event) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       let block = target;
@@ -301,6 +310,32 @@ export class BlockEditor {
       this.emitChange();
     });
     this.canvas.addEventListener('keydown', (event) => this.handleMarkdownShortcut(event));
+    this.root.querySelectorAll<HTMLButtonElement>('[data-history-action]').forEach((button) => {
+      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('click', () => this.restoreHistory(button.dataset.historyAction as 'undo' | 'redo'));
+    });
+    this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-inline-format]').forEach((button) => {
+      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('click', () => {
+        const command = button.dataset.inlineFormat ?? '';
+        if (command === 'link') {
+          this.rememberSelection();
+          const url = window.prompt('URL do link');
+          if (!url) return;
+          this.flushHistory();
+          this.restoreSelection();
+          this.canvas.focus();
+          document.execCommand('createLink', false, url);
+        } else {
+          this.flushHistory();
+          this.restoreSelection();
+          this.canvas.focus();
+          document.execCommand(command, false);
+        }
+        this.emitChange();
+        this.refreshSelectionToolbar();
+      });
+    });
     this.root.querySelectorAll<HTMLButtonElement>('[data-command]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => {
@@ -479,6 +514,15 @@ export class BlockEditor {
     this.history.push(snapshot);
     if (this.history.length > 100) this.history.shift();
     this.historyIndex = this.history.length - 1;
+    this.refreshHistoryButtons();
+  }
+
+  private refreshHistoryButtons(): void {
+    this.root.querySelectorAll<HTMLButtonElement>('[data-history-action]').forEach((button) => {
+      button.disabled = button.dataset.historyAction === 'undo'
+        ? this.historyIndex <= 0
+        : this.historyIndex >= this.history.length - 1;
+    });
   }
 
   private flushHistory(): void {
@@ -502,6 +546,7 @@ export class BlockEditor {
     this.historyTimer = null;
     this.history = [this.captureHistorySnapshot()];
     this.historyIndex = 0;
+    this.refreshHistoryButtons();
   }
 
   private restoreHistory(direction: 'undo' | 'redo'): void {
@@ -536,6 +581,21 @@ export class BlockEditor {
     this.rememberSelection();
     this.refreshBlockControls();
     this.onChange(this.getMarkdown());
+  }
+
+  private refreshSelectionToolbar(): void {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount ||
+        !this.canvas.contains(selection.anchorNode) || !this.canvas.contains(selection.focusNode)) {
+      this.selectionToolbar.hidden = true;
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const rootRect = this.root.getBoundingClientRect();
+    this.selectionToolbar.style.left = Math.max(0, rect.left - rootRect.left + rect.width / 2) + 'px';
+    this.selectionToolbar.style.top = Math.max(0, rect.top - rootRect.top - 42) + 'px';
+    this.selectionToolbar.hidden = false;
   }
 
   private rememberSelection(): void {
