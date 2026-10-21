@@ -171,8 +171,20 @@ export class BlockEditor {
     this.blockMenu.hidden = true;
     this.blockMenu.setAttribute('role', 'menu');
     this.root.append(this.blockControls, this.blockMenu);
-    document.addEventListener('selectionchange', () => this.rememberSelection());
-    window.addEventListener('resize', () => this.refreshBlockControls());
+    this.canvas.addEventListener('keyup', () => { this.rememberSelection(); this.refreshBlockControls(); });
+    this.canvas.addEventListener('mouseup', () => this.rememberSelection());
+    this.canvas.addEventListener('pointerover', (event) => {
+      const target = event.target instanceof HTMLElement ? event.target : null;
+      let block = target;
+      while (block && block.parentElement !== this.canvas) block = block.parentElement;
+      const index = block ? this.topLevelBlocks().indexOf(block) : -1;
+      this.blockControls.querySelectorAll<HTMLButtonElement>('[data-block-index]').forEach((handle) => {
+        handle.classList.toggle('is-visible', Number(handle.dataset.blockIndex) === index);
+      });
+    });
+    this.canvas.addEventListener('pointerleave', () => {
+      this.blockControls.querySelectorAll('.block-editor-block-handle').forEach((handle) => handle.classList.remove('is-visible'));
+    });
     this.canvas.addEventListener('scroll', () => this.refreshBlockControls(), { passive: true });
     this.canvas.addEventListener('compositionstart', () => { this.composing = true; });
     this.canvas.addEventListener('compositionend', () => {
