@@ -14,7 +14,7 @@ on:
       - ".github/workflows/check-writer.yml"
       - ".github/workflows/deploy-blog.yml"
   push:
-    branches: [feat/writer-projects]
+    branches: [feat/writer-projects, feat/writer-block-editor-overhaul]
     paths:
       - "apps/writer/**"
       - "apps/blog/**"
