@@ -50,6 +50,12 @@ jobs:
       - name: Test Writer security guards
         run: npm run test --workspace=apps/writer
 
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test Writer browser interactions
+        run: npm run test:writer:browser
+
       - name: Audit dependency advisories
         id: dependency_audit
         continue-on-error: true
