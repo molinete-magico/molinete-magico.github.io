@@ -220,6 +220,20 @@ function persistRecovery() {
   };
   try { localStorage.setItem('writer-v2-recovery', JSON.stringify(snapshot)); } catch { /* storage can be unavailable */ }
 }
+
+window.addEventListener('pagehide', () => {
+  if (state.dirty) persistRecovery();
+});
+window.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && state.dirty) persistRecovery();
+});
+window.addEventListener('beforeunload', (event) => {
+  if (!state.dirty) return;
+  persistRecovery();
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 async function restoreRecoveryIfMatches() {
   const raw = storageGet('writer-v2-recovery');
   if (!raw || !state.kind) return;
