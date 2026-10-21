@@ -128,6 +128,9 @@ export class BlockEditor {
   private readonly onUploadImage?: (file: File) => Promise<UploadedImage | null>;
   private readonly resolveImageUrl?: (src: string) => string;
   private imageRange: Range | null = null;
+  private savedRange: Range | null = null;
+  private blockControls: HTMLDivElement;
+  private blockMenu: HTMLDivElement;
   private composing = false;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
@@ -158,14 +161,31 @@ export class BlockEditor {
       <div class="block-editor-canvas" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Documento" spellcheck="true"></div>
     `;
     this.canvas = this.root.querySelector<HTMLDivElement>('.block-editor-canvas')!;
+    this.root.classList.add('block-editor-enhanced');
+    this.root.style.position = 'relative';
+    this.blockControls = document.createElement('div');
+    this.blockControls.className = 'block-editor-block-controls';
+    this.blockControls.setAttribute('aria-label', 'Controles dos blocos');
+    this.blockMenu = document.createElement('div');
+    this.blockMenu.className = 'block-editor-block-menu';
+    this.blockMenu.hidden = true;
+    this.blockMenu.setAttribute('role', 'menu');
+    this.root.append(this.blockControls, this.blockMenu);
+    document.addEventListener('selectionchange', () => this.rememberSelection());
+    window.addEventListener('resize', () => this.refreshBlockControls());
+    this.canvas.addEventListener('scroll', () => this.refreshBlockControls(), { passive: true });
     this.canvas.addEventListener('compositionstart', () => { this.composing = true; });
     this.canvas.addEventListener('compositionend', () => {
       this.composing = false;
+      this.rememberSelection();
+      this.refreshBlockControls();
       this.emitChange();
     });
     this.canvas.addEventListener('input', () => {
       if (!this.composing) {
         this.handleInlineMarkdownShortcut();
+        this.rememberSelection();
+        this.refreshBlockControls();
         this.emitChange();
       }
     });
@@ -205,6 +225,8 @@ export class BlockEditor {
       range.collapse(true);
       selection?.removeAllRanges();
       selection?.addRange(range);
+      this.rememberSelection();
+      this.refreshBlockControls();
       this.emitChange();
     });
     this.canvas.addEventListener('keydown', (event) => this.handleMarkdownShortcut(event));
@@ -212,13 +234,17 @@ export class BlockEditor {
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => {
         const command = button.dataset.command as FormatCommand;
+        this.restoreSelection();
         this.canvas.focus();
         document.execCommand(command, false);
+        this.rememberSelection();
+        this.refreshBlockControls();
         this.emitChange();
       });
     });
     const blockType = this.root.querySelector<HTMLSelectElement>('[data-block-type]')!;
     blockType.addEventListener('change', () => {
+      this.restoreSelection();
       this.canvas.focus();
       const value = blockType.value;
       document.execCommand('formatBlock', false, value);
@@ -231,23 +257,33 @@ export class BlockEditor {
           current.append(code);
         }
       }
+      this.rememberSelection();
+      this.refreshBlockControls();
       this.emitChange();
     });
     this.root.querySelector('[data-action="link"]')!.addEventListener('mousedown', (event) => event.preventDefault());
     this.root.querySelector('[data-action="link"]')!.addEventListener('click', () => {
+      this.rememberSelection();
       const url = window.prompt('URL do link');
       if (!url) return;
+      this.restoreSelection();
       this.canvas.focus();
       document.execCommand('createLink', false, url);
+      this.rememberSelection();
+      this.refreshBlockControls();
       this.emitChange();
     });
     this.root.querySelector('[data-action="image"]')!.addEventListener('mousedown', (event) => event.preventDefault());
     this.root.querySelector('[data-action="image"]')!.addEventListener('click', () => {
+      this.rememberSelection();
       const url = window.prompt('URL ou caminho da imagem');
       if (!url) return;
       const alt = window.prompt('Texto alternativo (opcional)') ?? '';
+      this.restoreSelection();
       this.canvas.focus();
       document.execCommand('insertHTML', false, `<img src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`);
+      this.rememberSelection();
+      this.refreshBlockControls();
       this.emitChange();
     });
     const imageUploadButton = this.root.querySelector<HTMLButtonElement>('[data-action="upload-image"]')!;
@@ -272,9 +308,17 @@ export class BlockEditor {
     });
     this.root.querySelector('[data-action="hr"]')!.addEventListener('mousedown', (event) => event.preventDefault());
     this.root.querySelector('[data-action="hr"]')!.addEventListener('click', () => {
+      this.restoreSelection();
       this.canvas.focus();
       document.execCommand('insertHTML', false, '<hr><p><br></p>');
+      this.rememberSelection();
+      this.refreshBlockControls();
       this.emitChange();
+    });
+    this.blockControls.addEventListener('click', (event) => this.handleBlockControlClick(event));
+    this.blockMenu.addEventListener('click', (event) => this.handleBlockMenuClick(event));
+    this.root.addEventListener('click', (event) => {
+      if (!this.blockMenu.hidden && !this.blockMenu.contains(event.target as Node) && !this.blockControls.contains(event.target as Node)) this.closeBlockMenu();
     });
   }
 
