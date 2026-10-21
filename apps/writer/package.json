@@ -13,7 +13,9 @@
     "build:client:legacy": "esbuild src/client/main.ts --bundle --outdir=dist/client --format=esm --target=es2020 --minify",
     "build:client:v2": "esbuild src/client-v2/main.ts --bundle --outdir=dist/client/v2 --format=esm --target=es2020 --minify",
     "test:browser": "playwright test --config=tests/browser/playwright.config.ts",
-    "test:browser:serve": "node tests/browser/serve-fixture.mjs"
+    "test:browser:serve": "node tests/browser/serve-fixture.mjs",
+    "test:e2e": "playwright test --config=tests/browser/playwright.e2e.config.ts",
+    "test:e2e:serve": "node --import tsx tests/browser/serve-writer-app.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: '.',
-  testMatch: '**/*.spec.ts',
+  testMatch: 'block-editor.spec.ts',
   fullyParallel: true,
   reporter: 'list',
   use: {

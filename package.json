@@ -12,6 +12,7 @@
     "check:writer": "npm run check --workspace=apps/writer",
     "test:writer": "npm run test --workspace=apps/writer",
     "check:site": "node scripts/check-built-site.mjs",
-    "test:writer:browser": "npm run test:browser --workspace=apps/writer"
+    "test:writer:browser": "npm run test:browser --workspace=apps/writer",
+    "test:writer:e2e": "npm run test:e2e --workspace=apps/writer"
   }
 }
