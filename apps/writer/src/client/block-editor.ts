@@ -725,11 +725,101 @@ export class BlockEditor {
     }
 
     let current = anchor instanceof HTMLElement ? anchor : anchor?.parentElement ?? null;
-    while (current && current.parentElement !== this.canvas) current = current.parentElement;
+    const activeListItem = current?.closest('li');
+    if (activeListItem && this.canvas.contains(activeListItem)) {
+      current = activeListItem;
+    } else {
+      while (current && current.parentElement !== this.canvas) current = current.parentElement;
+    }
     if (!current || current === this.canvas) {
       current = document.createElement('p');
       current.append(document.createElement('br'));
       this.canvas.append(current);
+    }
+
+    // Slash commands inside a list must operate on the current item, not replace
+    // the entire UL/OL and destroy the neighboring items.
+    if (current.tagName === 'LI') {
+      const item = current;
+      const list = item.parentElement;
+      if (list && (list.tagName === 'UL' || list.tagName === 'OL')) {
+        if (kind === 'ul' || kind === 'ol') {
+          const nestedList = document.createElement(kind);
+          const nestedItem = document.createElement('li');
+          while (item.firstChild) nestedItem.append(item.firstChild);
+          if (!nestedItem.hasChildNodes()) nestedItem.append(document.createElement('br'));
+          nestedList.append(nestedItem);
+          item.append(nestedList);
+          this.focusBlock(nestedItem, false);
+          this.closeBlockMenu();
+          this.refreshBlockControls();
+          this.emitChange();
+          return;
+        }
+
+        const items = Array.from(list.children).filter((child): child is HTMLElement => child.tagName === 'LI');
+        const itemIndex = items.indexOf(item);
+        const makeList = () => {
+          const copy = document.createElement(list.tagName.toLowerCase());
+          Array.from(list.attributes).forEach((attribute) => copy.setAttribute(attribute.name, attribute.value));
+          return copy;
+        };
+        const beforeItems = items.slice(0, itemIndex);
+        const afterItems = items.slice(itemIndex + 1);
+        const beforeList = beforeItems.length ? makeList() : null;
+        const afterList = afterItems.length ? makeList() : null;
+        beforeItems.forEach((entry) => beforeList!.append(entry));
+        afterItems.forEach((entry) => afterList!.append(entry));
+        if (afterList && list.tagName === 'OL') {
+          const originalStart = Number.parseInt(list.getAttribute('start') ?? '1', 10) || 1;
+          afterList.setAttribute('start', String(originalStart + itemIndex + 1));
+        }
+
+        const replacement: HTMLElement[] = [];
+        if (beforeList) replacement.push(beforeList);
+        let focusTarget: HTMLElement;
+        if (kind === 'hr') {
+          const paragraph = document.createElement('p');
+          while (item.firstChild) paragraph.append(item.firstChild);
+          if (!paragraph.hasChildNodes()) paragraph.append(document.createElement('br'));
+          const divider = document.createElement('hr');
+          const afterParagraph = document.createElement('p');
+          afterParagraph.append(document.createElement('br'));
+          replacement.push(paragraph, divider, afterParagraph);
+          focusTarget = afterParagraph;
+        } else if (kind === 'blockquote') {
+          const quote = document.createElement('blockquote');
+          const paragraph = document.createElement('p');
+          while (item.firstChild) paragraph.append(item.firstChild);
+          if (!paragraph.hasChildNodes()) paragraph.append(document.createElement('br'));
+          quote.append(paragraph);
+          replacement.push(quote);
+          focusTarget = paragraph;
+        } else if (kind === 'pre') {
+          const pre = document.createElement('pre');
+          const code = document.createElement('code');
+          code.textContent = item.textContent ?? '';
+          if (!code.textContent) code.append(document.createElement('br'));
+          pre.append(code);
+          replacement.push(pre);
+          focusTarget = code;
+        } else if (/^h[1-3]$/.test(kind) || kind === 'p') {
+          const block = document.createElement(kind);
+          while (item.firstChild) block.append(item.firstChild);
+          if (!block.hasChildNodes()) block.append(document.createElement('br'));
+          replacement.push(block);
+          focusTarget = block;
+        } else {
+          return;
+        }
+        if (afterList) replacement.push(afterList);
+        list.replaceWith(...replacement);
+        this.focusBlock(focusTarget, false);
+        this.closeBlockMenu();
+        this.refreshBlockControls();
+        this.emitChange();
+        return;
+      }
     }
 
     if (kind === 'hr') {
