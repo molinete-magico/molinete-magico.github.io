@@ -170,7 +170,7 @@ export class BlockEditor {
       if (text === undefined || text === null) return;
       event.preventDefault();
 
-      const normalized = text.replace(/\\r\\n?/g, '\\n');
+      const normalized = text.replace(/\r\n?/g, '\n');
       if (!normalized) return;
 
       const fragment = document.createDocumentFragment();
