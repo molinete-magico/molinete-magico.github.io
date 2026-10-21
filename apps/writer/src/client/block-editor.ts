@@ -33,7 +33,8 @@ function inlineMarkdown(node: Node): string {
     case 'EM':
     case 'I': return `*${children}*`;
     case 'DEL':
-    case 'S': return `~~${children}~~`;
+    case 'S':
+    case 'STRIKE': return `~~${children}~~`;
     case 'CODE': {
       const content = node.textContent ?? '';
       const longestRun = Math.max(0, ...Array.from(content.matchAll(/`+/g), (match) => match[0].length));
