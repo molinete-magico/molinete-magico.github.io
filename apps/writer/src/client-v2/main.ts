@@ -166,14 +166,35 @@ function activeTitle() {
   if (state.kind === 'project') return state.currentProject?.file.title ?? '';
   return state.currentDoc?.file.title ?? '';
 }
+let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
+let previewTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleRecovery() {
+  if (recoveryTimer) clearTimeout(recoveryTimer);
+  recoveryTimer = setTimeout(() => {
+    recoveryTimer = null;
+    persistRecovery();
+  }, 400);
+}
+function schedulePreviewRender() {
+  if (previewTimer) clearTimeout(previewTimer);
+  previewTimer = setTimeout(() => {
+    previewTimer = null;
+    renderPreview();
+  }, 120);
+}
 function markDirty() {
   state.editRevision += 1;
   state.dirty = true;
   status('Alterações não salvas', 'warn');
-  persistRecovery();
-  if (state.preview) renderPreview();
+  scheduleRecovery();
+  if (state.preview) schedulePreviewRender();
 }
 function persistRecovery() {
+  if (recoveryTimer) {
+    clearTimeout(recoveryTimer);
+    recoveryTimer = null;
+  }
   if (!state.kind || !activeId()) return;
   const snapshot = {
     id: activeId(), kind: state.kind, projectId: state.currentDoc?.projectId ?? state.currentProject?.id ?? '',
