@@ -168,6 +168,7 @@ function activeTitle() {
 }
 let recoveryTimer: ReturnType<typeof setTimeout> | null = null;
 let previewTimer: ReturnType<typeof setTimeout> | null = null;
+let editorMetricsTimer: ReturnType<typeof setTimeout> | null = null;
 
 function scheduleRecovery() {
   if (recoveryTimer) clearTimeout(recoveryTimer);
@@ -175,6 +176,14 @@ function scheduleRecovery() {
     recoveryTimer = null;
     persistRecovery();
   }, 400);
+}
+function scheduleEditorMetrics() {
+  if (editorMetricsTimer) clearTimeout(editorMetricsTimer);
+  editorMetricsTimer = setTimeout(() => {
+    editorMetricsTimer = null;
+    renderHeadingOutline();
+    updateWritingStats();
+  }, 120);
 }
 function schedulePreviewRender() {
   if (previewTimer) clearTimeout(previewTimer);
@@ -444,7 +453,7 @@ function renderWorkspace() {
     button.addEventListener('click', () => insertBlock(button.dataset.insertBlock!));
   });
   const host = $('#block-host')!;
-  state.editor = new BlockEditor(host, () => { markDirty(); renderHeadingOutline(); updateWritingStats(); }, uploadInlineImage, resolveImageUrl);
+  state.editor = new BlockEditor(host, () => { markDirty(); scheduleEditorMetrics(); }, uploadInlineImage, resolveImageUrl);
   $('#block-host .block-editor-toolbar')?.classList.add('v2-block-toolbar');
   bindSlashMenu();
   const goal = $('#word-goal') as HTMLInputElement | null;
