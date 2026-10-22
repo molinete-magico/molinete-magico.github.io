@@ -904,8 +904,8 @@ export class BlockEditor {
       const markdownSrc = image.getAttribute('src') ?? '';
       image.dataset.markdownSrc = markdownSrc;
       const title = image.getAttribute('title') ?? '';
-      const width = title.match(/(?:^|\\s)width=(\\d+)/)?.[1];
-      const align = title.match(/(?:^|\\s)align=(left|center|right)/)?.[1];
+      const width = title.match(/(?:^|\s)width=(\d+)/)?.[1];
+      const align = title.match(/(?:^|\s)align=(left|center|right)/)?.[1];
       if (width) { image.dataset.markdownWidth = width; image.setAttribute('width', width); image.style.width = width + 'px'; }
       if (align) { image.dataset.markdownAlign = align; image.style.display = 'block'; image.style.marginLeft = align === 'right' || align === 'center' ? 'auto' : '0'; image.style.marginRight = align === 'left' || align === 'center' ? 'auto' : '0'; }
       if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
