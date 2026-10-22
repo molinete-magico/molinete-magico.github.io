@@ -475,6 +475,20 @@ export class BlockEditor {
       this.emitChange();
     });
     this.blockControls.addEventListener('click', (event) => this.handleBlockControlClick(event));
+    this.blockControls.addEventListener('keydown', (event: KeyboardEvent) => {
+      const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
+      if (!handle || !event.shiftKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const index = Number(handle.dataset.blockIndex);
+      const target = index + (event.key === 'ArrowDown' ? 1 : -1);
+      const blocks = this.topLevelBlocks();
+      if (!blocks[index] || !blocks[target]) return;
+      event.preventDefault();
+      const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
+      this.selectedBlockIndices.clear();
+      for (let i = Math.min(anchor, target); i <= Math.max(anchor, target); i++) this.selectedBlockIndices.add(i);
+      this.refreshBlockControls();
+      this.showMultiBlockMenu(target);
+    });
     this.blockControls.addEventListener('dragstart', (event) => {
       const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
       if (!handle || !event.dataTransfer) return;
@@ -744,6 +758,7 @@ export class BlockEditor {
       handle.textContent = '⋮⋮';
       handle.title = 'Ações do bloco';
       handle.setAttribute('aria-label', `Ações do bloco ${index + 1}`);
+      handle.setAttribute('aria-keyshortcuts', 'Shift+ArrowUp Shift+ArrowDown');
       handle.dataset.blockIndex = String(index);
       handle.setAttribute('aria-pressed', String(this.selectedBlockIndices.has(index)));
       handle.classList.toggle('is-selected', this.selectedBlockIndices.has(index));
