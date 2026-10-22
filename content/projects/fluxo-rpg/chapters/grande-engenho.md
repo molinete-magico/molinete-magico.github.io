@@ -28,11 +28,11 @@ O uniforme tem duas variações:
 
 ### Masculino
 
-![eeeaedb](eeeaedb.webp)
+![eeeaedb](eeeaedb.webp "width=406 align=center")
 
 ### Feminino
 
-![caeac](caeac.webp)
+![caeac](caeac.webp "width=406 align=center")
 
 Todos os alunos tem direito a receber uma unidade dos dois uniformes, selecionando previamente se querem os dois, ou apenas um deles\.  
 Na versão sem colete da roupa masculina, é recomendável que se utilize uma gravata com as cores de sua casa\.
@@ -51,20 +51,32 @@ Para Espadas, um duelo exige decisões firmes, iniciativa e disposição para en
 
 A casa mantém uma antiga rivalidade com Paus, marcada por provocações, disputas e divergências sobre o que significa ser um bom duelista\.
 
-###  ♥ Copas \(Vermelho e Dourado\)
+### ♥ Copas \(Vermelho e Dourado\)
 
 Copas entende que um duelo não envolve apenas dois adversários, mas também intenções, vínculos e consequências\. Seus integrantes valorizam a compreensão do oponente e a capacidade de influenciar o rumo de um confronto\.
 
 São conhecidos por organizar as festas e celebrações da academia, mantendo viva a vida social entre os estudantes\.
 
-###  ◇ Ouros \(Amarelo e Dourado\)
+### ◇ Ouros \(Amarelo e Dourado\)
 
 Para Ouros, vencer significa construir uma posição favorável por meio do planejamento, da administração de recursos e da avaliação de riscos\. Seus integrantes procuram transformar oportunidades em vantagens concretas\.
 
 A casa também possui um sistema próprio de trocas entre estudantes, uma tradição que faz parte de sua identidade dentro do Grande Engenho\.
 
-###  ♣ Paus \(Azul e Prata\)
+### ♣ Paus \(Azul e Prata\)
 
 Paus acredita que as possibilidades de um duelo vão além das estratégias convencionais\. Seus integrantes valorizam a criatividade, a adaptação e a busca por soluções inesperadas\.
 
 Essa postura frequentemente entra em conflito com a filosofia de Espadas, cuja preferência pelo confronto direto é alvo constante das provocações de Paus\.
+
+## Alojamentos
+
+Cada uma das casas tem seus alojamentos dentro da academia, não tendo diferença nenhuma em seu interior\.  
+Os alojamentos são pequenos chalés individuais que possuem um banheiro, um quarto e uma pequena varanda na frente da casa\.
+
+![Cabine](https://i.pinimg.com/1200x/27/2f/83/272f8330361b53560b3cab68471f0aac.jpg "width=406 align=center")
+
+\(imagem ilustrativa de como seria a cabine do alojamento \(sem banheiro\)\)   
+Cada estudante tem a obrigação de cuidar de seu próprio chalé, tendo uma inspeção sanitária a cada mês, aplicando multas/punições caso as recomendações sanitárias não sejam seguidas\.
+
+Não são permitidas visitas entre alunos a partir das 23 da noite\. Um professor encarregado fará a vistoria regular pela noite\.
