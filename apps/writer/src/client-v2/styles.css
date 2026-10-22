@@ -354,3 +354,17 @@ textarea:focus-visible {
   .writing-stats { gap: .4rem .7rem; font-size: .68rem; }
   .block-editor-selection-toolbar { max-width: calc(100vw - 2rem); }
 }
+
+
+/* Batch selection, table navigation and media sizing affordances. */
+.block-editor-block-handle.is-selected { opacity: 1; color: var(--accent); background: var(--bg-soft); outline: 1px solid var(--accent); }
+.block-editor-canvas > .is-multi-selected { outline: 2px solid var(--accent); outline-offset: 3px; background-color: color-mix(in srgb, var(--accent) 5%, transparent); }
+.block-editor-block-menu .block-menu-label { margin: .25rem .5rem .45rem; color: var(--text-muted); font-size: .75rem; }
+.block-editor-canvas table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.block-editor-canvas th, .block-editor-canvas td { min-width: 4rem; padding: .45rem .55rem; border: 1px solid var(--border-strong); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.block-editor-canvas th { background: var(--bg-soft); font-weight: 650; }
+.block-editor-canvas td:focus, .block-editor-canvas th:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.block-editor-canvas img { max-width: 100%; height: auto; }
+.block-editor-canvas img:focus { outline: 2px solid var(--accent); outline-offset: 3px; }
+.block-editor-canvas .block-drop-before { border-top: 2px solid var(--accent); }
+.block-editor-canvas .block-drop-after { border-bottom: 2px solid var(--accent); }
