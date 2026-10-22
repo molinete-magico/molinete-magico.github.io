@@ -984,6 +984,28 @@ export class BlockEditor {
 
     // Slash commands inside a list must operate on the current item, not replace
     // the entire UL/OL and destroy the neighboring items.
+    if (kind === 'table' || kind === 'image') {
+      const insertionTarget = current.tagName === 'LI' ? current.closest('ul,ol') as HTMLElement | null : current;
+      if (!insertionTarget) return;
+      if (kind === 'table') {
+        const table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>Coluna 1</th><th>Coluna 2</th><th>Coluna 3</th></tr></thead><tbody><tr><td><br></td><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td><td><br></td></tr></tbody>';
+        insertionTarget.after(table);
+        this.focusBlock(table.querySelector('td') as HTMLElement, true);
+      } else {
+        const url = window.prompt('URL ou caminho da imagem');
+        if (!url) return;
+        const image = document.createElement('img');
+        image.setAttribute('src', url); image.dataset.markdownSrc = url;
+        image.alt = window.prompt('Texto alternativo da imagem (opcional)') ?? '';
+        image.loading = 'lazy';
+        insertionTarget.after(image);
+        const paragraph = document.createElement('p'); paragraph.append(document.createElement('br')); image.after(paragraph);
+        this.focusBlock(paragraph, true);
+      }
+      this.closeBlockMenu(); this.refreshBlockControls(); this.emitChange(); return;
+    }
+
     if (current.tagName === 'LI') {
       const item = current;
       const list = item.parentElement;
