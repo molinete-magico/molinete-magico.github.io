@@ -154,6 +154,7 @@ export class BlockEditor {
   private blockMenu: HTMLDivElement;
   private selectionToolbar: HTMLDivElement;
   private draggedBlockIndex = -1;
+  private selectedBlockIndices = new Set<number>();
   private hoveredBlockIndex = -1;
   private history: BlockEditorHistorySnapshot[] = [];
   private historyIndex = -1;
@@ -242,7 +243,44 @@ export class BlockEditor {
       if (this.composing) return;
       const clipboard = event.clipboardData;
       if (!clipboard) return;
+      const html = clipboard.getData('text/html');
       const text = clipboard.getData('text/plain');
+      if (!text && !html) return;
+
+      // Preserve useful rich-text structure from browsers and office editors, but
+      // strip scripts, inline styles and unsupported elements before insertion.
+      if (html) {
+        const sanitized = DOMPurify.sanitize(html, {
+          ALLOWED_TAGS: ['p', 'div', 'br', 'strong', 'b', 'em', 'i', 's', 'del', 'strike', 'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'h1', 'h2', 'h3', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img'],
+          ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'start', 'value', 'colspan', 'rowspan'],
+          ALLOW_DATA_ATTR: false,
+        });
+        const parsed = new DOMParser().parseFromString(sanitized, 'text/html');
+        parsed.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+          const src = image.getAttribute('src') ?? '';
+          if (!/^(https?:|\/|\.\/|\.\.\/)/i.test(src)) image.remove();
+          else image.dataset.markdownSrc = src;
+        });
+        const fragment = document.createDocumentFragment();
+        while (parsed.body.firstChild) fragment.append(parsed.body.firstChild);
+        if (fragment.childNodes.length) {
+          event.preventDefault();
+          this.flushHistory();
+          const selection = window.getSelection();
+          let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+          if (!range || !this.canvas.contains(range.commonAncestorContainer)) {
+            range = document.createRange(); range.selectNodeContents(this.canvas); range.collapse(false);
+          }
+          range.deleteContents();
+          const last = fragment.lastChild;
+          range.insertNode(fragment);
+          if (last) range.setStartAfter(last);
+          range.collapse(true);
+          selection?.removeAllRanges(); selection?.addRange(range);
+          this.emitChange();
+          return;
+        }
+      }
       if (!text) return;
 
       event.preventDefault();
@@ -639,6 +677,8 @@ export class BlockEditor {
       handle.title = 'Ações do bloco';
       handle.setAttribute('aria-label', `Ações do bloco ${index + 1}`);
       handle.dataset.blockIndex = String(index);
+      handle.setAttribute('aria-pressed', String(this.selectedBlockIndices.has(index)));
+      handle.classList.toggle('is-selected', this.selectedBlockIndices.has(index));
       handle.classList.toggle('is-visible', index === this.hoveredBlockIndex);
       handle.style.top = `${rect.top - rootRect.top + this.root.scrollTop + Math.min(8, rect.height / 2)}px`;
       this.blockControls.append(handle);
@@ -661,6 +701,18 @@ export class BlockEditor {
     const index = Number(button.dataset.blockIndex);
     const blocks = this.topLevelBlocks();
     if (!Number.isInteger(index) || !blocks[index]) return;
+    if (event instanceof MouseEvent && event.shiftKey) {
+      const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
+      this.selectedBlockIndices.clear();
+      for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); i++) this.selectedBlockIndices.add(i);
+      this.refreshBlockControls();
+      this.showMultiBlockMenu(index);
+      return;
+    }
+    if (!this.selectedBlockIndices.has(index) || this.selectedBlockIndices.size < 2) {
+      this.selectedBlockIndices.clear();
+      this.selectedBlockIndices.add(index);
+    }
     this.blockMenu.dataset.blockIndex = String(index);
     this.blockMenu.innerHTML = [
       '<button type="button" role="menuitem" data-block-action="up">Mover para cima</button>',
@@ -676,8 +728,28 @@ export class BlockEditor {
       '<button type="button" role="menuitem" data-block-action="convert-pre">Converter em código</button>',
       '<button type="button" role="menuitem" data-block-action="convert-ul">Converter em lista com marcadores</button>',
       '<button type="button" role="menuitem" data-block-action="convert-ol">Converter em lista numerada</button>',
+      '<hr aria-hidden="true">',
+      '<button type="button" role="menuitem" data-block-action="select-range">Selecionar até aqui (Shift+clique)</button>',
     ].join('');
     this.blockMenu.style.top = `${Number.parseFloat(button.style.top) + 24}px`;
+    this.blockMenu.hidden = false;
+    this.blockMenu.querySelector<HTMLButtonElement>('button')?.focus();
+  }
+
+  private showMultiBlockMenu(index: number): void {
+    this.blockMenu.dataset.blockIndex = String(index);
+    this.blockMenu.innerHTML = '<p class="block-menu-label">' + this.selectedBlockIndices.size + ' blocos selecionados</p>' +
+      '<button type="button" role="menuitem" data-block-action="group-up">Mover seleção para cima</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-down">Mover seleção para baixo</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-duplicate">Duplicar seleção</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-delete">Excluir seleção</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-clear">Limpar seleção</button>';
+    const block = this.topLevelBlocks()[index];
+    if (block) {
+      const rect = block.getBoundingClientRect();
+      const rootRect = this.root.getBoundingClientRect();
+      this.blockMenu.style.top = `${rect.top - rootRect.top + this.root.scrollTop + 24}px`;
+    }
     this.blockMenu.hidden = false;
     this.blockMenu.querySelector<HTMLButtonElement>('button')?.focus();
   }
@@ -691,6 +763,28 @@ export class BlockEditor {
     if (!block) return;
     this.flushHistory();
     const action = button.dataset.blockAction;
+    if (action === 'group-clear') {
+      this.selectedBlockIndices.clear(); this.closeBlockMenu(); this.refreshBlockControls(); return;
+    }
+    if (action?.startsWith('group-')) {
+      const selected = [...this.selectedBlockIndices].sort((a, b) => a - b);
+      const selectedBlocks = selected.map((i) => blocks[i]).filter((item): item is HTMLElement => Boolean(item));
+      if (action === 'group-up' && selected[0] > 0) this.canvas.insertBefore(selectedBlocks[0], blocks[selected[0] - 1]);
+      else if (action === 'group-down' && selected[selected.length - 1] < blocks.length - 1) this.canvas.insertBefore(blocks[selected[selected.length - 1] + 1], selectedBlocks[0]);
+      else if (action === 'group-duplicate') {
+        let last: HTMLElement | null = selectedBlocks[selectedBlocks.length - 1] ?? null;
+        selectedBlocks.forEach((item) => { const copy = item.cloneNode(true) as HTMLElement; (last ?? item).after(copy); last = copy; });
+      } else if (action === 'group-delete') {
+        selectedBlocks.forEach((item) => item.remove());
+        if (!this.canvas.children.length) { const p = document.createElement('p'); p.append(document.createElement('br')); this.canvas.append(p); }
+        this.selectedBlockIndices.clear();
+      }
+      this.closeBlockMenu(); this.refreshBlockControls(); this.emitChange(); return;
+    }
+    if (action === 'select-range') {
+      this.selectedBlockIndices.add(index);
+      this.closeBlockMenu(); this.refreshBlockControls(); this.showMultiBlockMenu(index); return;
+    }
     if (action?.startsWith('convert-')) {
       const kind = action.slice('convert-'.length);
       this.focusBlock(block, true);
