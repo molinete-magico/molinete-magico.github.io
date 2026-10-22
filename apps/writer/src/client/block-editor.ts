@@ -664,6 +664,7 @@ export class BlockEditor {
 
   private refreshBlockControls(): void {
     if (!this.blockControls || !this.canvas.isConnected) return;
+    this.topLevelBlocks().forEach((block, index) => block.classList.toggle('is-multi-selected', this.selectedBlockIndices.has(index)));
     this.blockControls.replaceChildren();
     const rootRect = this.root.getBoundingClientRect();
     this.topLevelBlocks().forEach((block, index) => {
@@ -770,7 +771,7 @@ export class BlockEditor {
       const selected = [...this.selectedBlockIndices].sort((a, b) => a - b);
       const selectedBlocks = selected.map((i) => blocks[i]).filter((item): item is HTMLElement => Boolean(item));
       if (action === 'group-up' && selected[0] > 0) this.canvas.insertBefore(selectedBlocks[0], blocks[selected[0] - 1]);
-      else if (action === 'group-down' && selected[selected.length - 1] < blocks.length - 1) this.canvas.insertBefore(blocks[selected[selected.length - 1] + 1], selectedBlocks[0]);
+      else if (action === 'group-down' && selected[selected.length - 1] < blocks.length - 1) selectedBlocks[selectedBlocks.length - 1].after(blocks[selected[selected.length - 1] + 1]);
       else if (action === 'group-duplicate') {
         let last: HTMLElement | null = selectedBlocks[selectedBlocks.length - 1] ?? null;
         selectedBlocks.forEach((item) => { const copy = item.cloneNode(true) as HTMLElement; (last ?? item).after(copy); last = copy; });
@@ -1104,6 +1105,32 @@ export class BlockEditor {
     }
     if (event.key === 'Tab' && selection?.isCollapsed && selection.anchorNode) {
       const anchor = selection.anchorNode;
+      const activeElement = anchor instanceof HTMLElement ? anchor : anchor.parentElement;
+      const cell = activeElement?.closest('td,th') as HTMLElement | null;
+      if (cell && this.canvas.contains(cell)) {
+        const cells = Array.from(this.canvas.querySelectorAll<HTMLElement>('td,th'));
+        const index = cells.indexOf(cell);
+        const next = cells[index + (event.shiftKey ? -1 : 1)];
+        if (next) {
+          event.preventDefault();
+          this.focusBlock(next, true);
+          return;
+        }
+        if (!event.shiftKey) {
+          const row = cell.closest('tr');
+          const table = cell.closest('table');
+          if (row && table) {
+            event.preventDefault();
+            const newRow = document.createElement('tr');
+            Array.from(row.children).forEach(() => { const td = document.createElement('td'); td.append(document.createElement('br')); newRow.append(td); });
+            (table.querySelector('tbody') ?? table).append(newRow);
+            const first = newRow.querySelector('td') as HTMLElement;
+            this.focusBlock(first, true);
+            this.emitChange();
+            return;
+          }
+        }
+      }
       const item = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)?.closest('li');
       const list = item?.parentElement;
       if (item && list && (list.tagName === 'UL' || list.tagName === 'OL') && this.canvas.contains(item)) {
