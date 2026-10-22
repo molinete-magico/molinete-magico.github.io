@@ -107,6 +107,8 @@ function blockMarkdown(node: Node): string {
     case 'H2': return `## ${inline}`;
     case 'H3': return `### ${inline}`;
     case 'H4': return `#### ${inline}`;
+    case 'H5': return `##### ${inline}`;
+    case 'H6': return `###### ${inline}`;
     case 'P': return inline;
     case 'DIV': {
       const hasBlockChildren = Array.from(node.children).some((child) =>
@@ -123,8 +125,11 @@ function blockMarkdown(node: Node): string {
     case 'BLOCKQUOTE': return children.join('\n\n').split('\n').map((line) => `> ${line}`).join('\n');
     case 'PRE': {
       const code = node.querySelector('code');
-      const language = code?.className.match(/language-([\w+-]+)/)?.[1] ?? '';
-      return '\u0060\u0060\u0060' + language + '\n' + (code?.textContent ?? node.textContent ?? '').replace(/\n+$/, '') + '\n' + '\u0060\u0060\u0060';
+      const language = code?.className.match(/language-([\\w+-]+)/)?.[1] ?? '';
+      const content = (code?.textContent ?? node.textContent ?? '').replace(/\\n+$/, '');
+      const longestFence = Math.max(0, ...Array.from(content.matchAll(/\x60+/g), (match) => match[0].length));
+      const fence = '\\u0060'.repeat(Math.max(3, longestFence + 1));
+      return fence + language + '\\n' + content + '\\n' + fence;
     }
     case 'HR': return '---';
     case 'IMG': return inlineMarkdown(node);
@@ -164,6 +169,7 @@ export class BlockEditor {
   private historyIndex = -1;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private composing = false;
+  private blockControlsTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
     this.root = host;
@@ -1491,9 +1497,19 @@ export class BlockEditor {
     selection.addRange(range);
   }
 
+  private scheduleBlockControlsRefresh(): void {
+    // Rebuilding one handle per block on every keystroke is expensive in long documents.
+    // Coalesce rapid input events while structural actions can still refresh immediately.
+    if (this.blockControlsTimer) return;
+    this.blockControlsTimer = setTimeout(() => {
+      this.blockControlsTimer = null;
+      this.refreshBlockControls();
+    }, 80);
+  }
+
   private emitChange(): void {
     this.rememberSelection();
-    this.refreshBlockControls();
+    this.scheduleBlockControlsRefresh();
     this.scheduleHistorySnapshot();
     this.onChange(this.getMarkdown());
   }
