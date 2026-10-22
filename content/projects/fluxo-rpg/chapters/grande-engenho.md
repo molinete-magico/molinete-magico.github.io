@@ -79,4 +79,4 @@ Os alojamentos são pequenos chalés individuais que possuem um banheiro, um qua
 \(imagem ilustrativa de como seria a cabine do alojamento \(sem banheiro\)\)   
 Cada estudante tem a obrigação de cuidar de seu próprio chalé, tendo uma inspeção sanitária a cada mês, aplicando multas/punições caso as recomendações sanitárias não sejam seguidas\.
 
-Não são permitidas visitas entre alunos a partir das 23 da noite\. Um professor encarregado fará a vistoria regular pela noite\.
+Não são permitidas visitas entre alunos a partir das 23 horas\. Um professor encarregado fará a vistoria regular pela noite\.
