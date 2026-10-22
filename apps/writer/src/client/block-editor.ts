@@ -831,9 +831,15 @@ export class BlockEditor {
     if (action?.startsWith('group-')) {
       const selected = [...this.selectedBlockIndices].sort((a, b) => a - b);
       const selectedBlocks = selected.map((i) => blocks[i]).filter((item): item is HTMLElement => Boolean(item));
-      if (action === 'group-up' && selected[0] > 0) this.canvas.insertBefore(selectedBlocks[0], blocks[selected[0] - 1]);
-      else if (action === 'group-down' && selected[selected.length - 1] < blocks.length - 1) selectedBlocks[selectedBlocks.length - 1].after(blocks[selected[selected.length - 1] + 1]);
-      else if (action === 'group-duplicate') {
+      if (action === 'group-up' && selected[0] > 0) {
+        const fragment = document.createDocumentFragment();
+        selectedBlocks.forEach((item) => fragment.append(item));
+        this.canvas.insertBefore(fragment, blocks[selected[0] - 1]);
+      } else if (action === 'group-down' && selected[selected.length - 1] < blocks.length - 1) {
+        const fragment = document.createDocumentFragment();
+        selectedBlocks.forEach((item) => fragment.append(item));
+        blocks[selected[selected.length - 1] + 1].after(fragment);
+      } else if (action === 'group-duplicate') {
         let last: HTMLElement | null = selectedBlocks[selectedBlocks.length - 1] ?? null;
         selectedBlocks.forEach((item) => { const copy = item.cloneNode(true) as HTMLElement; (last ?? item).after(copy); last = copy; });
       } else if (action === 'group-delete') {
