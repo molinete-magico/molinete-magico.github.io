@@ -49,7 +49,10 @@ function inlineMarkdown(node: Node): string {
     case 'IMG': {
       const src = node.getAttribute('data-markdown-src') ?? node.getAttribute('src') ?? '';
       const alt = (node.getAttribute('alt') ?? '').replace(/\]/g, '\\]');
-      return src ? `![${alt}](${src.replace(/\)/g, '%29')})` : '';
+      const width = node.getAttribute('data-markdown-width') ?? node.getAttribute('width');
+      const align = node.getAttribute('data-markdown-align');
+      const title = [width ? 'width=' + width : '', align ? 'align=' + align : ''].filter(Boolean).join(' ');
+      return src ? `![${alt}](${src.replace(/\)/g, '%29')}${title ? ' "' + title + '"' : ''})` : '';
     }
     case 'BR': return '  \n';
     default: return children;
@@ -104,6 +107,8 @@ function blockMarkdown(node: Node): string {
     case 'H2': return `## ${inline}`;
     case 'H3': return `### ${inline}`;
     case 'H4': return `#### ${inline}`;
+    case 'H5': return `##### ${inline}`;
+    case 'H6': return `###### ${inline}`;
     case 'P': return inline;
     case 'DIV': {
       const hasBlockChildren = Array.from(node.children).some((child) =>
@@ -121,7 +126,10 @@ function blockMarkdown(node: Node): string {
     case 'PRE': {
       const code = node.querySelector('code');
       const language = code?.className.match(/language-([\w+-]+)/)?.[1] ?? '';
-      return '\u0060\u0060\u0060' + language + '\n' + (code?.textContent ?? node.textContent ?? '').replace(/\n+$/, '') + '\n' + '\u0060\u0060\u0060';
+      const content = (code?.textContent ?? node.textContent ?? '').replace(/\n+$/, '');
+      const longestFence = Math.max(0, ...Array.from(content.matchAll(/\x60+/g), (match) => match[0].length));
+      const fence = '\u0060'.repeat(Math.max(3, longestFence + 1));
+      return fence + language + '\n' + content + '\n' + fence;
     }
     case 'HR': return '---';
     case 'IMG': return inlineMarkdown(node);
@@ -149,16 +157,20 @@ export class BlockEditor {
   private readonly onUploadImage?: (file: File) => Promise<UploadedImage | null>;
   private readonly resolveImageUrl?: (src: string) => string;
   private imageRange: Range | null = null;
+  private activeImage: HTMLImageElement | null = null;
   private savedRange: Range | null = null;
   private blockControls: HTMLDivElement;
   private blockMenu: HTMLDivElement;
   private selectionToolbar: HTMLDivElement;
   private draggedBlockIndex = -1;
+  private selectedBlockIndices = new Set<number>();
   private hoveredBlockIndex = -1;
   private history: BlockEditorHistorySnapshot[] = [];
   private historyIndex = -1;
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private composing = false;
+  private blockControlsTimer: ReturnType<typeof setTimeout> | null = null;
+  private shiftPointerSelectionIndex = -1;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
     this.root = host;
@@ -205,10 +217,11 @@ export class BlockEditor {
     this.selectionToolbar.hidden = true;
     this.selectionToolbar.setAttribute('role', 'toolbar');
     this.selectionToolbar.setAttribute('aria-label', 'Formatação da seleção');
-    this.selectionToolbar.innerHTML = '<button type="button" data-inline-format="bold" aria-label="Negrito" title="Negrito"><strong>B</strong></button><button type="button" data-inline-format="italic" aria-label="Itálico" title="Itálico"><em>I</em></button><button type="button" data-inline-format="strikeThrough" aria-label="Tachado" title="Tachado"><s>S</s></button><button type="button" data-inline-format="link" aria-label="Inserir link" title="Inserir link">Link</button>';
+    this.selectionToolbar.innerHTML = '<button type="button" data-image-resize="smaller" aria-label="Diminuir imagem" title="Diminuir imagem">− Img</button><button type="button" data-image-resize="larger" aria-label="Aumentar imagem" title="Aumentar imagem">+ Img</button><button type="button" data-image-align="left" aria-label="Alinhar imagem à esquerda" title="Alinhar à esquerda">←</button><button type="button" data-image-align="center" aria-label="Centralizar imagem" title="Centralizar">↔</button><button type="button" data-image-align="right" aria-label="Alinhar imagem à direita" title="Alinhar à direita">→</button><button type="button" data-inline-format="bold" aria-label="Negrito" title="Negrito"><strong>B</strong></button><button type="button" data-inline-format="italic" aria-label="Itálico" title="Itálico"><em>I</em></button><button type="button" data-inline-format="strikeThrough" aria-label="Tachado" title="Tachado"><s>S</s></button><button type="button" data-inline-format="link" aria-label="Inserir link" title="Inserir link">Link</button>';
     this.root.append(this.blockControls, this.blockMenu, this.selectionToolbar);
     this.canvas.addEventListener('keyup', () => { this.rememberSelection(); this.refreshBlockControls(); this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('mouseup', () => { this.rememberSelection(); this.refreshSelectionToolbar(); });
+    this.canvas.addEventListener('click', (event) => { const image = (event.target as HTMLElement).closest('img') as HTMLImageElement | null; this.activeImage = image && this.canvas.contains(image) ? image : null; this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('pointerover', (event) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       let block = target;
@@ -242,7 +255,44 @@ export class BlockEditor {
       if (this.composing) return;
       const clipboard = event.clipboardData;
       if (!clipboard) return;
+      const html = clipboard.getData('text/html');
       const text = clipboard.getData('text/plain');
+      if (!text && !html) return;
+
+      // Preserve useful rich-text structure from browsers and office editors, but
+      // strip scripts, inline styles and unsupported elements before insertion.
+      if (html) {
+        const sanitized = DOMPurify.sanitize(html, {
+          ALLOWED_TAGS: ['p', 'div', 'br', 'strong', 'b', 'em', 'i', 's', 'del', 'strike', 'a', 'ul', 'ol', 'li', 'blockquote', 'pre', 'code', 'h1', 'h2', 'h3', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'img'],
+          ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'start', 'value', 'colspan', 'rowspan'],
+          ALLOW_DATA_ATTR: false,
+        });
+        const parsed = new DOMParser().parseFromString(sanitized, 'text/html');
+        parsed.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
+          const src = image.getAttribute('src') ?? '';
+          if (!/^(https?:|\/|\.\/|\.\.\/)/i.test(src)) image.remove();
+          else image.dataset.markdownSrc = src;
+        });
+        const fragment = document.createDocumentFragment();
+        while (parsed.body.firstChild) fragment.append(parsed.body.firstChild);
+        if (fragment.childNodes.length) {
+          event.preventDefault();
+          this.flushHistory();
+          const selection = window.getSelection();
+          let range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+          if (!range || !this.canvas.contains(range.commonAncestorContainer)) {
+            range = document.createRange(); range.selectNodeContents(this.canvas); range.collapse(false);
+          }
+          range.deleteContents();
+          const last = fragment.lastChild;
+          range.insertNode(fragment);
+          if (last) range.setStartAfter(last);
+          range.collapse(true);
+          selection?.removeAllRanges(); selection?.addRange(range);
+          this.emitChange();
+          return;
+        }
+      }
       if (!text) return;
 
       event.preventDefault();
@@ -313,6 +363,14 @@ export class BlockEditor {
     this.root.querySelectorAll<HTMLButtonElement>('[data-history-action]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => this.restoreHistory(button.dataset.historyAction as 'undo' | 'redo'));
+    });
+    this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-image-resize]').forEach((button) => {
+      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('click', () => this.resizeSelectedImage(button.dataset.imageResize === 'larger' ? 40 : -40));
+    });
+    this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-image-align]').forEach((button) => {
+      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('click', () => this.alignSelectedImage(button.dataset.imageAlign ?? 'center'));
     });
     this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-inline-format]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
@@ -417,7 +475,30 @@ export class BlockEditor {
       document.execCommand('insertHTML', false, '<hr><p><br></p>');
       this.emitChange();
     });
+    this.blockControls.addEventListener('pointerdown', (event: PointerEvent) => {
+      if (!event.shiftKey) return;
+      const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
+      if (!handle) return;
+      const index = Number(handle.dataset.blockIndex);
+      if (!this.topLevelBlocks()[index]) return;
+      this.shiftPointerSelectionIndex = index;
+      this.selectBlockRange(index);
+    });
     this.blockControls.addEventListener('click', (event) => this.handleBlockControlClick(event));
+    this.blockControls.addEventListener('keydown', (event: KeyboardEvent) => {
+      const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
+      if (!handle || !event.shiftKey || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
+      const index = Number(handle.dataset.blockIndex);
+      const target = index + (event.key === 'ArrowDown' ? 1 : -1);
+      const blocks = this.topLevelBlocks();
+      if (!blocks[index] || !blocks[target]) return;
+      event.preventDefault();
+      const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
+      this.selectedBlockIndices.clear();
+      for (let i = Math.min(anchor, target); i <= Math.max(anchor, target); i++) this.selectedBlockIndices.add(i);
+      this.refreshBlockControls();
+      this.showMultiBlockMenu(target);
+    });
     this.blockControls.addEventListener('dragstart', (event) => {
       const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
       if (!handle || !event.dataTransfer) return;
@@ -583,7 +664,55 @@ export class BlockEditor {
     this.onChange(this.getMarkdown());
   }
 
+  private selectedImage(): HTMLImageElement | null {
+    if (this.activeImage && this.canvas.contains(this.activeImage)) return this.activeImage;
+    const selection = window.getSelection();
+    const node = selection?.anchorNode;
+    const element = node instanceof HTMLElement ? node : node?.parentElement;
+    const image = element?.closest('img') as HTMLImageElement | null;
+    return image && this.canvas.contains(image) ? image : null;
+  }
+
+  private resizeSelectedImage(delta: number): void {
+    const image = this.selectedImage();
+    if (!image) return;
+    this.flushHistory();
+    const current = Number(image.dataset.markdownWidth || image.getAttribute('width') || Math.round(image.getBoundingClientRect().width) || 320);
+    const width = Math.max(80, Math.min(1200, current + delta));
+    image.dataset.markdownWidth = String(width);
+    image.setAttribute('width', String(width));
+    image.style.width = width + 'px';
+    image.style.maxWidth = '100%';
+    this.emitChange();
+    this.refreshSelectionToolbar();
+  }
+
+  private alignSelectedImage(align: string): void {
+    const image = this.selectedImage();
+    if (!image || !['left', 'center', 'right'].includes(align)) return;
+    this.flushHistory();
+    image.dataset.markdownAlign = align;
+    image.style.display = 'block';
+    image.style.marginLeft = align === 'right' ? 'auto' : align === 'center' ? 'auto' : '0';
+    image.style.marginRight = align === 'left' ? 'auto' : align === 'center' ? 'auto' : '0';
+    this.emitChange();
+    this.refreshSelectionToolbar();
+  }
+
   private refreshSelectionToolbar(): void {
+    const image = this.selectedImage();
+    if (image) {
+      const rect = image.getBoundingClientRect();
+      const rootRect = this.root.getBoundingClientRect();
+      this.selectionToolbar.style.left = Math.max(0, rect.left - rootRect.left + rect.width / 2) + 'px';
+      this.selectionToolbar.style.top = Math.max(0, rect.top - rootRect.top - 42) + 'px';
+      this.selectionToolbar.querySelectorAll<HTMLElement>('[data-image-resize], [data-image-align]').forEach((button) => { button.hidden = false; });
+      this.selectionToolbar.querySelectorAll<HTMLElement>('[data-inline-format]').forEach((button) => { button.hidden = true; });
+      this.selectionToolbar.hidden = false;
+      return;
+    }
+    this.selectionToolbar.querySelectorAll<HTMLElement>('[data-image-resize], [data-image-align]').forEach((button) => { button.hidden = true; });
+    this.selectionToolbar.querySelectorAll<HTMLElement>('[data-inline-format]').forEach((button) => { button.hidden = false; });
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.rangeCount ||
         !this.canvas.contains(selection.anchorNode) || !this.canvas.contains(selection.focusNode)) {
@@ -626,6 +755,7 @@ export class BlockEditor {
 
   private refreshBlockControls(): void {
     if (!this.blockControls || !this.canvas.isConnected) return;
+    this.topLevelBlocks().forEach((block, index) => block.classList.toggle('is-multi-selected', this.selectedBlockIndices.has(index)));
     this.blockControls.replaceChildren();
     const rootRect = this.root.getBoundingClientRect();
     this.topLevelBlocks().forEach((block, index) => {
@@ -638,7 +768,10 @@ export class BlockEditor {
       handle.textContent = '⋮⋮';
       handle.title = 'Ações do bloco';
       handle.setAttribute('aria-label', `Ações do bloco ${index + 1}`);
+      handle.setAttribute('aria-keyshortcuts', 'Shift+ArrowUp Shift+ArrowDown');
       handle.dataset.blockIndex = String(index);
+      handle.setAttribute('aria-pressed', String(this.selectedBlockIndices.has(index)));
+      handle.classList.toggle('is-selected', this.selectedBlockIndices.has(index));
       handle.classList.toggle('is-visible', index === this.hoveredBlockIndex);
       handle.style.top = `${rect.top - rootRect.top + this.root.scrollTop + Math.min(8, rect.height / 2)}px`;
       this.blockControls.append(handle);
@@ -655,12 +788,31 @@ export class BlockEditor {
     }
   }
 
+  private selectBlockRange(index: number): void {
+    const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
+    this.selectedBlockIndices.clear();
+    for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); i++) this.selectedBlockIndices.add(i);
+    this.refreshBlockControls();
+    this.showMultiBlockMenu(index);
+  }
+
   private handleBlockControlClick(event: Event): void {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
     if (!button) return;
     const index = Number(button.dataset.blockIndex);
     const blocks = this.topLevelBlocks();
     if (!Number.isInteger(index) || !blocks[index]) return;
+    const shiftClick = 'shiftKey' in event && Boolean((event as MouseEvent).shiftKey);
+    if (this.shiftPointerSelectionIndex === index && !shiftClick) {
+      this.shiftPointerSelectionIndex = -1;
+      return;
+    }
+    this.shiftPointerSelectionIndex = -1;
+    if (shiftClick) { this.selectBlockRange(index); return; }
+    if (!this.selectedBlockIndices.has(index) || this.selectedBlockIndices.size < 2) {
+      this.selectedBlockIndices.clear();
+      this.selectedBlockIndices.add(index);
+    }
     this.blockMenu.dataset.blockIndex = String(index);
     this.blockMenu.innerHTML = [
       '<button type="button" role="menuitem" data-block-action="up">Mover para cima</button>',
@@ -676,8 +828,28 @@ export class BlockEditor {
       '<button type="button" role="menuitem" data-block-action="convert-pre">Converter em código</button>',
       '<button type="button" role="menuitem" data-block-action="convert-ul">Converter em lista com marcadores</button>',
       '<button type="button" role="menuitem" data-block-action="convert-ol">Converter em lista numerada</button>',
+      '<hr aria-hidden="true">',
+      '<button type="button" role="menuitem" data-block-action="select-range">Selecionar até aqui (Shift+clique)</button>',
     ].join('');
     this.blockMenu.style.top = `${Number.parseFloat(button.style.top) + 24}px`;
+    this.blockMenu.hidden = false;
+    this.blockMenu.querySelector<HTMLButtonElement>('button')?.focus();
+  }
+
+  private showMultiBlockMenu(index: number): void {
+    this.blockMenu.dataset.blockIndex = String(index);
+    this.blockMenu.innerHTML = '<p class="block-menu-label">' + this.selectedBlockIndices.size + ' blocos selecionados</p>' +
+      '<button type="button" role="menuitem" data-block-action="group-up">Mover seleção para cima</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-down">Mover seleção para baixo</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-duplicate">Duplicar seleção</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-delete">Excluir seleção</button>' +
+      '<button type="button" role="menuitem" data-block-action="group-clear">Limpar seleção</button>';
+    const block = this.topLevelBlocks()[index];
+    if (block) {
+      const rect = block.getBoundingClientRect();
+      const rootRect = this.root.getBoundingClientRect();
+      this.blockMenu.style.top = `${rect.top - rootRect.top + this.root.scrollTop + 24}px`;
+    }
     this.blockMenu.hidden = false;
     this.blockMenu.querySelector<HTMLButtonElement>('button')?.focus();
   }
@@ -691,6 +863,34 @@ export class BlockEditor {
     if (!block) return;
     this.flushHistory();
     const action = button.dataset.blockAction;
+    if (action === 'group-clear') {
+      this.selectedBlockIndices.clear(); this.closeBlockMenu(); this.refreshBlockControls(); return;
+    }
+    if (action?.startsWith('group-')) {
+      const selected = [...this.selectedBlockIndices].sort((a, b) => a - b);
+      const selectedBlocks = selected.map((i) => blocks[i]).filter((item): item is HTMLElement => Boolean(item));
+      if (action === 'group-up' && selected[0] > 0) {
+        const fragment = document.createDocumentFragment();
+        selectedBlocks.forEach((item) => fragment.append(item));
+        this.canvas.insertBefore(fragment, blocks[selected[0] - 1]);
+      } else if (action === 'group-down' && selected[selected.length - 1] < blocks.length - 1) {
+        const fragment = document.createDocumentFragment();
+        selectedBlocks.forEach((item) => fragment.append(item));
+        blocks[selected[selected.length - 1] + 1].after(fragment);
+      } else if (action === 'group-duplicate') {
+        let last: HTMLElement | null = selectedBlocks[selectedBlocks.length - 1] ?? null;
+        selectedBlocks.forEach((item) => { const copy = item.cloneNode(true) as HTMLElement; (last ?? item).after(copy); last = copy; });
+      } else if (action === 'group-delete') {
+        selectedBlocks.forEach((item) => item.remove());
+        if (!this.canvas.children.length) { const p = document.createElement('p'); p.append(document.createElement('br')); this.canvas.append(p); }
+        this.selectedBlockIndices.clear();
+      }
+      this.closeBlockMenu(); this.refreshBlockControls(); this.emitChange(); return;
+    }
+    if (action === 'select-range') {
+      this.selectedBlockIndices.add(index);
+      this.closeBlockMenu(); this.refreshBlockControls(); this.showMultiBlockMenu(index); return;
+    }
     if (action?.startsWith('convert-')) {
       const kind = action.slice('convert-'.length);
       this.focusBlock(block, true);
@@ -747,6 +947,11 @@ export class BlockEditor {
     this.canvas.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
       const markdownSrc = image.getAttribute('src') ?? '';
       image.dataset.markdownSrc = markdownSrc;
+      const title = image.getAttribute('title') ?? '';
+      const width = title.match(/(?:^|\s)width=(\d+)/)?.[1];
+      const align = title.match(/(?:^|\s)align=(left|center|right)/)?.[1];
+      if (width) { image.dataset.markdownWidth = width; image.setAttribute('width', width); image.style.width = width + 'px'; }
+      if (align) { image.dataset.markdownAlign = align; image.style.display = 'block'; image.style.marginLeft = align === 'right' || align === 'center' ? 'auto' : '0'; image.style.marginRight = align === 'left' || align === 'center' ? 'auto' : '0'; }
       if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
     });
     this.refreshBlockControls();
@@ -823,6 +1028,28 @@ export class BlockEditor {
 
     // Slash commands inside a list must operate on the current item, not replace
     // the entire UL/OL and destroy the neighboring items.
+    if (kind === 'table' || kind === 'image') {
+      const insertionTarget = current.tagName === 'LI' ? current.closest('ul,ol') as HTMLElement | null : current;
+      if (!insertionTarget) return;
+      if (kind === 'table') {
+        const table = document.createElement('table');
+        table.innerHTML = '<thead><tr><th>Coluna 1</th><th>Coluna 2</th><th>Coluna 3</th></tr></thead><tbody><tr><td><br></td><td><br></td><td><br></td></tr><tr><td><br></td><td><br></td><td><br></td></tr></tbody>';
+        insertionTarget.after(table);
+        this.focusBlock(table.querySelector('td') as HTMLElement, true);
+      } else {
+        const url = window.prompt('URL ou caminho da imagem');
+        if (!url) return;
+        const image = document.createElement('img');
+        image.setAttribute('src', url); image.dataset.markdownSrc = url;
+        image.alt = window.prompt('Texto alternativo da imagem (opcional)') ?? '';
+        image.loading = 'lazy';
+        insertionTarget.after(image);
+        const paragraph = document.createElement('p'); paragraph.append(document.createElement('br')); image.after(paragraph);
+        this.focusBlock(paragraph, true);
+      }
+      this.closeBlockMenu(); this.refreshBlockControls(); this.emitChange(); return;
+    }
+
     if (current.tagName === 'LI') {
       const item = current;
       const list = item.parentElement;
@@ -1010,6 +1237,32 @@ export class BlockEditor {
     }
     if (event.key === 'Tab' && selection?.isCollapsed && selection.anchorNode) {
       const anchor = selection.anchorNode;
+      const activeElement = anchor instanceof HTMLElement ? anchor : anchor.parentElement;
+      const cell = activeElement?.closest('td,th') as HTMLElement | null;
+      if (cell && this.canvas.contains(cell)) {
+        const cells = Array.from(this.canvas.querySelectorAll<HTMLElement>('td,th'));
+        const index = cells.indexOf(cell);
+        const next = cells[index + (event.shiftKey ? -1 : 1)];
+        if (next) {
+          event.preventDefault();
+          this.focusBlock(next, true);
+          return;
+        }
+        if (!event.shiftKey) {
+          const row = cell.closest('tr');
+          const table = cell.closest('table');
+          if (row && table) {
+            event.preventDefault();
+            const newRow = document.createElement('tr');
+            Array.from(row.children).forEach(() => { const td = document.createElement('td'); td.append(document.createElement('br')); newRow.append(td); });
+            (table.querySelector('tbody') ?? table).append(newRow);
+            const first = newRow.querySelector('td') as HTMLElement;
+            this.focusBlock(first, true);
+            this.emitChange();
+            return;
+          }
+        }
+      }
       const item = (anchor instanceof HTMLElement ? anchor : anchor.parentElement)?.closest('li');
       const list = item?.parentElement;
       if (item && list && (list.tagName === 'UL' || list.tagName === 'OL') && this.canvas.contains(item)) {
@@ -1276,9 +1529,19 @@ export class BlockEditor {
     selection.addRange(range);
   }
 
+  private scheduleBlockControlsRefresh(): void {
+    // Rebuilding one handle per block on every keystroke is expensive in long documents.
+    // Coalesce rapid input events while structural actions can still refresh immediately.
+    if (this.blockControlsTimer) return;
+    this.blockControlsTimer = setTimeout(() => {
+      this.blockControlsTimer = null;
+      this.refreshBlockControls();
+    }, 80);
+  }
+
   private emitChange(): void {
     this.rememberSelection();
-    this.refreshBlockControls();
+    this.scheduleBlockControlsRefresh();
     this.scheduleHistorySnapshot();
     this.onChange(this.getMarkdown());
   }
