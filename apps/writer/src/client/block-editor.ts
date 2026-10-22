@@ -784,7 +784,8 @@ export class BlockEditor {
     const index = Number(button.dataset.blockIndex);
     const blocks = this.topLevelBlocks();
     if (!Number.isInteger(index) || !blocks[index]) return;
-    if (event instanceof MouseEvent && event.shiftKey) {
+    // Read the modifier structurally instead of relying on instanceof across realms.
+    if ('shiftKey' in event && Boolean((event as MouseEvent).shiftKey)) {
       const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
       this.selectedBlockIndices.clear();
       for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); i++) this.selectedBlockIndices.add(i);
