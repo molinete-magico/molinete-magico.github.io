@@ -125,11 +125,11 @@ function blockMarkdown(node: Node): string {
     case 'BLOCKQUOTE': return children.join('\n\n').split('\n').map((line) => `> ${line}`).join('\n');
     case 'PRE': {
       const code = node.querySelector('code');
-      const language = code?.className.match(/language-([\\w+-]+)/)?.[1] ?? '';
-      const content = (code?.textContent ?? node.textContent ?? '').replace(/\\n+$/, '');
+      const language = code?.className.match(/language-([\w+-]+)/)?.[1] ?? '';
+      const content = (code?.textContent ?? node.textContent ?? '').replace(/\n+$/, '');
       const longestFence = Math.max(0, ...Array.from(content.matchAll(/\x60+/g), (match) => match[0].length));
-      const fence = '\\u0060'.repeat(Math.max(3, longestFence + 1));
-      return fence + language + '\\n' + content + '\\n' + fence;
+      const fence = '\u0060'.repeat(Math.max(3, longestFence + 1));
+      return fence + language + '\n' + content + '\n' + fence;
     }
     case 'HR': return '---';
     case 'IMG': return inlineMarkdown(node);
