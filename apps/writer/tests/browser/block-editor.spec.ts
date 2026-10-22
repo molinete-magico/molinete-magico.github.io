@@ -202,3 +202,63 @@ test('Alt+Shift+ArrowDown reorders a top-level block', async ({ page }) => {
   await page.keyboard.press('Alt+Shift+ArrowDown');
   await expect(page.locator('#markdown')).toHaveText('second\n\nfirst');
 });
+
+
+test('rich paste preserves safe formatting and strips executable markup', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  const markdown = await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('before after');
+    const text = element.querySelector('p')!.firstChild!;
+    const range = document.createRange();
+    range.setStart(text, 7);
+    range.setEnd(text, 12);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges(); selection.addRange(range);
+    const clipboard = new DataTransfer();
+    clipboard.setData('text/html', '<p><strong>bold</strong> <a href="https://example.com">link</a><script>window.pastedScript = true</script></p>');
+    clipboard.setData('text/plain', 'bold link');
+    element.dispatchEvent(new ClipboardEvent('paste', { clipboardData: clipboard, bubbles: true, cancelable: true }));
+    return window.writerEditor.getMarkdown();
+  });
+  expect(markdown).toContain('**bold**');
+  expect(markdown).toContain('[link](https://example.com)');
+  expect(markdown).not.toContain('pastedScript');
+});
+
+test('table Tab moves between cells and adds a row at the end', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => {
+    window.writerEditor.setMarkdown('| A | B |\n| --- | --- |\n| C | D |');
+    const cell = element.querySelector('tbody td')!;
+    const range = document.createRange(); range.selectNodeContents(cell); range.collapse(true);
+    const selection = window.getSelection()!; selection.removeAllRanges(); selection.addRange(range);
+    element.focus();
+  });
+  await page.keyboard.press('Tab');
+  await expect(canvas.locator('tbody tr')).toHaveCount(2);
+  await expect(canvas.locator('tbody td').nth(1)).toBeFocused();
+  await page.locator('.block-editor-canvas tbody td').last().evaluate((cell) => {
+    const range = document.createRange(); range.selectNodeContents(cell); range.collapse(true);
+    const selection = window.getSelection()!; selection.removeAllRanges(); selection.addRange(range);
+  });
+  await page.keyboard.press('Tab');
+  await expect(canvas.locator('tbody tr')).toHaveCount(3);
+  await expect(page.locator('#markdown')).toContainText('| --- | --- |');
+});
+
+test('image size and alignment survive Markdown serialization', async ({ page }) => {
+  const markdown = await page.locator('.block-editor-canvas').evaluate((element) => {
+    window.writerEditor.setMarkdown('![map](/media/map.png "width=320 align=center")');
+    return window.writerEditor.getMarkdown();
+  });
+  expect(markdown).toBe('![map](/media/map.png "width=320 align=center")');
+});
+
+test('multi-block selection can duplicate a contiguous range', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => window.writerEditor.setMarkdown('first\n\nsecond\n\nthird'));
+  await page.locator('.block-editor-block-handle[data-block-index="0"]').click();
+  await page.locator('.block-editor-block-handle[data-block-index="1"]').click({ modifiers: ['Shift'] });
+  await page.getByRole('menuitem', { name: 'Duplicar seleção' }).click();
+  await expect(page.locator('#markdown')).toHaveText('first\n\nsecond\n\nfirst\n\nsecond\n\nthird');
+});
