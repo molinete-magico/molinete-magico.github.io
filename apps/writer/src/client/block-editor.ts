@@ -49,7 +49,10 @@ function inlineMarkdown(node: Node): string {
     case 'IMG': {
       const src = node.getAttribute('data-markdown-src') ?? node.getAttribute('src') ?? '';
       const alt = (node.getAttribute('alt') ?? '').replace(/\]/g, '\\]');
-      return src ? `![${alt}](${src.replace(/\)/g, '%29')})` : '';
+      const width = node.getAttribute('data-markdown-width') ?? node.getAttribute('width');
+      const align = node.getAttribute('data-markdown-align');
+      const title = [width ? 'width=' + width : '', align ? 'align=' + align : ''].filter(Boolean).join(' ');
+      return src ? `![${alt}](${src.replace(/\)/g, '%29')}${title ? ' "' + title + '"' : ''})` : '';
     }
     case 'BR': return '  \n';
     default: return children;
@@ -206,10 +209,11 @@ export class BlockEditor {
     this.selectionToolbar.hidden = true;
     this.selectionToolbar.setAttribute('role', 'toolbar');
     this.selectionToolbar.setAttribute('aria-label', 'Formatação da seleção');
-    this.selectionToolbar.innerHTML = '<button type="button" data-inline-format="bold" aria-label="Negrito" title="Negrito"><strong>B</strong></button><button type="button" data-inline-format="italic" aria-label="Itálico" title="Itálico"><em>I</em></button><button type="button" data-inline-format="strikeThrough" aria-label="Tachado" title="Tachado"><s>S</s></button><button type="button" data-inline-format="link" aria-label="Inserir link" title="Inserir link">Link</button>';
+    this.selectionToolbar.innerHTML = '<button type="button" data-image-resize="smaller" aria-label="Diminuir imagem" title="Diminuir imagem">− Img</button><button type="button" data-image-resize="larger" aria-label="Aumentar imagem" title="Aumentar imagem">+ Img</button><button type="button" data-image-align="left" aria-label="Alinhar imagem à esquerda" title="Alinhar à esquerda">←</button><button type="button" data-image-align="center" aria-label="Centralizar imagem" title="Centralizar">↔</button><button type="button" data-image-align="right" aria-label="Alinhar imagem à direita" title="Alinhar à direita">→</button><button type="button" data-inline-format="bold" aria-label="Negrito" title="Negrito"><strong>B</strong></button><button type="button" data-inline-format="italic" aria-label="Itálico" title="Itálico"><em>I</em></button><button type="button" data-inline-format="strikeThrough" aria-label="Tachado" title="Tachado"><s>S</s></button><button type="button" data-inline-format="link" aria-label="Inserir link" title="Inserir link">Link</button>';
     this.root.append(this.blockControls, this.blockMenu, this.selectionToolbar);
     this.canvas.addEventListener('keyup', () => { this.rememberSelection(); this.refreshBlockControls(); this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('mouseup', () => { this.rememberSelection(); this.refreshSelectionToolbar(); });
+    this.canvas.addEventListener('click', (event) => { if ((event.target as HTMLElement).closest('img')) this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('pointerover', (event) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       let block = target;
@@ -351,6 +355,14 @@ export class BlockEditor {
     this.root.querySelectorAll<HTMLButtonElement>('[data-history-action]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
       button.addEventListener('click', () => this.restoreHistory(button.dataset.historyAction as 'undo' | 'redo'));
+    });
+    this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-image-resize]').forEach((button) => {
+      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('click', () => this.resizeSelectedImage(button.dataset.imageResize === 'larger' ? 40 : -40));
+    });
+    this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-image-align]').forEach((button) => {
+      button.addEventListener('mousedown', (event) => event.preventDefault());
+      button.addEventListener('click', () => this.alignSelectedImage(button.dataset.imageAlign ?? 'center'));
     });
     this.selectionToolbar.querySelectorAll<HTMLButtonElement>('[data-inline-format]').forEach((button) => {
       button.addEventListener('mousedown', (event) => event.preventDefault());
@@ -621,7 +633,54 @@ export class BlockEditor {
     this.onChange(this.getMarkdown());
   }
 
+  private selectedImage(): HTMLImageElement | null {
+    const selection = window.getSelection();
+    const node = selection?.anchorNode;
+    const element = node instanceof HTMLElement ? node : node?.parentElement;
+    const image = element?.closest('img') as HTMLImageElement | null;
+    return image && this.canvas.contains(image) ? image : null;
+  }
+
+  private resizeSelectedImage(delta: number): void {
+    const image = this.selectedImage();
+    if (!image) return;
+    this.flushHistory();
+    const current = Number(image.dataset.markdownWidth || image.getAttribute('width') || Math.round(image.getBoundingClientRect().width) || 320);
+    const width = Math.max(80, Math.min(1200, current + delta));
+    image.dataset.markdownWidth = String(width);
+    image.setAttribute('width', String(width));
+    image.style.width = width + 'px';
+    image.style.maxWidth = '100%';
+    this.emitChange();
+    this.refreshSelectionToolbar();
+  }
+
+  private alignSelectedImage(align: string): void {
+    const image = this.selectedImage();
+    if (!image || !['left', 'center', 'right'].includes(align)) return;
+    this.flushHistory();
+    image.dataset.markdownAlign = align;
+    image.style.display = 'block';
+    image.style.marginLeft = align === 'right' ? 'auto' : align === 'center' ? 'auto' : '0';
+    image.style.marginRight = align === 'left' ? 'auto' : align === 'center' ? 'auto' : '0';
+    this.emitChange();
+    this.refreshSelectionToolbar();
+  }
+
   private refreshSelectionToolbar(): void {
+    const image = this.selectedImage();
+    if (image) {
+      const rect = image.getBoundingClientRect();
+      const rootRect = this.root.getBoundingClientRect();
+      this.selectionToolbar.style.left = Math.max(0, rect.left - rootRect.left + rect.width / 2) + 'px';
+      this.selectionToolbar.style.top = Math.max(0, rect.top - rootRect.top - 42) + 'px';
+      this.selectionToolbar.querySelectorAll<HTMLElement>('[data-image-resize], [data-image-align]').forEach((button) => { button.hidden = false; });
+      this.selectionToolbar.querySelectorAll<HTMLElement>('[data-inline-format]').forEach((button) => { button.hidden = true; });
+      this.selectionToolbar.hidden = false;
+      return;
+    }
+    this.selectionToolbar.querySelectorAll<HTMLElement>('[data-image-resize], [data-image-align]').forEach((button) => { button.hidden = true; });
+    this.selectionToolbar.querySelectorAll<HTMLElement>('[data-inline-format]').forEach((button) => { button.hidden = false; });
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.rangeCount ||
         !this.canvas.contains(selection.anchorNode) || !this.canvas.contains(selection.focusNode)) {
@@ -842,6 +901,11 @@ export class BlockEditor {
     this.canvas.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
       const markdownSrc = image.getAttribute('src') ?? '';
       image.dataset.markdownSrc = markdownSrc;
+      const title = image.getAttribute('title') ?? '';
+      const width = title.match(/(?:^|\\s)width=(\\d+)/)?.[1];
+      const align = title.match(/(?:^|\\s)align=(left|center|right)/)?.[1];
+      if (width) { image.dataset.markdownWidth = width; image.setAttribute('width', width); image.style.width = width + 'px'; }
+      if (align) { image.dataset.markdownAlign = align; image.style.display = 'block'; image.style.marginLeft = align === 'right' || align === 'center' ? 'auto' : '0'; image.style.marginRight = align === 'left' || align === 'center' ? 'auto' : '0'; }
       if (this.resolveImageUrl) image.src = this.resolveImageUrl(markdownSrc);
     });
     this.refreshBlockControls();
