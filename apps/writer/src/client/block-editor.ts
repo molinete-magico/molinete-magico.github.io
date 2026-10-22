@@ -170,6 +170,7 @@ export class BlockEditor {
   private historyTimer: ReturnType<typeof setTimeout> | null = null;
   private composing = false;
   private blockControlsTimer: ReturnType<typeof setTimeout> | null = null;
+  private shiftPointerSelectionIndex = -1;
 
   constructor(host: HTMLElement, onChange: (markdown: string) => void, onUploadImage?: (file: File) => Promise<UploadedImage | null>, resolveImageUrl?: (src: string) => string) {
     this.root = host;
@@ -473,6 +474,15 @@ export class BlockEditor {
       this.canvas.focus();
       document.execCommand('insertHTML', false, '<hr><p><br></p>');
       this.emitChange();
+    });
+    this.blockControls.addEventListener('pointerdown', (event: PointerEvent) => {
+      if (!event.shiftKey) return;
+      const handle = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
+      if (!handle) return;
+      const index = Number(handle.dataset.blockIndex);
+      if (!this.topLevelBlocks()[index]) return;
+      this.shiftPointerSelectionIndex = index;
+      this.selectBlockRange(index);
     });
     this.blockControls.addEventListener('click', (event) => this.handleBlockControlClick(event));
     this.blockControls.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -778,21 +788,27 @@ export class BlockEditor {
     }
   }
 
+  private selectBlockRange(index: number): void {
+    const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
+    this.selectedBlockIndices.clear();
+    for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); i++) this.selectedBlockIndices.add(i);
+    this.refreshBlockControls();
+    this.showMultiBlockMenu(index);
+  }
+
   private handleBlockControlClick(event: Event): void {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-block-index]');
     if (!button) return;
     const index = Number(button.dataset.blockIndex);
     const blocks = this.topLevelBlocks();
     if (!Number.isInteger(index) || !blocks[index]) return;
-    // Read the modifier structurally instead of relying on instanceof across realms.
-    if ('shiftKey' in event && Boolean((event as MouseEvent).shiftKey)) {
-      const anchor = this.selectedBlockIndices.size ? Math.min(...this.selectedBlockIndices) : index;
-      this.selectedBlockIndices.clear();
-      for (let i = Math.min(anchor, index); i <= Math.max(anchor, index); i++) this.selectedBlockIndices.add(i);
-      this.refreshBlockControls();
-      this.showMultiBlockMenu(index);
+    const shiftClick = 'shiftKey' in event && Boolean((event as MouseEvent).shiftKey);
+    if (this.shiftPointerSelectionIndex === index && !shiftClick) {
+      this.shiftPointerSelectionIndex = -1;
       return;
     }
+    this.shiftPointerSelectionIndex = -1;
+    if (shiftClick) { this.selectBlockRange(index); return; }
     if (!this.selectedBlockIndices.has(index) || this.selectedBlockIndices.size < 2) {
       this.selectedBlockIndices.clear();
       this.selectedBlockIndices.add(index);
