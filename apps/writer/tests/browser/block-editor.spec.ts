@@ -262,3 +262,33 @@ test('multi-block selection can duplicate a contiguous range', async ({ page }) 
   await page.getByRole('menuitem', { name: 'Duplicar seleção' }).click();
   await expect(page.locator('#markdown')).toHaveText('first\n\nsecond\n\nfirst\n\nsecond\n\nthird');
 });
+
+test('heading levels five and six survive Markdown serialization', async ({ page }) => {
+  const markdown = await page.locator('.block-editor-canvas').evaluate((element) => {
+    element.innerHTML = '<h5>Heading five</h5><h6>Heading six</h6>';
+    return window.writerEditor.getMarkdown();
+  });
+  expect(markdown).toBe('##### Heading five\n\n###### Heading six');
+});
+
+test('code blocks use a longer fence when code contains triple backticks', async ({ page }) => {
+  const markdown = await page.locator('.block-editor-canvas').evaluate((element) => {
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+    code.className = 'language-js';
+    code.textContent = 'const fence = ' + String.fromCharCode(96).repeat(3) + ';';
+    pre.append(code);
+    element.replaceChildren(pre);
+    return window.writerEditor.getMarkdown();
+  });
+  expect(markdown).toBe('````js\nconst fence = ```;\n````');
+});
+
+test('block ranges can be selected and duplicated with the keyboard', async ({ page }) => {
+  const canvas = page.locator('.block-editor-canvas');
+  await canvas.evaluate((element) => window.writerEditor.setMarkdown('first\n\nsecond\n\nthird'));
+  await page.locator('.block-editor-block-handle[data-block-index="1"]').focus();
+  await page.keyboard.press('Shift+ArrowDown');
+  await page.getByRole('menuitem', { name: 'Duplicar seleção' }).click();
+  await expect(page.locator('#markdown')).toHaveText('first\n\nsecond\n\nthird\n\nsecond\n\nthird');
+});
