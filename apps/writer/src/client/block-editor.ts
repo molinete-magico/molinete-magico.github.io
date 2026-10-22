@@ -152,6 +152,7 @@ export class BlockEditor {
   private readonly onUploadImage?: (file: File) => Promise<UploadedImage | null>;
   private readonly resolveImageUrl?: (src: string) => string;
   private imageRange: Range | null = null;
+  private activeImage: HTMLImageElement | null = null;
   private savedRange: Range | null = null;
   private blockControls: HTMLDivElement;
   private blockMenu: HTMLDivElement;
@@ -213,7 +214,7 @@ export class BlockEditor {
     this.root.append(this.blockControls, this.blockMenu, this.selectionToolbar);
     this.canvas.addEventListener('keyup', () => { this.rememberSelection(); this.refreshBlockControls(); this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('mouseup', () => { this.rememberSelection(); this.refreshSelectionToolbar(); });
-    this.canvas.addEventListener('click', (event) => { if ((event.target as HTMLElement).closest('img')) this.refreshSelectionToolbar(); });
+    this.canvas.addEventListener('click', (event) => { const image = (event.target as HTMLElement).closest('img') as HTMLImageElement | null; this.activeImage = image && this.canvas.contains(image) ? image : null; this.refreshSelectionToolbar(); });
     this.canvas.addEventListener('pointerover', (event) => {
       const target = event.target instanceof HTMLElement ? event.target : null;
       let block = target;
@@ -634,6 +635,7 @@ export class BlockEditor {
   }
 
   private selectedImage(): HTMLImageElement | null {
+    if (this.activeImage && this.canvas.contains(this.activeImage)) return this.activeImage;
     const selection = window.getSelection();
     const node = selection?.anchorNode;
     const element = node instanceof HTMLElement ? node : node?.parentElement;
