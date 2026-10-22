@@ -235,7 +235,7 @@ test('table Tab moves between cells and adds a row at the end', async ({ page })
     element.focus();
   });
   await page.keyboard.press('Tab');
-  await expect.poll(() => canvas.evaluate((element) => window.getSelection()?.anchorNode?.parentElement?.closest('td,th')?.textContent)).toBe('D');
+  await expect.poll(() => canvas.evaluate((element) => { const node = window.getSelection()?.anchorNode; const active = node instanceof Element ? node : node?.parentElement; return active?.closest('td,th')?.textContent; })).toBe('D');
   await expect(canvas.locator('tbody tr')).toHaveCount(1);
   await page.locator('.block-editor-canvas tbody td').last().evaluate((cell) => {
     const range = document.createRange(); range.selectNodeContents(cell); range.collapse(true);
