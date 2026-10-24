@@ -17,6 +17,7 @@ import {
   readPost,
   readPostBanner,
   savePostBanner,
+  removePostBanner,
   createPost,
   savePost,
   deletePost,
@@ -30,6 +31,7 @@ import {
   createProject,
   saveProject,
   saveProjectBanner,
+  removeProjectBanner,
   saveProjectImage,
   readProjectDocument,
   createProjectDocument,
@@ -281,6 +283,15 @@ app.post('/api/project/:id/image', async (c) => {
   } catch (err) { return c.json({ error: (err as Error).message }, 400); }
 });
 
+app.delete('/api/project/:id/banner', async (c) => {
+  try {
+    await removeProjectBanner(c.req.param('id'));
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
+});
+
 app.post('/api/project/:id/banner', async (c) => {
   try {
     const form = await c.req.formData();
@@ -470,6 +481,15 @@ app.post('/api/post/delete', async (c) => {
 app.post('/api/post/duplicate', async (c) => {
   const { id } = await c.req.json();
   return c.json(await duplicatePost(String(id)), 201);
+});
+
+app.delete('/api/post/:id/banner', async (c) => {
+  try {
+    await removePostBanner(c.req.param('id'));
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: (err as Error).message }, 400);
+  }
 });
 
 app.post('/api/post/:id/banner', async (c) => {

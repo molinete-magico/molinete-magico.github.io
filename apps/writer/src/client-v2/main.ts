@@ -411,7 +411,7 @@ function renderWorkspace() {
   $('#focus-toggle')!.removeAttribute('disabled');
   $('#palette-toggle')!.removeAttribute('disabled');
   const main = $('#v2-main')!;
-  main.innerHTML = '<section class="workspace"><div class="workspace-bar"><button class="text-button" id="back-library">← Biblioteca</button><div class="crumbs"><span id="crumb-parent">POST</span><span>/</span><span id="crumb-title">Sem título</span></div><div class="workspace-actions"><button class="button" id="outline-toggle" aria-pressed="false">Estrutura</button><button class="button" id="details-toggle" aria-pressed="false">Detalhes</button><button class="button" id="preview-toggle" aria-pressed="false">Prévia</button><button class="button" id="save-document">Salvar</button><button class="button button-primary" id="publish-document">Publicar</button></div></div><div class="workspace-layout"><aside class="document-sidebar" id="document-sidebar"><div class="sidebar-label">NAVEGAÇÃO</div><div id="document-tree"></div><div class="sidebar-actions" id="document-actions"></div><div class="heading-outline-section"><div class="sidebar-label">TÍTULOS DO DOCUMENTO</div><nav id="heading-outline" aria-label="Títulos do documento"><p class="tree-note">Adicione títulos para criar um sumário.</p></nav></div></aside><section class="writing-stage"><div class="document-meta"><label class="title-field"><span class="eyebrow">TÍTULO DO DOCUMENTO</span><input id="doc-title" placeholder="Dê um nome a esta ideia" autocomplete="off"></label><div id="post-fields" class="metadata-grid"><label>Descrição<input id="meta-description" placeholder="Uma frase sobre o post"></label><label>Data de publicação<input id="meta-date" type="date"></label><label class="checkbox-field"><input id="meta-draft" type="checkbox"><span>Manter como rascunho</span></label><label>Tags <input id="meta-tags" placeholder="separe tags por vírgula"></label><div class="banner-tools"><label class="file-label">Banner <input id="post-banner-file" type="file" accept="image/*"></label><label>Enquadramento <input id="banner-position" type="range" min="0" max="100" value="50"></label><label>Exibição <select id="banner-fit"><option value="cover">Recortar</option><option value="fill">Imagem inteira</option></select></label><img id="post-banner-preview" class="banner-preview" alt="Prévia do banner do post" hidden></div></div><div id="project-fields" class="metadata-grid" hidden><label>Descrição<input id="project-description" placeholder="Sobre este projeto"></label><label>Tipo<select id="project-type"><option value="story">História</option><option value="rpg">Sistema de RPG</option></select></label><label>Ordem<input id="project-order" type="number" step="1"></label><label class="checkbox-field"><input id="project-published" type="checkbox"><span>Visível no site</span></label><label class="checkbox-field"><input id="project-homepage" type="checkbox"><span>Mostrar página inicial</span></label><label>Imagem de capa <input id="project-cover" placeholder="Caminho/URL da imagem"></label><label class="file-label">Enviar capa/banner <input id="project-cover-file" type="file" accept="image/*"></label><label>Posição do banner <input id="project-banner-position" type="range" min="0" max="100" value="50"></label><img id="project-banner-preview" class="banner-preview" alt="Prévia do banner do projeto" hidden></div><div id="document-fields" class="metadata-grid" hidden><label>Ordem<input id="document-order" type="number" step="1"></label><label class="checkbox-field"><input id="document-published" type="checkbox"><span>Capítulo publicado</span></label></div></div><div class="editor-label-row"><span class="eyebrow">EDITOR EM BLOCOS</span><span class="editor-hint">Digite / para inserir um bloco · Ctrl/⌘ + S para salvar</span></div><div id="block-host" class="block-host"></div><div id="writing-stats" class="writing-stats" aria-live="polite"><span id="word-count">0 palavras</span><span id="character-count">0 caracteres</span><span id="reading-time">1 min de leitura</span><label>Meta <input id="word-goal" type="number" min="0" step="50" placeholder="palavras" aria-label="Meta de palavras"></label><span id="goal-progress"></span></div><div id="slash-menu" class="slash-menu" role="listbox" aria-label="Inserir bloco" hidden><button role="option" data-insert-block="h1">Título 1</button><button role="option" data-insert-block="h2">Título 2</button><button role="option" data-insert-block="h3">Título 3</button><button role="option" data-insert-block="blockquote">Citação</button><button role="option" data-insert-block="pre">Código</button><button role="option" data-insert-block="ul">Lista</button><button role="option" data-insert-block="ol">Lista numerada</button><button role="option" data-insert-block="table">Tabela 3×2</button><button role="option" data-insert-block="image">Imagem por URL</button><button role="option" data-insert-block="hr">Divisor</button></div><section id="preview-pane" class="preview-pane" hidden><div class="sidebar-label">PRÉVIA PUBLICADA</div><article id="preview-content" class="prose"></article></section></section></div></section>';
+  main.innerHTML = '<section class="workspace"><div class="workspace-bar"><button class="text-button" id="back-library">← Biblioteca</button><div class="crumbs"><span id="crumb-parent">POST</span><span>/</span><span id="crumb-title">Sem título</span></div><div class="workspace-actions"><button class="button" id="outline-toggle" aria-pressed="false">Estrutura</button><button class="button" id="details-toggle" aria-pressed="false">Detalhes</button><button class="button" id="preview-toggle" aria-pressed="false">Prévia</button><button class="button" id="save-document">Salvar</button><button class="button button-primary" id="publish-document">Publicar</button></div></div><div class="workspace-layout"><aside class="document-sidebar" id="document-sidebar"><div class="sidebar-label">NAVEGAÇÃO</div><div id="document-tree"></div><div class="sidebar-actions" id="document-actions"></div><div class="heading-outline-section"><div class="sidebar-label">TÍTULOS DO DOCUMENTO</div><nav id="heading-outline" aria-label="Títulos do documento"><p class="tree-note">Adicione títulos para criar um sumário.</p></nav></div></aside><section class="writing-stage"><div class="document-meta"><label class="title-field"><span class="eyebrow">TÍTULO DO DOCUMENTO</span><input id="doc-title" placeholder="Dê um nome a esta ideia" autocomplete="off"></label><div id="post-fields" class="metadata-grid"><label>Descrição<input id="meta-description" placeholder="Uma frase sobre o post"></label><label>Data de publicação<input id="meta-date" type="date"></label><label class="checkbox-field"><input id="meta-draft" type="checkbox"><span>Manter como rascunho</span></label><label>Tags <input id="meta-tags" placeholder="separe tags por vírgula"></label><div class="banner-tools"><label class="file-label">Trocar / enviar banner <input id="post-banner-file" type="file" accept="image/*"></label><label>Enquadramento <input id="banner-position" type="range" min="0" max="100" value="50"></label><label>Exibição <select id="banner-fit"><option value="cover">Recortar</option><option value="fill">Imagem inteira</option></select></label><img id="post-banner-preview" class="banner-preview" alt="Prévia do banner do post" hidden><button type="button" class="button banner-remove" id="remove-post-banner" hidden>Remover banner</button></div></div><div id="project-fields" class="metadata-grid" hidden><label>Descrição<input id="project-description" placeholder="Sobre este projeto"></label><label>Tipo<select id="project-type"><option value="story">História</option><option value="rpg">Sistema de RPG</option></select></label><label>Ordem<input id="project-order" type="number" step="1"></label><label class="checkbox-field"><input id="project-published" type="checkbox"><span>Visível no site</span></label><label class="checkbox-field"><input id="project-homepage" type="checkbox"><span>Mostrar página inicial</span></label><label>Imagem de capa <input id="project-cover" placeholder="Caminho/URL da imagem"></label><label class="file-label">Trocar banner do projeto <input id="project-cover-file" type="file" accept="image/*"></label><label>Posição do banner <input id="project-banner-position" type="range" min="0" max="100" value="50"></label><img id="project-banner-preview" class="banner-preview" alt="Prévia do banner do projeto" hidden><button type="button" class="button banner-remove" id="remove-project-banner" hidden>Remover banner</button></div><div id="document-fields" class="metadata-grid" hidden><label>Ordem<input id="document-order" type="number" step="1"></label><label class="checkbox-field"><input id="document-published" type="checkbox"><span>Capítulo publicado</span></label></div></div><div class="editor-label-row"><span class="eyebrow">EDITOR EM BLOCOS</span><span class="editor-hint">Digite / para inserir um bloco · Ctrl/⌘ + S para salvar</span></div><div id="block-host" class="block-host"></div><div id="writing-stats" class="writing-stats" aria-live="polite"><span id="word-count">0 palavras</span><span id="character-count">0 caracteres</span><span id="reading-time">1 min de leitura</span><label>Meta <input id="word-goal" type="number" min="0" step="50" placeholder="palavras" aria-label="Meta de palavras"></label><span id="goal-progress"></span></div><div id="slash-menu" class="slash-menu" role="listbox" aria-label="Inserir bloco" hidden><button role="option" data-insert-block="h1">Título 1</button><button role="option" data-insert-block="h2">Título 2</button><button role="option" data-insert-block="h3">Título 3</button><button role="option" data-insert-block="blockquote">Citação</button><button role="option" data-insert-block="pre">Código</button><button role="option" data-insert-block="ul">Lista</button><button role="option" data-insert-block="ol">Lista numerada</button><button role="option" data-insert-block="table">Tabela 3×2</button><button role="option" data-insert-block="image">Imagem por URL</button><button role="option" data-insert-block="hr">Divisor</button></div><section id="preview-pane" class="preview-pane" hidden><div class="sidebar-label">PRÉVIA PUBLICADA</div><article id="preview-content" class="prose"></article></section></section></div></section>';
   $('#back-library')!.addEventListener('click', () => { if (confirmLeave()) showLibrary(); });
   $('#save-document')!.addEventListener('click', () => void saveCurrent());
   $('#publish-document')!.addEventListener('click', () => void publishCurrent());
@@ -444,6 +444,8 @@ function renderWorkspace() {
   });
   $('#post-banner-file')!.addEventListener('change', (event) => void uploadBanner(event));
   $('#project-cover-file')!.addEventListener('change', (event) => void uploadProjectCover(event));
+  $('#remove-post-banner')!.addEventListener('click', () => void removePostBanner());
+  $('#remove-project-banner')!.addEventListener('click', () => void removeProjectBanner());
   bindBannerFraming('post-banner-preview', 'banner-position');
   bindBannerFraming('project-banner-preview', 'project-banner-position');
   $('#document-actions')!.addEventListener('click', (event) => void handleDocumentAction(event));
@@ -497,8 +499,8 @@ function fillMetadata() {
     state.bannerAvailable = Boolean(p.file.bannerPosition || p.file.bannerFit);
     const bannerPreview = $('#post-banner-preview') as HTMLImageElement;
     bannerPreview.hidden = true;
-    bannerPreview.onload = () => { state.bannerAvailable = true; bannerPreview.hidden = false; bannerPreview.style.objectPosition = 'center ' + (p.file.bannerPosition ?? '50%'); bannerPreview.style.objectFit = p.file.bannerFit ?? 'cover'; };
-    bannerPreview.onerror = () => { if (!p.file.bannerPosition && !p.file.bannerFit) state.bannerAvailable = false; bannerPreview.hidden = true; };
+    bannerPreview.onload = () => { state.bannerAvailable = true; bannerPreview.hidden = false; ($('#remove-post-banner') as HTMLButtonElement).hidden = false; bannerPreview.style.objectPosition = 'center ' + (p.file.bannerPosition ?? '50%'); bannerPreview.style.objectFit = p.file.bannerFit ?? 'cover'; };
+    bannerPreview.onerror = () => { if (!p.file.bannerPosition && !p.file.bannerFit) state.bannerAvailable = false; bannerPreview.hidden = true; ($('#remove-post-banner') as HTMLButtonElement).hidden = true; };
     bannerPreview.src = '/api/post-banner?post=' + encodeURIComponent(p.id) + '&v=' + Date.now();
   } else if (isProject && state.currentProject) {
     const p = state.currentProject;
@@ -515,8 +517,8 @@ function fillMetadata() {
     if (p.file.cover) {
       const bannerName = p.file.cover.split('/').pop() || 'banner.webp';
       bannerPreview.src = '/api/project-image?project=' + encodeURIComponent(p.id) + '&name=' + encodeURIComponent(bannerName) + '&v=' + Date.now();
-      bannerPreview.onload = () => { bannerPreview.hidden = false; bannerPreview.style.objectPosition = 'center ' + (p.file.bannerPosition ?? '50%'); };
-      bannerPreview.onerror = () => { bannerPreview.hidden = true; };
+      bannerPreview.onload = () => { bannerPreview.hidden = false; ($('#remove-project-banner') as HTMLButtonElement).hidden = false; bannerPreview.style.objectPosition = 'center ' + (p.file.bannerPosition ?? '50%'); };
+      bannerPreview.onerror = () => { bannerPreview.hidden = true; ($('#remove-project-banner') as HTMLButtonElement).hidden = true; };
     }
   } else if (state.currentDoc) {
     title.value = state.currentDoc.file.title; state.editor?.setMarkdown(state.currentDoc.body);
@@ -873,6 +875,33 @@ function resolveImageUrl(src: string) {
   if (state.currentDoc) return '/api/project-document/image-file?project=' + encodeURIComponent(state.currentDoc.projectId) + '&kind=' + encodeURIComponent(state.currentDoc.kind) + '&id=' + encodeURIComponent(state.currentDoc.id) + '&' + q;
   return src;
 }
+async function removePostBanner() {
+  if (!state.currentPost || !window.confirm('Remover o banner deste post? O texto e as imagens do conteúdo serão preservados.')) return;
+  try {
+    await api('DELETE', '/api/post/' + encodeURIComponent(state.currentPost.id) + '/banner');
+    state.bannerAvailable = false;
+    const preview = $('#post-banner-preview') as HTMLImageElement;
+    preview.hidden = true; preview.removeAttribute('src');
+    const button = $('#remove-post-banner') as HTMLButtonElement; button.hidden = true;
+    ($('#banner-position') as HTMLInputElement).value = '50';
+    ($('#banner-fit') as HTMLSelectElement).value = 'cover';
+    markDirty(); status('Banner removido. Salve o post para registrar as alterações.');
+  } catch (err) { status(formatError(err), 'error'); }
+}
+async function removeProjectBanner() {
+  if (!state.currentProject || !window.confirm('Remover o banner deste projeto? O texto e os documentos serão preservados.')) return;
+  try {
+    await api('DELETE', '/api/project/' + encodeURIComponent(state.currentProject.id) + '/banner');
+    ($('#project-cover') as HTMLInputElement).value = '';
+    ($('#project-banner-position') as HTMLInputElement).value = '50';
+    const preview = $('#project-banner-preview') as HTMLImageElement;
+    preview.hidden = true; preview.removeAttribute('src');
+    ($('#remove-project-banner') as HTMLButtonElement).hidden = true;
+    state.currentProject.file.cover = undefined;
+    state.currentProject.file.bannerPosition = undefined;
+    markDirty(); status('Banner removido. Salve o projeto para registrar as alterações.');
+  } catch (err) { status(formatError(err), 'error'); }
+}
 async function uploadBanner(event: Event) {
   const input = event.target as HTMLInputElement; const file = input.files?.[0]; if (!file || !state.currentPost) return;
   try {
@@ -880,7 +909,7 @@ async function uploadBanner(event: Event) {
     await api('POST', '/api/post/' + encodeURIComponent(state.currentPost.id) + '/banner', form);
     state.bannerAvailable = true;
     const preview = $('#post-banner-preview') as HTMLImageElement;
-    preview.src = '/api/post-banner?post=' + encodeURIComponent(state.currentPost.id) + '&v=' + Date.now(); preview.hidden = false;
+    preview.src = '/api/post-banner?post=' + encodeURIComponent(state.currentPost.id) + '&v=' + Date.now(); preview.hidden = false; ($('#remove-post-banner') as HTMLButtonElement).hidden = false;
     markDirty(); status('Banner enviado; salve para registrar o enquadramento');
   }
   catch (err) { status(formatError(err), 'error'); }
@@ -895,7 +924,7 @@ async function uploadProjectCover(event: Event) {
     const preview = $('#project-banner-preview') as HTMLImageElement;
     const name = result.cover.split('/').pop() || 'banner.webp';
     preview.src = '/api/project-image?project=' + encodeURIComponent(state.currentProject.id) + '&name=' + encodeURIComponent(name) + '&v=' + Date.now();
-    preview.hidden = false; state.currentProject.file.bannerPosition = String(($('#project-banner-position') as HTMLInputElement).value) + '%';
+    preview.hidden = false; ($('#remove-project-banner') as HTMLButtonElement).hidden = false; state.currentProject.file.bannerPosition = String(($('#project-banner-position') as HTMLInputElement).value) + '%';
     markDirty(); status('Banner do projeto enviado');
   } catch (err) { status(formatError(err), 'error'); }
   finally { input.value = ''; }
