@@ -6,7 +6,7 @@ tags:
   - analise
 draft: false
 updatedDate: '2026-10-24'
-bannerPosition: 37%
+bannerPosition: 8%
 ---
 
 ![Cyberpunk: Edgerunners 2' review: A beautiful reminder of what makes us  human | Mashable](https://helios-i.mashable.com/imagery/articles/003MXGuPpXrYEuBJRs9pW8G/hero-image.fill.size_1248x702.v1792420092.jpg)
@@ -113,5 +113,7 @@ Espero ver mais de Roman, Talia e Kingsley\.
 > 
 > 
 > "E até esse dia chegar, quero que você continue filmando muito tá?" \- Talia
+> 
+> 
 
 **E então, todos foram para casa\.**
