@@ -6,7 +6,7 @@ tags:
   - analise
 draft: false
 updatedDate: '2026-10-24'
-bannerPosition: 8%
+bannerPosition: 71%
 ---
 
 ![Cyberpunk: Edgerunners 2' review: A beautiful reminder of what makes us  human | Mashable](https://helios-i.mashable.com/imagery/articles/003MXGuPpXrYEuBJRs9pW8G/hero-image.fill.size_1248x702.v1792420092.jpg)
