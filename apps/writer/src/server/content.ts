@@ -390,6 +390,19 @@ export async function savePostBanner(postId: string, filename: string, buffer: B
   return name;
 }
 
+// Remove o banner atual sem tocar no Markdown nem nas imagens do corpo.
+export async function removePostBanner(postId: string): Promise<void> {
+  const postFile = await resolvePostFile(postId);
+  const folder = path.dirname(postFile);
+  const allowed = ['banner.webp', 'banner.png', 'banner.jpg', 'banner.jpeg', 'banner.avif'];
+  if (folder === postsRoot()) {
+    // Posts em arquivo único não podem ter banner na raiz compartilhada.
+    return;
+  }
+  await assertPathWithin(postsRoot(), folder);
+  await Promise.all(allowed.map((name) => fs.rm(path.join(folder, name), { force: true })));
+}
+
 // Guarda uma imagem dentro da pasta do post e devolve o nome do arquivo.
 export async function saveImage(postId: string, filename: string, buffer: Buffer): Promise<string> {
   const extension = path.extname(filename).toLowerCase();
@@ -716,6 +729,19 @@ export async function saveProjectBanner(
   ]);
 
   return `/projects/${slug}/${name}`;
+}
+
+export async function removeProjectBanner(projectId: string): Promise<void> {
+  await projectFile(projectId);
+  const slug = safeSegment(projectId, 'projeto');
+  const contentDir = path.join(projectsRoot(), slug);
+  const publicDir = path.join(repoRoot(), 'apps', 'blog', 'public', 'projects', slug);
+  await assertPathWithin(projectsRoot(), contentDir);
+  const names = ['banner.jpg', 'banner.jpeg', 'banner.png', 'banner.webp', 'banner.gif', 'banner.avif'];
+  await Promise.all([
+    ...names.map((name) => fs.rm(path.join(contentDir, name), { force: true })),
+    ...names.map((name) => fs.rm(path.join(publicDir, name), { force: true })),
+  ]);
 }
 
 export async function saveProjectImage(projectId: string, filename: string, buffer: Buffer): Promise<string> {
