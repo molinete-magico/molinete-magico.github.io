@@ -2,6 +2,8 @@
 title: 'Rambling #9 - Raiva Raiva Grr'
 description: ''
 pubDate: '2026-10-29T09:06:30Z'
+tags:
+  - rambling
 draft: false
 updatedDate: '2026-10-29'
 ---
