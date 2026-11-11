@@ -18,7 +18,7 @@
     "test:e2e:serve": "node --import tsx tests/browser/serve-writer-app.mjs"
   },
   "dependencies": {
-    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/lang-markdown": "^6.5.2",
     "@codemirror/language-data": "^6.5.2",
     "@codemirror/lint": "^6.9.7",
