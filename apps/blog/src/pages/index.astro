@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import { execFileSync } from 'node:child_process';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import EntryList from '../components/EntryList.astro';
 import { withBase } from '../lib/paths';
@@ -9,6 +10,136 @@ const posts = (await getCollection('posts'))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
 const recentPosts = posts.slice(0, 10);
+
+// Últimas alterações relevantes dos projetos, obtidas do histórico Git.
+// Alterações pequenas são ignoradas; cada capítulo/documento ocupa só uma posição.
+const projects = await getCollection('projects', ({ data }) => data.published);
+const [chapters, supplements, documents] = await Promise.all([
+  getCollection('projectChapters', ({ data }) => data.published),
+  getCollection('projectSupplements', ({ data }) => data.published),
+  getCollection('projectDocs', ({ data }) => data.published),
+]);
+const projectById = new Map(projects.map((project) => [project.id, project]));
+const contentByPath = new Map<string, {
+  projectId: string;
+  projectTitle: string;
+  title: string;
+  kind: 'chapter' | 'supplement' | 'document';
+  href: string;
+}>();
+
+for (const entry of chapters) {
+  const project = projects.find((candidate) => entry.id.startsWith(projectIdPrefix(candidate.id, 'chapters')));
+  if (!project) continue;
+  const relative = entry.id.slice(project.id.length + 1);
+  contentByPath.set('content/projects/' + entry.id + '.md', {
+    projectId: project.id,
+    projectTitle: project.data.title,
+    title: entry.data.title,
+    kind: 'chapter',
+    href: '/projetos/' + project.id + '/documentacao/' + relative + '/',
+  });
+}
+for (const entry of supplements) {
+  const project = projects.find((candidate) => entry.id.startsWith(projectIdPrefix(candidate.id, 'supplements')));
+  if (!project) continue;
+  const relative = entry.id.slice(project.id.length + 1);
+  contentByPath.set('content/projects/' + entry.id + '.md', {
+    projectId: project.id,
+    projectTitle: project.data.title,
+    title: entry.data.title,
+    kind: 'supplement',
+    href: '/projetos/' + project.id + '/documentacao/' + relative + '/',
+  });
+}
+for (const entry of documents) {
+  const project = projectById.get(entry.id);
+  if (!project) continue;
+  contentByPath.set('content/projects/' + entry.id + '/document.md', {
+    projectId: project.id,
+    projectTitle: project.data.title,
+    title: entry.data.title,
+    kind: 'document',
+    href: '/projetos/' + project.id + '/documentacao/',
+  });
+}
+
+function projectIdPrefix(projectId: string, group: string) {
+  return projectId + '/' + group + '/';
+}
+
+type UpdateRecord = {
+  sha: string;
+  date: Date;
+  path: string;
+  additions: number;
+  deletions: number;
+};
+let historyRecords: UpdateRecord[] = [];
+const addedFiles = new Set<string>();
+try {
+  const log = execFileSync('git', [
+    'log', '-n', '120', '--format=%x1e%H%x09%cI', '--numstat', '--', 'content/projects',
+  ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  let current: { sha: string; date: Date } | null = null;
+  for (const line of log.split('\n')) {
+    if (line.startsWith('\x1e')) {
+      const [sha, date] = line.slice(1).split('\t');
+      current = { sha, date: new Date(date) };
+      continue;
+    }
+    if (!current || !line.includes('\t')) continue;
+    const [additions, deletions, path] = line.split('\t');
+    if (!path || additions === '-' || deletions === '-') continue;
+    historyRecords.push({
+      ...current,
+      path,
+      additions: Number(additions),
+      deletions: Number(deletions),
+    });
+  }
+
+  const addedLog = execFileSync('git', [
+    'log', '-n', '200', '--diff-filter=A', '--format=%H', '--name-only', '--', 'content/projects',
+  ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  let addedCommit = '';
+  for (const line of addedLog.split('\n')) {
+    if (/^[a-f0-9]{40}$/.test(line)) addedCommit = line;
+    else if (line.startsWith('content/projects/')) addedFiles.add(addedCommit + ':' + line);
+  }
+} catch {
+  // Em desenvolvimento sem histórico Git completo, o componente simplesmente não lista novidades.
+}
+
+const latestByContent = new Map<string, UpdateRecord>();
+for (const record of historyRecords) {
+  if (!contentByPath.has(record.path)) continue;
+  const isNewContent = addedFiles.has(record.sha + ':' + record.path);
+  const changedLines = record.additions + record.deletions;
+  if (!isNewContent && changedLines < 12) continue;
+  const previous = latestByContent.get(record.path);
+  if (!previous || record.date > previous.date) latestByContent.set(record.path, record);
+}
+
+const recentUpdates = [...latestByContent.values()]
+  .sort((a, b) => b.date.getTime() - a.date.getTime())
+  .slice(0, 5)
+  .map((record) => {
+    const content = contentByPath.get(record.path)!;
+    const isNewContent = addedFiles.has(record.sha + ':' + record.path);
+    const title = content.kind === 'chapter'
+      ? (isNewContent ? 'Novo capítulo em ' : 'Capítulo atualizado em ') + content.projectTitle
+      : content.kind === 'supplement'
+        ? (isNewContent ? 'Novo complemento em ' : 'Complemento atualizado em ') + content.projectTitle
+        : (isNewContent ? 'Novo documento em ' : 'Documento atualizado em ') + content.projectTitle;
+    return {
+      ...content,
+      title,
+      date: record.date,
+      detail: content.title,
+      href: withBase(content.href),
+    };
+  });
 
 // Conta as tags utilizadas nos posts
 const tagCounts = new Map<string, number>();
@@ -54,6 +185,51 @@ const tags = [...tagCounts.entries()]
   <div class="container home-layout">
 
     <div class="home-main">
+      {recentUpdates.length > 0 && (
+        <section class="widget updates-widget" aria-label="Últimas alterações" data-updates-slider>
+          <h2 class="widget-title">Últimas alterações</h2>
+          <div class="widget-body updates-body">
+            <div class="updates-slides" aria-live="off">
+              {recentUpdates.map((update, index) => (
+                <a
+                  class:list={['updates-slide', { 'is-active': index === 0 }]}
+                  href={update.href}
+                  data-update-slide={index}
+                  aria-hidden={index !== 0 ? 'true' : undefined}
+                  tabindex={index === 0 ? 0 : -1}
+                >
+                  <p class="updates-project">{update.projectTitle}</p>
+                  <h3 class="updates-title">{update.title}</h3>
+                  <p class="updates-detail">{update.detail}</p>
+                  <span class="updates-meta">
+                    <time datetime={update.date.toISOString()}>{update.date.toLocaleDateString('pt-BR')}</time>
+                    <span>Ver conteúdo →</span>
+                  </span>
+                </a>
+              ))}
+            </div>
+            {recentUpdates.length > 1 && (
+              <div class="updates-controls">
+                <button class="updates-arrow" type="button" data-update-prev aria-label="Atualização anterior">←</button>
+                <div class="updates-pagination" aria-label="Selecionar atualização">
+                  {recentUpdates.map((_, index) => (
+                    <button
+                      class:list={['updates-dot', { 'is-active': index === 0 }]}
+                      type="button"
+                      data-update-dot={index}
+                      aria-label={'Ir para atualização ' + (index + 1)}
+                      aria-current={index === 0 ? 'true' : undefined}
+                    />
+                  ))}
+                </div>
+                <span class="updates-counter" data-update-counter>1 / {recentUpdates.length}</span>
+                <button class="updates-arrow" type="button" data-update-next aria-label="Próxima atualização">→</button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       <section class="section">
 
         <h2 class="section-title">
@@ -191,4 +367,114 @@ const tags = [...tagCounts.entries()]
     </aside>
 
   </div>
+
+<style>
+  .updates-widget { margin-bottom: var(--space-6); }
+  .updates-body { padding: 0.8rem; }
+  .updates-slides { position: relative; min-height: 7.5rem; }
+  .updates-slide { display: none; min-height: 7.5rem; color: inherit; text-decoration: none; }
+  .updates-slide.is-active {
+    display: flex; flex-direction: column; align-items: flex-start;
+    animation: updates-enter 180ms ease both;
+  }
+  .updates-project {
+    margin: 0; color: var(--text-muted); font-family: var(--font-mono);
+    font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .updates-title {
+    margin: 0.35rem 0 0; color: var(--text-primary);
+    font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.35; text-shadow: none;
+  }
+  .updates-detail { margin: 0.35rem 0 0; color: var(--text-muted); font-size: 0.84rem; }
+  .updates-meta {
+    display: flex; width: 100%; justify-content: space-between; gap: 1rem;
+    margin-top: auto; padding-top: 0.85rem; color: var(--text-secondary);
+    font-family: var(--font-mono); font-size: 0.72rem;
+  }
+  .updates-slide:hover .updates-meta span,
+  .updates-slide:focus-visible .updates-meta span {
+    text-decoration: underline; text-underline-offset: 0.2em;
+  }
+  .updates-controls {
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.65rem;
+    margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px solid var(--border-rest);
+  }
+  .updates-arrow, .updates-dot {
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border-rest); border-radius: 0;
+    color: var(--text-secondary); background: transparent; cursor: pointer;
+  }
+  .updates-arrow { width: 1.8rem; height: 1.8rem; font-size: 0.9rem; }
+  .updates-dot {
+    width: 0.48rem; height: 0.48rem; padding: 0; border-radius: 50%; opacity: 0.5;
+  }
+  .updates-dot.is-active { opacity: 1; background: var(--accent); border-color: var(--accent); }
+  .updates-arrow:hover, .updates-dot:hover { border-color: var(--border-hover); color: var(--text-primary); }
+  .updates-pagination { display: flex; align-items: center; gap: 0.45rem; }
+  .updates-counter { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+  .updates-arrow:focus-visible, .updates-dot:focus-visible, .updates-slide:focus-visible {
+    outline: 2px solid var(--border-focus); outline-offset: 3px;
+  }
+  @keyframes updates-enter {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (max-width: 520px) {
+    .updates-meta { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { .updates-slide.is-active { animation: none; } }
+</style>
+
+<script>
+  const slider = document.querySelector<HTMLElement>('[data-updates-slider]');
+  if (slider) {
+    const slides = Array.from(slider.querySelectorAll<HTMLElement>('[data-update-slide]'));
+    const dots = Array.from(slider.querySelectorAll<HTMLButtonElement>('[data-update-dot]'));
+    const counter = slider.querySelector<HTMLElement>('[data-update-counter]');
+    const previous = slider.querySelector<HTMLButtonElement>('[data-update-prev]');
+    const next = slider.querySelector<HTMLButtonElement>('[data-update-next]');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let activeIndex = 0;
+    let timer: number | undefined;
+
+    const showSlide = (index: number) => {
+      activeIndex = (index + slides.length) % slides.length;
+      slides.forEach((slide, slideIndex) => {
+        const active = slideIndex === activeIndex;
+        slide.classList.toggle('is-active', active);
+        slide.setAttribute('aria-hidden', String(!active));
+        slide.tabIndex = active ? 0 : -1;
+      });
+      dots.forEach((dot, dotIndex) => {
+        const active = dotIndex === activeIndex;
+        dot.classList.toggle('is-active', active);
+        if (active) dot.setAttribute('aria-current', 'true');
+        else dot.removeAttribute('aria-current');
+      });
+      if (counter) counter.textContent = (activeIndex + 1) + ' / ' + slides.length;
+    };
+
+    const stopAutoplay = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+    };
+    const startAutoplay = () => {
+      stopAutoplay();
+      if (reducedMotion || slides.length < 2) return;
+      timer = window.setInterval(() => showSlide(activeIndex + 1), 7000);
+    };
+
+    previous?.addEventListener('click', () => { showSlide(activeIndex - 1); startAutoplay(); });
+    next?.addEventListener('click', () => { showSlide(activeIndex + 1); startAutoplay(); });
+    dots.forEach((dot, index) => dot.addEventListener('click', () => { showSlide(index); startAutoplay(); }));
+    slider.addEventListener('mouseenter', stopAutoplay);
+    slider.addEventListener('mouseleave', startAutoplay);
+    slider.addEventListener('focusin', stopAutoplay);
+    slider.addEventListener('focusout', (event) => {
+      if (!slider.contains(event.relatedTarget as Node | null)) startAutoplay();
+    });
+    startAutoplay();
+  }
+</script>
+
 </BaseLayout>
