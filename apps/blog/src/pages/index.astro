@@ -1,8 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
 import { execFileSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import EntryList from '../components/EntryList.astro';
 import { withBase } from '../lib/paths';
@@ -12,8 +10,6 @@ const posts = (await getCollection('posts'))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
 const recentPosts = posts.slice(0, 10);
-
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 // Últimas alterações relevantes dos projetos, obtidas do histórico Git.
 // Alterações pequenas são ignoradas; cada capítulo/documento ocupa só uma posição.
@@ -90,26 +86,14 @@ try {
   // Percorre o histórico dos arquivos de projeto, não os commits gerais do repositório.
   // A primeira alteração relevante de cada documento é a mais recente; mudanças pequenas
   // não escondem a última atualização substancial daquele mesmo documento.
+  const repositoryRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+
   const log = execFileSync('git', [
     'log', '-n', '250', '--no-merges', '--format=COMMIT:%H%x09%cI',
     '--numstat', '--', 'content/projects',
   ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-
-  const additionsLog = execFileSync('git', [
-    'log', '-n', '250', '--no-merges', '--diff-filter=A',
-    '--format=ADD:%H', '--name-only', '--', 'content/projects',
-  ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-
-  const newlyAdded = new Map<string, Set<string>>();
-  let addedCommit = '';
-  for (const line of additionsLog.split('\n')) {
-    if (line.startsWith('ADD:')) {
-      addedCommit = line.slice(4);
-      if (!newlyAdded.has(addedCommit)) newlyAdded.set(addedCommit, new Set());
-    } else if (addedCommit && line.startsWith('content/projects/')) {
-      newlyAdded.get(addedCommit)?.add(line.trim());
-    }
-  }
 
   const latestRelevantByPath = new Map<string, {
     sha: string;
@@ -123,8 +107,7 @@ try {
     if (!commit) return;
     for (const changed of commit.paths) {
       if (!changed.path.endsWith('.md') || latestRelevantByPath.has(changed.path)) continue;
-      const isNewDocument = newlyAdded.get(commit.sha)?.has(changed.path) ?? false;
-      if (!isNewDocument && changed.additions + changed.deletions < 12) continue;
+      if (changed.additions + changed.deletions < 12) continue;
       latestRelevantByPath.set(changed.path, {
         sha: commit.sha,
         date: commit.date,
