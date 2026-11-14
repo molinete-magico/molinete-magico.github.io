@@ -221,8 +221,8 @@ const tags = [...tagCounts.entries()]
       <section class="widget updates-widget">
         <h2 class="widget-title">Novidades</h2>
         <div class="widget-body updates-widget-body">
-          <details class="updates-shortcut">
-            <summary class="updates-shortcut-tile">
+          <div class="updates-shortcut" data-updates-slider>
+            <div class="updates-shortcut-tile">
               <span class="updates-shortcut-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none">
                   <path d="M4 7.5h10M4 12h6M4 16.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
@@ -230,32 +230,23 @@ const tags = [...tagCounts.entries()]
                   <path d="M16.5 4.5h3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
                 </svg>
               </span>
-              <span class="updates-shortcut-copy">
-                <strong>Atualizações dos projetos</strong>
-                <small>{recentUpdates.length} {recentUpdates.length === 1 ? 'novidade' : 'novidades'}</small>
-              </span>
-              <span class="updates-shortcut-chevron" aria-hidden="true">+</span>
-            </summary>
-            <div class="updates-popover">
-              {recentUpdates.length > 0 ? (
-                <ul class="updates-list">
-                  {recentUpdates.map((update) => (
-                    <li>
-                      <a href={update.href}>
-                        <span class="updates-list-project">{update.projectTitle}</span>
-                        <strong>{update.title}</strong>
-                        <span class="updates-list-meta">
-                          {update.detail} · <time datetime={update.date.toISOString()}>{update.date.toLocaleDateString('pt-BR')}</time>
-                        </span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p class="widget-muted">Nenhuma atualização recente.</p>
-              )}
+              <div class="updates-slide-window" aria-live="polite" aria-atomic="true">
+                {recentUpdates.length > 0 ? recentUpdates.map((update, index) => (
+                  <a class:list={['updates-slide', { 'is-active': index === 0 }]} href={update.href} data-update-slide>
+                    <strong>{update.title}</strong>
+                    <small>{update.projectTitle} · {update.date.toLocaleDateString('pt-BR')}</small>
+                  </a>
+                )) : (
+                  <span class="updates-slide is-active"><strong>Nenhuma novidade recente</strong><small>Os projetos ainda não receberam atualizações</small></span>
+                )}
+              </div>
+              <div class="updates-slider-controls">
+                <span class="updates-slide-count"><span data-update-current>1</span>/{Math.max(recentUpdates.length, 1)}</span>
+                <button type="button" class="updates-slide-arrow" data-update-prev aria-label="Novidade anterior" disabled={recentUpdates.length < 2}>‹</button>
+                <button type="button" class="updates-slide-arrow" data-update-next aria-label="Próxima novidade" disabled={recentUpdates.length < 2}>›</button>
+              </div>
             </div>
-          </details>
+          </div>
         </div>
       </section>
 
@@ -363,100 +354,70 @@ const tags = [...tagCounts.entries()]
   .updates-widget-body { padding: 0.65rem; }
   .updates-shortcut { width: 100%; }
   .updates-shortcut-tile {
-    display: flex;
-    width: 100%;
-    min-height: 4rem;
-    align-items: center;
-    gap: 0.7rem;
-    padding: 0.55rem;
-    border: 1px solid var(--border-rest);
-    background: var(--bg-elevated);
-    color: var(--text-primary);
-    cursor: pointer;
-    list-style: none;
-    transition: border-color 150ms ease, background 150ms ease;
-  }
-  .updates-shortcut-tile::-webkit-details-marker { display: none; }
-  .updates-shortcut-tile::marker { content: ""; }
-  .updates-shortcut-tile:hover,
-  .updates-shortcut[open] .updates-shortcut-tile {
-    border-color: var(--border-hover);
-    background: var(--bg-soft);
+    display: flex; width: 100%; min-height: 4rem; align-items: center;
+    gap: 0.65rem; padding: 0.55rem; border: 1px solid var(--border-rest);
+    background: var(--bg-elevated); color: var(--text-primary);
   }
   .updates-shortcut-icon {
-    display: grid;
-    width: 2.75rem;
-    height: 2.75rem;
-    flex: 0 0 2.75rem;
-    place-items: center;
-    border: 1px solid var(--border-rest);
-    background: var(--bg);
-    color: var(--accent);
+    display: grid; width: 2.75rem; height: 2.75rem; flex: 0 0 2.75rem;
+    place-items: center; border: 1px solid var(--border-rest);
+    background: var(--bg); color: var(--accent);
   }
   .updates-shortcut-icon svg { width: 1.4rem; height: 1.4rem; }
-  .updates-shortcut-copy {
-    display: grid;
-    min-width: 0;
-    flex: 1;
-    gap: 0.15rem;
-    text-align: left;
+  .updates-slide-window {
+    display: grid; min-width: 0; flex: 1; align-self: stretch; align-content: center;
   }
-  .updates-shortcut-copy strong {
-    color: var(--text-primary);
-    font-size: 0.76rem;
-    font-weight: 600;
-    line-height: 1.35;
+  .updates-slide { display: none; min-width: 0; gap: 0.2rem; color: inherit; text-decoration: none; }
+  .updates-slide.is-active { display: grid; }
+  .updates-slide strong {
+    overflow: hidden; color: var(--text-primary); font-size: 0.76rem;
+    font-weight: 600; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap;
   }
-  .updates-shortcut-copy small {
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.65rem;
+  .updates-slide small {
+    overflow: hidden; color: var(--text-muted); font-family: var(--font-mono);
+    font-size: 0.61rem; text-overflow: ellipsis; white-space: nowrap;
   }
-  .updates-shortcut-chevron {
-    color: var(--text-secondary);
-    font-family: var(--font-mono);
-    font-size: 1.1rem;
-    line-height: 1;
+  .updates-slide:hover strong,
+  .updates-slide:focus-visible strong {
+    color: var(--accent); text-decoration: underline; text-underline-offset: 0.18em;
   }
-  .updates-shortcut[open] .updates-shortcut-chevron { transform: rotate(45deg); }
-  .updates-popover {
-    margin-top: 0.55rem;
-    padding-top: 0.15rem;
-    border-top: 1px solid var(--border-rest);
+  .updates-slider-controls {
+    display: grid; flex: 0 0 auto; grid-template-columns: 1fr 1.45rem 1.45rem;
+    align-items: center; gap: 0.15rem;
   }
-  .updates-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
-  .updates-list li + li { border-top: 1px solid var(--border-rest); }
-  .updates-list a {
-    display: grid;
-    gap: 0.2rem;
-    padding: 0.65rem 0;
-    color: inherit;
-    text-decoration: none;
+  .updates-slide-count {
+    color: var(--text-muted); font-family: var(--font-mono);
+    font-size: 0.6rem; text-align: center; white-space: nowrap;
   }
-  .updates-list a:hover strong,
-  .updates-list a:focus-visible strong {
-    color: var(--accent);
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
+  .updates-slide-arrow {
+    display: grid; width: 1.45rem; height: 1.7rem; place-items: center;
+    padding: 0; border: 1px solid var(--border-rest); background: var(--bg);
+    color: var(--text-secondary); font-size: 1rem; line-height: 1; cursor: pointer;
   }
-  .updates-list-project {
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .updates-list strong { color: var(--text-primary); font-size: 0.78rem; font-weight: 500; }
-  .updates-list-meta { color: var(--text-muted); font-size: 0.66rem; }
-  .updates-list a:focus-visible,
-  .updates-shortcut-tile:focus-visible {
-    outline: 2px solid var(--border-focus);
-    outline-offset: 3px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .updates-shortcut-tile { transition: none; }
-  }
+  .updates-slide-arrow:hover:not(:disabled) { border-color: var(--border-hover); color: var(--accent); }
+  .updates-slide-arrow:disabled { opacity: 0.35; cursor: default; }
+  .updates-slide:focus-visible,
+  .updates-slide-arrow:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 </style>
 >
+
+
+<script>
+  document.querySelectorAll('[data-updates-slider]').forEach((slider) => {
+    const slides = Array.from(slider.querySelectorAll('[data-update-slide]'));
+    const current = slider.querySelector('[data-update-current]');
+    const previous = slider.querySelector('[data-update-prev]');
+    const next = slider.querySelector('[data-update-next]');
+    if (slides.length < 2 || !current || !previous || !next) return;
+    let active = 0;
+    const show = (index) => {
+      active = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => slide.classList.toggle('is-active', i === active));
+      current.textContent = String(active + 1);
+    };
+    previous.addEventListener('click', () => show(active - 1));
+    next.addEventListener('click', () => show(active + 1));
+  });
+</script>
 
 </BaseLayout>
