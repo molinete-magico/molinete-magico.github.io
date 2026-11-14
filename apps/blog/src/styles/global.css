@@ -1058,7 +1058,7 @@ th {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 1.5rem;
-  align-items: start;
+  align-items: stretch;
   margin-top: 2rem;
 }
 
@@ -1071,6 +1071,7 @@ th {
 .sidebar {
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 1rem;
   min-width: 0;
 }
