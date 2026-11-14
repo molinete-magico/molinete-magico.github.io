@@ -217,26 +217,47 @@ const tags = [...tagCounts.entries()]
 
     <aside class="sidebar" aria-label="Barra lateral">
 
-      <!-- SOBRE -->
-      <section class="widget">
-        <h2 class="widget-title">Sobre</h2>
-
-        <div class="widget-body">
-          <p>
-            Este é meu pequeno canto na internet.
-            Um arquivo de coisas que penso, faço,
-            estudo e descubro pelo caminho.
-          </p>
-
-          <a
-            href={withBase('/about')}
-            class="widget-link"
-          >
-            → saber mais
-          </a>
+      <!-- NOVIDADES -->
+      <section class="widget updates-widget">
+        <h2 class="widget-title">Novidades</h2>
+        <div class="widget-body updates-widget-body">
+          <details class="updates-shortcut">
+            <summary class="updates-shortcut-tile">
+              <span class="updates-shortcut-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M4 7.5h10M4 12h6M4 16.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
+                  <path d="M17 14.5v5m-2.5-2.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
+                  <path d="M16.5 4.5h3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
+                </svg>
+              </span>
+              <span class="updates-shortcut-copy">
+                <strong>Atualizações dos projetos</strong>
+                <small>{recentUpdates.length} {recentUpdates.length === 1 ? 'novidade' : 'novidades'}</small>
+              </span>
+              <span class="updates-shortcut-chevron" aria-hidden="true">+</span>
+            </summary>
+            <div class="updates-popover">
+              {recentUpdates.length > 0 ? (
+                <ul class="updates-list">
+                  {recentUpdates.map((update) => (
+                    <li>
+                      <a href={update.href}>
+                        <span class="updates-list-project">{update.projectTitle}</span>
+                        <strong>{update.title}</strong>
+                        <span class="updates-list-meta">
+                          {update.detail} · <time datetime={update.date.toISOString()}>{update.date.toLocaleDateString('pt-BR')}</time>
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p class="widget-muted">Nenhuma atualização recente.</p>
+              )}
+            </div>
+          </details>
         </div>
       </section>
-
 
       <!-- NAVEGAÇÃO -->
       <section class="widget">
@@ -262,42 +283,6 @@ const tags = [...tagCounts.entries()]
           </ul>
         </div>
       </section>
-
-      <!-- ATUALIZAÇÕES DOS PROJETOS -->
-      <details class="updates-shortcut">
-        <summary class="updates-shortcut-tile" aria-label="Abrir últimas atualizações dos projetos">
-          <span class="updates-shortcut-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 7.5h10M4 12h6M4 16.5h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
-              <path d="M17 14.5v5m-2.5-2.5h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
-              <path d="M16.5 4.5h3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/>
-            </svg>
-          </span>
-          <span class="updates-shortcut-label">Novidades</span>
-          <span class="updates-shortcut-count">{recentUpdates.length}</span>
-        </summary>
-        <div class="updates-popover">
-          <h2 class="updates-popover-title">Atualizações dos projetos</h2>
-          {recentUpdates.length > 0 ? (
-            <ul class="updates-list">
-              {recentUpdates.map((update) => (
-                <li>
-                  <a href={update.href}>
-                    <span class="updates-list-project">{update.projectTitle}</span>
-                    <strong>{update.title}</strong>
-                    <span class="updates-list-meta">
-                      {update.detail} · <time datetime={update.date.toISOString()}>{update.date.toLocaleDateString('pt-BR')}</time>
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p class="widget-muted">Nenhuma atualização recente.</p>
-          )}
-        </div>
-      </details>
-
 
       <!-- TAGS -->
       <section class="widget">
@@ -375,21 +360,17 @@ const tags = [...tagCounts.entries()]
   </div>
 
 <style>
-  .updates-shortcut {
-    position: relative;
-    margin: 0 0 var(--space-4);
-  }
+  .updates-widget-body { padding: 0.65rem; }
+  .updates-shortcut { width: 100%; }
   .updates-shortcut-tile {
-    position: relative;
     display: flex;
-    width: 5.25rem;
-    min-height: 5.25rem;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 0.7rem;
+    width: 100%;
+    min-height: 4rem;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.55rem;
     border: 1px solid var(--border-rest);
-    background: var(--surface-raised, var(--surface));
+    background: var(--bg-elevated);
     color: var(--text-primary);
     cursor: pointer;
     list-style: none;
@@ -400,50 +381,48 @@ const tags = [...tagCounts.entries()]
   .updates-shortcut-tile:hover,
   .updates-shortcut[open] .updates-shortcut-tile {
     border-color: var(--border-hover);
-    background: var(--surface-hover, var(--surface));
+    background: var(--bg-soft);
   }
-  .updates-shortcut-icon { display: flex; width: 1.45rem; height: 1.45rem; }
-  .updates-shortcut-icon svg { width: 100%; height: 100%; }
-  .updates-shortcut-label {
-    font-family: var(--font-mono);
-    font-size: 0.67rem;
-    letter-spacing: 0.02em;
-  }
-  .updates-shortcut-count {
-    position: absolute;
-    top: -0.4rem;
-    right: -0.4rem;
+  .updates-shortcut-icon {
     display: grid;
-    min-width: 1.25rem;
-    height: 1.25rem;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 2.75rem;
     place-items: center;
-    padding: 0 0.2rem;
     border: 1px solid var(--border-rest);
-    background: var(--accent);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
+    background: var(--bg);
+    color: var(--accent);
   }
-  .updates-popover {
-    position: absolute;
-    z-index: 20;
-    top: 0;
-    left: calc(5.25rem + 0.65rem);
-    width: min(19rem, calc(100vw - 3rem));
-    max-height: 24rem;
-    overflow-y: auto;
-    padding: 0.8rem;
-    border: 1px solid var(--border-rest);
-    background: var(--surface, var(--background));
-    box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  .updates-shortcut-icon svg { width: 1.4rem; height: 1.4rem; }
+  .updates-shortcut-copy {
+    display: grid;
+    min-width: 0;
+    flex: 1;
+    gap: 0.15rem;
+    text-align: left;
   }
-  .updates-popover-title {
-    margin: 0 0 0.65rem;
+  .updates-shortcut-copy strong {
     color: var(--text-primary);
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 600;
+    line-height: 1.35;
+  }
+  .updates-shortcut-copy small {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+  .updates-shortcut-chevron {
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .updates-shortcut[open] .updates-shortcut-chevron { transform: rotate(45deg); }
+  .updates-popover {
+    margin-top: 0.55rem;
+    padding-top: 0.15rem;
+    border-top: 1px solid var(--border-rest);
   }
   .updates-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
   .updates-list li + li { border-top: 1px solid var(--border-rest); }
@@ -467,21 +446,12 @@ const tags = [...tagCounts.entries()]
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
-  .updates-list strong { color: var(--text-primary); font-size: 0.82rem; font-weight: 500; }
-  .updates-list-meta { color: var(--text-muted); font-size: 0.68rem; }
+  .updates-list strong { color: var(--text-primary); font-size: 0.78rem; font-weight: 500; }
+  .updates-list-meta { color: var(--text-muted); font-size: 0.66rem; }
   .updates-list a:focus-visible,
   .updates-shortcut-tile:focus-visible {
     outline: 2px solid var(--border-focus);
     outline-offset: 3px;
-  }
-  @media (max-width: 520px) {
-    .updates-popover {
-      position: static;
-      width: 100%;
-      max-height: none;
-      margin-top: 0.65rem;
-      box-shadow: none;
-    }
   }
   @media (prefers-reduced-motion: reduce) {
     .updates-shortcut-tile { transition: none; }
