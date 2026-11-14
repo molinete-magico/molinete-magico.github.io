@@ -143,9 +143,7 @@ try {
       return {
         projectTitle: content.projectTitle,
         title: content.title,
-        detail: content.kind === 'chapter' ? 'Capítulo atualizado'
-          : content.kind === 'supplement' ? 'Suplemento atualizado'
-          : 'Documento do projeto atualizado',
+        kind: content.kind,
         date: change.date,
         href: withBase(content.href),
       };
@@ -226,7 +224,7 @@ const tags = [...tagCounts.entries()]
               <div class="updates-slide-window" aria-live="polite" aria-atomic="true">
                 {recentUpdates.length > 0 ? recentUpdates.map((update, index) => (
                   <a class:list={['updates-slide', { 'is-active': index === 0 }]} href={update.href} data-update-slide>
-                    {update.title}
+                    {update.kind === 'chapter' ? 'Novo capítulo: ' : 'Atualização: '}{update.title}
                   </a>
                 )) : (
                   <span class="updates-slide is-active">Nenhuma novidade recente</span>
@@ -378,15 +376,13 @@ const tags = [...tagCounts.entries()]
 <script>
   document.querySelectorAll('[data-updates-slider]').forEach((slider) => {
     const slides = Array.from(slider.querySelectorAll('[data-update-slide]'));
-    const current = slider.querySelector('[data-update-current]');
     const previous = slider.querySelector('[data-update-prev]');
     const next = slider.querySelector('[data-update-next]');
-    if (slides.length < 2 || !current || !previous || !next) return;
+    if (slides.length < 2 || !previous || !next) return;
     let active = 0;
     const show = (index) => {
       active = (index + slides.length) % slides.length;
       slides.forEach((slide, i) => slide.classList.toggle('is-active', i === active));
-      current.textContent = String(active + 1);
     };
     previous.addEventListener('click', () => show(active - 1));
     next.addEventListener('click', () => show(active + 1));
