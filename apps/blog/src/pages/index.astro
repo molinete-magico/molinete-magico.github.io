@@ -72,70 +72,54 @@ function projectIdPrefix(projectId: string, group: string) {
   return projectId + '/' + group + '/';
 }
 
-type UpdateRecord = {
+type CommitRecord = {
   sha: string;
   date: Date;
-  path: string;
+  subject: string;
+  paths: string[];
 };
-let historyRecords: UpdateRecord[] = [];
-const addedFiles = new Set<string>();
+
+let latestCommits: CommitRecord[] = [];
 try {
-  // --name-only evita depender do formato variável do --numstat.
-  // O marcador explícito mantém cada commit separado durante a leitura.
+  // Lê os cinco commits mais recentes do repositório inteiro, não apenas
+  // commits que tocaram content/projects.
   const log = execFileSync('git', [
-    'log', '-n', '200', '--format=COMMIT:%H%x09%cI', '--name-only', '--', 'content/projects',
+    'log', '-n', '5', '--format=COMMIT:%H%x09%cI%x09%s', '--name-only',
   ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  let current: { sha: string; date: Date } | null = null;
+
+  let current: CommitRecord | null = null;
   for (const line of log.split('\n')) {
     if (line.startsWith('COMMIT:')) {
-      const [sha, date] = line.slice('COMMIT:'.length).split('\t');
-      current = { sha, date: new Date(date) };
+      if (current) latestCommits.push(current);
+      const [sha, date, ...subjectParts] = line.slice('COMMIT:'.length).split('\t');
+      current = { sha, date: new Date(date), subject: subjectParts.join('\t'), paths: [] };
       continue;
     }
-    if (!current || !line.startsWith('content/projects/')) continue;
-    historyRecords.push({ ...current, path: line.trim() });
+    if (current && line.startsWith('content/projects/')) {
+      current.paths.push(line.trim());
+    }
   }
-
-  const addedLog = execFileSync('git', [
-    'log', '-n', '200', '--diff-filter=A', '--format=%H', '--name-only', '--', 'content/projects',
-  ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  let addedCommit = '';
-  for (const line of addedLog.split('\n')) {
-    if (/^[a-f0-9]{40}$/.test(line)) addedCommit = line;
-    else if (line.startsWith('content/projects/')) addedFiles.add(addedCommit + ':' + line.trim());
-  }
+  if (current) latestCommits.push(current);
 } catch {
-  // Em desenvolvimento sem histórico Git completo, o componente simplesmente não lista novidades.
+  // Sem histórico Git disponível, o slider não terá entradas.
 }
 
-const latestByContent = new Map<string, UpdateRecord>();
-for (const record of historyRecords) {
-  if (!contentByPath.has(record.path)) continue;
-  const isNewContent = addedFiles.has(record.sha + ':' + record.path);
-  // Toda alteração publicada em um capítulo/documento é relevante para o histórico.
-  const previous = latestByContent.get(record.path);
-  if (!previous || record.date > previous.date) latestByContent.set(record.path, record);
-}
-
-const recentUpdates = [...latestByContent.values()]
-  .sort((a, b) => b.date.getTime() - a.date.getTime())
-  .slice(0, 5)
-  .map((record) => {
-    const content = contentByPath.get(record.path)!;
-    const isNewContent = addedFiles.has(record.sha + ':' + record.path);
-    const title = content.kind === 'chapter'
-      ? (isNewContent ? 'Novo capítulo em ' : 'Capítulo atualizado em ') + content.projectTitle
-      : content.kind === 'supplement'
-        ? (isNewContent ? 'Novo complemento em ' : 'Complemento atualizado em ') + content.projectTitle
-        : (isNewContent ? 'Novo documento em ' : 'Documento atualizado em ') + content.projectTitle;
-    return {
-      ...content,
-      title,
-      date: record.date,
-      detail: content.title,
-      href: withBase(content.href),
-    };
-  });
+const recentUpdates = latestCommits.slice(0, 5).map((commit) => {
+  const changedContent = commit.paths
+    .map((path) => contentByPath.get(path))
+    .find((content) => content !== undefined);
+  const changedFiles = commit.paths.map((path) => path.split('/').pop()).filter(Boolean);
+  return {
+    projectTitle: changedContent?.projectTitle ?? 'Repositório',
+    title: commit.subject || 'Atualização do repositório',
+    detail: changedContent?.title ?? (changedFiles.length
+      ? changedFiles.slice(0, 2).join(', ')
+      : 'Ver arquivos e alterações do commit'),
+    date: commit.date,
+    href: changedContent ? withBase(changedContent.href)
+      : 'https://github.com/molinete-magico/molinete-magico.github.io/commit/' + commit.sha,
+  };
+});
 
 // Conta as tags utilizadas nos posts
 const tagCounts = new Map<string, number>();
