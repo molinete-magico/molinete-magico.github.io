@@ -77,7 +77,7 @@ type CommitRecord = {
 let recentUpdates: Array<{
   projectTitle: string;
   title: string;
-  detail: string;
+  kind: 'chapter' | 'supplement' | 'document';
   date: Date;
   href: string;
 }> = [];
@@ -219,23 +219,25 @@ const tags = [...tagCounts.entries()]
       <section class="widget updates-widget">
         <h2 class="widget-title">Novidades</h2>
         <div class="widget-body updates-widget-body">
-          <div class="updates-shortcut" data-updates-slider>
-            <div class="updates-shortcut-tile">
-              <div class="updates-slide-window" aria-live="polite" aria-atomic="true">
-                {recentUpdates.length > 0 ? recentUpdates.map((update, index) => (
-                  <a class:list={['updates-slide', { 'is-active': index === 0 }]} href={update.href} data-update-slide>
-                    {update.kind === 'chapter' ? 'Novo capítulo: ' : 'Atualização: '}{update.title}
-                  </a>
-                )) : (
-                  <span class="updates-slide is-active">Nenhuma novidade recente</span>
-                )}
-              </div>
-              <div class="updates-slider-controls">
-                <button type="button" class="updates-slide-arrow" data-update-prev aria-label="Novidade anterior" disabled={recentUpdates.length < 2}>‹</button>
-                <button type="button" class="updates-slide-arrow" data-update-next aria-label="Próxima novidade" disabled={recentUpdates.length < 2}>›</button>
-              </div>
+          {recentUpdates.length > 0 ? (
+            <div class="updates-list">
+              {recentUpdates.slice(0, 3).map((update, index) => (
+                <a class="update-entry" href={update.href}>
+                  <div class="update-entry-heading">
+                    <span class:list={['update-kind', { 'update-kind-chapter': update.kind === 'chapter' }]}>
+                      {update.kind === 'chapter' ? 'NOVO CAPÍTULO' : 'ATUALIZAÇÃO'}
+                    </span>
+                    <span class="update-index">{String(index + 1).padStart(2, '0')}</span>
+                  </div>
+                  <span class="update-entry-title">{update.title}</span>
+                  <span class="update-entry-project">{update.projectTitle}</span>
+                </a>
+              ))}
             </div>
-          </div>
+          ) : (
+            <p class="widget-muted updates-empty">Nenhuma novidade recente.</p>
+          )}
+          <a class="updates-more" href={withBase('/projetos')}>explorar projetos <span aria-hidden="true">→</span></a>
         </div>
       </section>
 
@@ -340,53 +342,47 @@ const tags = [...tagCounts.entries()]
   </div>
 
 <style>
-  .updates-widget-body { padding: 0.65rem; }
-  .updates-shortcut { width: 100%; }
-  .updates-shortcut-tile {
-    display: grid; width: 100%; min-height: 4rem; justify-items: center;
-    gap: 0.55rem; padding: 0.7rem; border: 1px solid var(--border-rest);
-    background: var(--bg-elevated); color: var(--text-primary);
+  .updates-widget-body { padding: 0.45rem 0.65rem 0.6rem; }
+  .updates-list { display: grid; }
+  .update-entry {
+    display: grid; gap: 0.28rem; min-width: 0; padding: 0.75rem 0.15rem;
+    border-bottom: 1px solid var(--border-rest); color: var(--text-primary);
+    text-decoration: none; transition: background-color 140ms ease, padding 140ms ease;
   }
-  .updates-slide-window {
-    display: grid; width: 100%; min-width: 0; min-height: 1.5rem;
-    align-content: center; justify-items: center; text-align: center;
+  .update-entry:first-child { padding-top: 0.35rem; }
+  .update-entry:last-child { border-bottom: 0; }
+  .update-entry:hover,
+  .update-entry:focus-visible {
+    padding-right: 0.4rem; padding-left: 0.4rem;
+    background: var(--bg-elevated);
   }
-  .updates-slide {
-    display: none; max-width: 100%; overflow: hidden; color: var(--text-primary);
-    font-size: 0.78rem; font-weight: 600; line-height: 1.35;
-    text-decoration: none; text-overflow: ellipsis; white-space: nowrap;
+  .update-entry:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+  .update-entry-heading { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .update-kind {
+    color: var(--text-secondary); font-size: 0.59rem; font-weight: 700;
+    letter-spacing: 0.075em; line-height: 1.3;
   }
-  .updates-slide.is-active { display: block; }
-  .updates-slide:hover,
-  .updates-slide:focus-visible { color: var(--accent); text-decoration: underline; text-underline-offset: 0.18em; }
-  .updates-slider-controls { display: flex; justify-content: center; gap: 0.35rem; }
-  .updates-slide-arrow {
-    display: grid; width: 1.65rem; height: 1.45rem; place-items: center;
-    padding: 0; border: 1px solid var(--border-rest); background: var(--bg);
-    color: var(--text-secondary); font-size: 1rem; line-height: 1; cursor: pointer;
+  .update-kind-chapter { color: var(--accent); }
+  .update-index { color: var(--text-muted, var(--text-secondary)); font-size: 0.62rem; font-variant-numeric: tabular-nums; }
+  .update-entry-title {
+    overflow-wrap: anywhere; color: var(--text-primary); font-size: 0.82rem;
+    font-weight: 650; line-height: 1.35;
   }
-  .updates-slide-arrow:hover:not(:disabled) { border-color: var(--border-hover); color: var(--accent); }
-  .updates-slide-arrow:disabled { opacity: 0.35; cursor: default; }
-  .updates-slide:focus-visible,
-  .updates-slide-arrow:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+  .update-entry-project { color: var(--text-secondary); font-size: 0.7rem; line-height: 1.3; }
+  .update-entry:hover .update-entry-title,
+  .update-entry:focus-visible .update-entry-title { color: var(--accent); }
+  .updates-more {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;
+    margin-top: 0.45rem; padding: 0.45rem 0.15rem 0.1rem;
+    border-top: 1px solid var(--border-rest); color: var(--text-secondary);
+    font-size: 0.68rem; text-decoration: none;
+  }
+  .updates-more:hover { color: var(--accent); }
+  .updates-empty { margin: 0.4rem 0 0.7rem; font-size: 0.75rem; }
 </style>
 >
 
 
-<script>
-  document.querySelectorAll('[data-updates-slider]').forEach((slider) => {
-    const slides = Array.from(slider.querySelectorAll('[data-update-slide]'));
-    const previous = slider.querySelector('[data-update-prev]');
-    const next = slider.querySelector('[data-update-next]');
-    if (slides.length < 2 || !previous || !next) return;
-    let active = 0;
-    const show = (index) => {
-      active = (index + slides.length) % slides.length;
-      slides.forEach((slide, i) => slide.classList.toggle('is-active', i === active));
-    };
-    previous.addEventListener('click', () => show(active - 1));
-    next.addEventListener('click', () => show(active + 1));
-  });
-</script>
+
 
 </BaseLayout>
