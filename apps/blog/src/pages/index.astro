@@ -1,6 +1,8 @@
 ---
 import { getCollection } from 'astro:content';
 import { execFileSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import EntryList from '../components/EntryList.astro';
 import { withBase } from '../lib/paths';
@@ -10,6 +12,8 @@ const posts = (await getCollection('posts'))
   .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 
 const recentPosts = posts.slice(0, 10);
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 // Últimas alterações relevantes dos projetos, obtidas do histórico Git.
 // Alterações pequenas são ignoradas; cada capítulo/documento ocupa só uma posição.
@@ -80,7 +84,7 @@ const addedFiles = new Set<string>();
 try {
   const log = execFileSync('git', [
     'log', '-n', '120', '--format=%x1e%H%x09%cI', '--numstat', '--', 'content/projects',
-  ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   let current: { sha: string; date: Date } | null = null;
   for (const line of log.split('\n')) {
     if (line.startsWith('\x1e')) {
@@ -101,7 +105,7 @@ try {
 
   const addedLog = execFileSync('git', [
     'log', '-n', '200', '--diff-filter=A', '--format=%H', '--name-only', '--', 'content/projects',
-  ], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   let addedCommit = '';
   for (const line of addedLog.split('\n')) {
     if (/^[a-f0-9]{40}$/.test(line)) addedCommit = line;
