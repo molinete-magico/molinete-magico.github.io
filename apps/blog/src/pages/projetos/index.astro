@@ -9,50 +9,87 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
 
 <BaseLayout
   title="Projetos"
-  description="Sistemas de RPG e histórias autorais, cada um com seu próprio espaço."
+  description="Uma biblioteca de sistemas de RPG, histórias e mundos em desenvolvimento."
   canonicalPath="/projetos"
 >
   <section class="container projects-page">
-    <header class="post-header">
-      <h1>Projetos</h1>
-      <p class="post-meta">
-        Sistemas de RPG e histórias autorais. Cada projeto reúne seus próprios textos e materiais.
-      </p>
+    <header class="projects-intro">
+      <p class="eyebrow">MOLINETE MÁGICO <span>/</span> ARQUIVO PESSOAL</p>
+      <div class="intro-heading">
+        <div>
+          <h1>Projetos<span class="title-period">.</span></h1>
+          <p class="intro-description">
+            Sistemas, histórias e mundos em construção. Cada ideia tem seu próprio espaço para crescer.
+          </p>
+        </div>
+        <p class="catalog-total" aria-label={`${projects.length} projetos publicados`}>
+          <span class="catalog-total-number">{String(projects.length).padStart(2, '0')}</span>
+          <span class="catalog-total-label">itens<br />no catálogo</span>
+        </p>
+      </div>
+      <div class="intro-rule"><span>CATÁLOGO DE PROJETOS</span><span>EDIÇÃO CONTÍNUA</span></div>
     </header>
 
     {projects.length > 0 ? (
       <>
-      <div class="project-search">
-        <label for="project-search-input">Buscar projetos</label>
-        <input id="project-search-input" type="search" placeholder="Nome, descrição ou tipo..." autocomplete="off" />
-        <p id="project-search-count" class="post-meta" aria-live="polite">{projects.length} projetos</p>
-      </div>
-      <ul class="project-grid" id="project-grid">
-        {projects.map((project) => (
-          <li class="project-card" data-search={`${project.data.title} ${project.data.description ?? ''} ${project.data.type === 'rpg' ? 'sistema de rpg rpg' : 'história narrativa'}`}>
-            <a
-              class:list={['project-card-link', { 'project-card-link--banner': Boolean(project.data.cover) }]}
-              href={withBase(`/projetos/${project.id}/`)}
-              style={project.data.cover ? `--project-banner: url("${withBase(project.data.cover)}"); --banner-position: ${project.data.bannerPosition ?? '50%'};` : undefined}
+        <section class="library-tools" aria-label="Ferramentas do catálogo">
+          <label class="search-field">
+            <span class="search-label">BUSCAR NO CATÁLOGO</span>
+            <span class="search-input-wrap">
+              <span class="search-symbol" aria-hidden="true">⌕</span>
+              <input id="project-search-input" type="search" placeholder="Nome, descrição ou tipo..." autocomplete="off" />
+              <kbd>/</kbd>
+            </span>
+          </label>
+          <div class="filter-group" role="group" aria-label="Filtrar projetos por categoria">
+            <button class="filter-button is-active" type="button" data-filter="all" aria-pressed="true">Todos <span>{projects.length}</span></button>
+            <button class="filter-button" type="button" data-filter="rpg" aria-pressed="false">RPGs</button>
+            <button class="filter-button" type="button" data-filter="story" aria-pressed="false">Histórias</button>
+          </div>
+        </section>
+
+        <div class="catalog-heading">
+          <h2>Biblioteca</h2>
+          <p id="project-search-count" aria-live="polite">{projects.length} {projects.length === 1 ? 'projeto encontrado' : 'projetos encontrados'}</p>
+        </div>
+
+        <ul class="project-grid" id="project-grid">
+          {projects.map((project, index) => (
+            <li
+              class:list={['project-card', { 'project-card--featured': index === 0 }]}
+              data-type={project.data.type}
+              data-search={`${project.data.title} ${project.data.description ?? ''} ${project.data.type === 'rpg' ? 'sistema de rpg rpg' : 'história narrativa'}`}
             >
-              <div class="project-card-body">
-                <p class="project-type">{project.data.type === 'rpg' ? 'Sistema de RPG' : 'História'}</p>
-                <h2>{project.data.title}</h2>
-                {project.data.description && <p class="project-description">{project.data.description}</p>}
-                <span class="project-open">Abrir projeto →</span>
-              </div>
-            </a>
-          </li>
-        ))}
-      </ul>
-      <p id="project-search-empty" class="projects-empty" hidden>Nenhum projeto corresponde à sua busca.</p>
+              <a class="project-card-link" href={withBase(`/projetos/${project.id}/`)}>
+                <div class="card-topline">
+                  <span class="card-index">Nº {String(index + 1).padStart(2, '0')}</span>
+                  <span class="card-type">{project.data.type === 'rpg' ? 'SISTEMA DE RPG' : 'NARRATIVA'}</span>
+                </div>
+                <div class="card-content">
+                  <h3>{project.data.title}</h3>
+                  {project.data.description && <p class="project-description">{project.data.description}</p>}
+                </div>
+                <div class="card-bottomline">
+                  <span>{index === 0 ? 'PROJETO EM DESTAQUE' : 'CONSULTAR PROJETO'}</span>
+                  <span class="card-arrow" aria-hidden="true">↗</span>
+                </div>
+                <span class="card-watermark" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p id="project-search-empty" class="projects-empty" hidden>Nenhum projeto corresponde a esses critérios. Experimente outra busca ou categoria.</p>
       </>
     ) : (
-      <div class="projects-empty">
-        <p class="empty-label">[ NENHUM PROJETO PUBLICADO ]</p>
+      <div class="projects-empty projects-empty--initial">
+        <p class="empty-label">[ CATÁLOGO VAZIO ]</p>
         <p>Quando você publicar um sistema de RPG ou uma história pelo Writer, ele aparecerá aqui.</p>
       </div>
     )}
+    <footer class="catalog-footer">
+      <span>FIM DO CATÁLOGO</span>
+      <span>FEITO PARA MUDAR</span>
+    </footer>
   </section>
 </BaseLayout>
 
@@ -61,63 +98,276 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
   const projectCards = Array.from(document.querySelectorAll<HTMLElement>('#project-grid .project-card'));
   const count = document.querySelector<HTMLElement>('#project-search-count');
   const empty = document.querySelector<HTMLElement>('#project-search-empty');
+  const filterButtons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+  let activeFilter = 'all';
 
-  const normalize = (value: string) => value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('pt-BR');
+  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 
-  searchInput?.addEventListener('input', () => {
-    const query = normalize(searchInput.value.trim());
+  const updateProjects = () => {
+    const query = normalize(searchInput?.value.trim() ?? '');
     let visible = 0;
+
     for (const card of projectCards) {
-      const matches = normalize(card.dataset.search ?? '').includes(query);
+      const matchesText = normalize(card.dataset.search ?? '').includes(query);
+      const matchesType = activeFilter === 'all' || card.dataset.type === activeFilter;
+      const matches = matchesText && matchesType;
       card.hidden = !matches;
       if (matches) visible++;
     }
-    if (count) count.textContent = visible === 1 ? '1 projeto' : `${visible} projetos`;
+
+    if (count) count.textContent = visible === 1 ? '1 projeto encontrado' : `${visible} projetos encontrados`;
     if (empty) empty.hidden = visible !== 0;
+  };
+
+  searchInput?.addEventListener('input', updateProjects);
+
+  filterButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      activeFilter = button.dataset.filter ?? 'all';
+      filterButtons.forEach((item) => {
+        const active = item === button;
+        item.classList.toggle('is-active', active);
+        item.setAttribute('aria-pressed', String(active));
+      });
+      updateProjects();
+    });
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName ?? '')) return;
+    event.preventDefault();
+    searchInput?.focus();
   });
 </script>
 
 <style>
   .projects-page {
+    padding-top: var(--space-5);
     padding-bottom: var(--space-8);
   }
 
-  .project-search {
-    display: grid;
-    gap: var(--space-2);
-    margin-top: var(--space-6);
-    max-width: 42rem;
+  .projects-intro {
+    padding: var(--space-5) 0 0;
   }
 
-  .project-search label {
-    color: var(--text-secondary);
+  .eyebrow,
+  .intro-rule,
+  .catalog-total-label,
+  .search-label,
+  .card-topline,
+  .card-bottomline,
+  .catalog-footer,
+  .empty-label {
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
   }
 
-  .project-search input {
-    width: 100%;
+  .eyebrow {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+  }
+
+  .eyebrow span,
+  .title-period {
+    color: var(--accent);
+  }
+
+  .intro-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-5) 0 var(--space-6);
+  }
+
+  .intro-heading h1 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: clamp(2.8rem, 8vw, 5.4rem);
+    font-weight: 750;
+    letter-spacing: -0.075em;
+    line-height: 0.98;
+  }
+
+  .intro-description {
+    max-width: 34rem;
+    margin: var(--space-4) 0 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .catalog-total {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0 0 0.35rem var(--space-4);
+    border-left: 1px solid var(--border-rest);
+  }
+
+  .catalog-total-number {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 2.25rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .catalog-total-label {
+    color: var(--text-muted);
+    font-size: 0.58rem;
+    line-height: 1.5;
+  }
+
+  .intro-rule {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0.65rem 0;
+    border-top: 1px solid var(--border-rest);
+    border-bottom: 1px solid var(--border-rest);
+    color: var(--text-muted);
+    font-size: 0.61rem;
+  }
+
+  .library-tools {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-5);
+    padding: var(--space-5) 0;
+  }
+
+  .search-field {
+    display: grid;
+    flex: 1;
+    gap: 0.45rem;
+    max-width: 30rem;
+  }
+
+  .search-label {
+    color: var(--text-muted);
+    font-size: 0.61rem;
+  }
+
+  .search-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
     min-height: 2.8rem;
-    padding: var(--space-3);
+    padding: 0 var(--space-3);
+    border: 1px solid var(--border-rest);
+    background: var(--bg-elevated);
+  }
+
+  .search-input-wrap:focus-within {
+    border-color: var(--border-focus);
+  }
+
+  .search-symbol {
+    color: var(--text-muted);
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .search-input-wrap input {
+    width: 100%;
+    min-width: 0;
+    padding: 0.65rem 0;
+    border: 0;
+    outline: 0;
+    color: var(--text-primary);
+    background: transparent;
+    font: inherit;
+    font-size: 0.88rem;
+  }
+
+  .search-input-wrap kbd {
+    flex: 0 0 auto;
+    padding: 0.1rem 0.35rem;
+    border: 1px solid var(--border-rest);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .filter-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.7rem;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    background: transparent;
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+  }
+
+  .filter-button:hover,
+  .filter-button.is-active {
+    border-color: var(--border-rest);
     color: var(--text-primary);
     background: var(--bg-elevated);
-    border: 1px solid var(--border-rest);
-    border-radius: 0;
-    font: inherit;
   }
 
-  .project-search input:focus-visible {
+  .filter-button.is-active {
+    border-bottom-color: var(--accent);
+  }
+
+  .filter-button span {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+
+  .filter-button:focus-visible,
+  .project-card-link:focus-visible {
     outline: 2px solid var(--border-focus);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 
-  .project-search .post-meta { margin: 0; }
+  .catalog-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin: var(--space-2) 0 var(--space-3);
+  }
+
+  .catalog-heading h2 {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 1.05rem;
+  }
+
+  .catalog-heading p {
+    margin: 0;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
 
   .project-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-4);
-    margin: var(--space-6) 0 0;
+    gap: var(--space-3);
+    margin: 0;
     padding: 0;
     list-style: none;
   }
@@ -126,137 +376,230 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
     min-width: 0;
     border: 1px solid var(--border-rest);
     background: var(--bg-elevated);
-    transition: border-color 120ms ease, background-color 120ms ease;
+    transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
   }
 
   .project-card:hover {
+    transform: translateY(-2px);
     border-color: var(--border-hover);
     background: var(--bg-soft);
   }
 
+  .project-card[hidden] {
+    display: none;
+  }
+
+  .project-card--featured {
+    grid-column: 1 / -1;
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--border-rest));
+    background:
+      linear-gradient(115deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 58%),
+      var(--bg-elevated);
+  }
+
   .project-card-link {
     position: relative;
+    isolation: isolate;
     display: flex;
-    min-height: 10rem;
+    min-height: 13.5rem;
     height: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    padding: var(--space-4);
     color: inherit;
     text-decoration: none;
-    overflow: hidden;
   }
 
-  .project-card-link--banner::before {
-    position: absolute;
-    z-index: 0;
-    top: 0;
-    right: 0;
-    width: min(46%, 24rem);
-    height: 100%;
-    content: "";
-    background-image: var(--project-banner);
-    background-size: cover;
-    background-position: center var(--banner-position, 50%);
-    background-repeat: no-repeat;
-    opacity: 0.52;
-    -webkit-mask-image: linear-gradient(to left, black 0%, black 42%, transparent 100%);
-    mask-image: linear-gradient(to left, black 0%, black 42%, transparent 100%);
-    pointer-events: none;
+  .project-card--featured .project-card-link {
+    min-height: 17rem;
+    padding: var(--space-5);
   }
 
-  .project-card-link:hover {
-    color: inherit;
-    text-shadow: none;
-  }
-
-  .project-cover {
-    aspect-ratio: 16 / 7;
-    overflow: hidden;
-    border-bottom: 1px solid var(--border-rest);
-    background: var(--bg-soft);
-  }
-
-  .project-cover img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center 50%;
-  }
-
-  .project-card-body {
+  .card-topline,
+  .card-bottomline {
     position: relative;
     z-index: 1;
     display: flex;
-    flex: 1;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: var(--space-4);
-  }
-
-  .project-card-link--banner .project-card-body {
-    padding-right: min(34%, 15rem);
-  }
-
-  .project-type,
-  .empty-label {
-    margin: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
     color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    font-size: 0.61rem;
   }
 
-  .project-card h2 {
-    margin: var(--space-2) 0 0;
+  .project-card--featured .card-type {
+    color: var(--accent);
+  }
+
+  .card-index {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card-content {
+    position: relative;
+    z-index: 1;
+    max-width: 38rem;
+    margin: auto 0;
+    padding: var(--space-5) 0;
+  }
+
+  .card-content h3 {
+    margin: 0;
     padding: 0;
     border: 0;
-    font-size: var(--fs-h3);
+    font-size: clamp(1.25rem, 3vw, 1.8rem);
+    letter-spacing: -0.035em;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .project-card--featured .card-content h3 {
+    max-width: 32rem;
+    font-size: clamp(1.8rem, 5vw, 3.25rem);
+    letter-spacing: -0.06em;
   }
 
   .project-description {
-    margin: var(--space-3) 0 var(--space-4);
-    color: var(--text-muted);
-    font-size: 0.88rem;
-    line-height: 1.55;
+    max-width: 34rem;
+    margin: var(--space-3) 0 0;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    line-height: 1.6;
   }
 
-  .project-open {
-    margin-top: auto;
+  .card-bottomline {
     padding-top: var(--space-3);
-    color: var(--text-secondary);
+    border-top: 1px solid var(--border-rest);
+  }
+
+  .card-arrow {
+    color: var(--accent);
+    font-size: 1rem;
+    transition: transform 150ms ease;
+  }
+
+  .project-card-link:hover .card-arrow {
+    transform: translate(2px, -2px);
+  }
+
+  .card-watermark {
+    position: absolute;
+    z-index: 0;
+    right: 0.05em;
+    bottom: -0.3em;
+    color: color-mix(in srgb, var(--text-primary) 4%, transparent);
     font-family: var(--font-mono);
-    font-size: 0.78rem;
+    font-size: clamp(8rem, 22vw, 15rem);
+    font-weight: 700;
+    letter-spacing: -0.12em;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .project-card--featured .card-watermark {
+    right: 0.12em;
+    bottom: -0.28em;
+    color: color-mix(in srgb, var(--accent) 10%, transparent);
+    font-size: clamp(12rem, 34vw, 23rem);
   }
 
   .projects-empty {
-    margin-top: var(--space-6);
-    padding: var(--space-6);
+    margin: var(--space-5) 0;
+    padding: var(--space-5);
     border: 1px dashed var(--border-rest);
     color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  .projects-empty--initial {
+    margin-top: var(--space-6);
+    padding: var(--space-6);
+  }
+
+  .empty-label {
+    color: var(--text-secondary);
+    font-size: 0.68rem;
   }
 
   .projects-empty p:last-child {
     margin-bottom: 0;
   }
 
-  @media (max-width: 650px) {
+  .catalog-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: var(--space-6);
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--border-rest);
+    color: var(--text-muted);
+    font-size: 0.59rem;
+  }
+
+  @media (max-width: 700px) {
+    .intro-heading {
+      align-items: flex-start;
+    }
+
+    .catalog-total {
+      gap: 0.4rem;
+      padding-left: var(--space-2);
+    }
+
+    .catalog-total-number {
+      font-size: 1.7rem;
+    }
+
+    .catalog-total-label {
+      font-size: 0.5rem;
+    }
+
+    .library-tools {
+      align-items: stretch;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .search-field {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 560px) {
     .project-grid {
       grid-template-columns: 1fr;
     }
 
-    .project-card-link--banner .project-card-body {
-      padding-right: var(--space-4);
+    .project-card--featured {
+      grid-column: auto;
     }
 
-    .project-card-link--banner::before {
-      width: 62%;
-      opacity: 0.3;
+    .project-card-link,
+    .project-card--featured .project-card-link {
+      min-height: 14rem;
+      padding: var(--space-4);
+    }
+
+    .project-card--featured .card-content h3 {
+      font-size: 2rem;
+    }
+
+    .intro-rule,
+    .catalog-footer {
+      font-size: 0.52rem;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .project-card {
+    .project-card,
+    .filter-button,
+    .card-arrow {
       transition: none;
+    }
+
+    .project-card:hover {
+      transform: none;
     }
   }
 </style>
