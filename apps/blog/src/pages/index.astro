@@ -75,51 +75,104 @@ function projectIdPrefix(projectId: string, group: string) {
 type CommitRecord = {
   sha: string;
   date: Date;
-  subject: string;
-  paths: string[];
+  paths: Array<{ path: string; additions: number; deletions: number }>;
 };
 
-let latestCommits: CommitRecord[] = [];
+let recentUpdates: Array<{
+  projectTitle: string;
+  title: string;
+  detail: string;
+  date: Date;
+  href: string;
+}> = [];
+
 try {
-  // Lê os cinco commits mais recentes do repositório inteiro, não apenas
-  // commits que tocaram content/projects.
+  // Percorre o histórico dos arquivos de projeto, não os commits gerais do repositório.
+  // A primeira alteração relevante de cada documento é a mais recente; mudanças pequenas
+  // não escondem a última atualização substancial daquele mesmo documento.
   const log = execFileSync('git', [
-    'log', '-n', '5', '--format=COMMIT:%H%x09%cI%x09%s', '--name-only',
+    'log', '-n', '250', '--no-merges', '--format=COMMIT:%H%x09%cI',
+    '--numstat', '--', 'content/projects',
   ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 
-  let current: CommitRecord | null = null;
-  for (const line of log.split('\n')) {
-    if (line.startsWith('COMMIT:')) {
-      if (current) latestCommits.push(current);
-      const [sha, date, ...subjectParts] = line.slice('COMMIT:'.length).split('\t');
-      current = { sha, date: new Date(date), subject: subjectParts.join('\t'), paths: [] };
-      continue;
-    }
-    if (current && line.startsWith('content/projects/')) {
-      current.paths.push(line.trim());
+  const additionsLog = execFileSync('git', [
+    'log', '-n', '250', '--no-merges', '--diff-filter=A',
+    '--format=ADD:%H', '--name-only', '--', 'content/projects',
+  ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+
+  const newlyAdded = new Map<string, Set<string>>();
+  let addedCommit = '';
+  for (const line of additionsLog.split('\n')) {
+    if (line.startsWith('ADD:')) {
+      addedCommit = line.slice(4);
+      if (!newlyAdded.has(addedCommit)) newlyAdded.set(addedCommit, new Set());
+    } else if (addedCommit && line.startsWith('content/projects/')) {
+      newlyAdded.get(addedCommit)?.add(line.trim());
     }
   }
-  if (current) latestCommits.push(current);
+
+  const latestRelevantByPath = new Map<string, {
+    sha: string;
+    date: Date;
+    additions: number;
+    deletions: number;
+  }>();
+  let current: CommitRecord | null = null;
+
+  const considerCommit = (commit: CommitRecord | null) => {
+    if (!commit) return;
+    for (const changed of commit.paths) {
+      if (!changed.path.endsWith('.md') || latestRelevantByPath.has(changed.path)) continue;
+      const isNewDocument = newlyAdded.get(commit.sha)?.has(changed.path) ?? false;
+      if (!isNewDocument && changed.additions + changed.deletions < 12) continue;
+      latestRelevantByPath.set(changed.path, {
+        sha: commit.sha,
+        date: commit.date,
+        additions: changed.additions,
+        deletions: changed.deletions,
+      });
+    }
+  };
+
+  for (const line of log.split('\n')) {
+    if (line.startsWith('COMMIT:')) {
+      considerCommit(current);
+      const [sha, date] = line.slice('COMMIT:'.length).split('\t');
+      current = { sha, date: new Date(date), paths: [] };
+      continue;
+    }
+    if (!current || !line.includes('\t')) continue;
+    const [added, removed, ...pathParts] = line.split('\t');
+    const path = pathParts.join('\t');
+    if (!path.startsWith('content/projects/')) continue;
+    current.paths.push({
+      path,
+      additions: added === '-' ? 0 : Number(added) || 0,
+      deletions: removed === '-' ? 0 : Number(removed) || 0,
+    });
+  }
+  considerCommit(current);
+
+  recentUpdates = [...latestRelevantByPath.entries()]
+    .map(([path, change]) => {
+      const content = contentByPath.get(path);
+      if (!content) return null;
+      return {
+        projectTitle: content.projectTitle,
+        title: content.title,
+        detail: content.kind === 'chapter' ? 'Capítulo atualizado'
+          : content.kind === 'supplement' ? 'Suplemento atualizado'
+          : 'Documento do projeto atualizado',
+        date: change.date,
+        href: withBase(content.href),
+      };
+    })
+    .filter((update): update is NonNullable<typeof update> => update !== null)
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 5);
 } catch {
   // Sem histórico Git disponível, o slider não terá entradas.
 }
-
-const recentUpdates = latestCommits.slice(0, 5).map((commit) => {
-  const changedContent = commit.paths
-    .map((path) => contentByPath.get(path))
-    .find((content) => content !== undefined);
-  const changedFiles = commit.paths.map((path) => path.split('/').pop()).filter(Boolean);
-  return {
-    projectTitle: changedContent?.projectTitle ?? 'Repositório',
-    title: commit.subject || 'Atualização do repositório',
-    detail: changedContent?.title ?? (changedFiles.length
-      ? changedFiles.slice(0, 2).join(', ')
-      : 'Ver arquivos e alterações do commit'),
-    date: commit.date,
-    href: changedContent ? withBase(changedContent.href)
-      : 'https://github.com/molinete-magico/molinete-magico.github.io/commit/' + commit.sha,
-  };
-});
 
 // Conta as tags utilizadas nos posts
 const tagCounts = new Map<string, number>();
@@ -349,49 +402,49 @@ const tags = [...tagCounts.entries()]
   </div>
 
 <style>
-  .updates-widget { margin-bottom: var(--space-6); }
-  .updates-body { padding: 0.8rem; }
-  .updates-slides { position: relative; min-height: 7.5rem; }
-  .updates-slide { display: none; min-height: 7.5rem; color: inherit; text-decoration: none; }
+  .updates-widget { margin-bottom: var(--space-4); }
+  .updates-body { padding: 0.6rem 0.75rem; }
+  .updates-slides { position: relative; min-height: 5.2rem; }
+  .updates-slide { display: none; min-height: 5.2rem; color: inherit; text-decoration: none; }
   .updates-slide.is-active {
     display: flex; flex-direction: column; align-items: flex-start;
     animation: updates-enter 180ms ease both;
   }
   .updates-project {
     margin: 0; color: var(--text-muted); font-family: var(--font-mono);
-    font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase;
+    font-size: 0.64rem; letter-spacing: 0.06em; text-transform: uppercase;
   }
   .updates-title {
     margin: 0.35rem 0 0; color: var(--text-primary);
-    font-size: clamp(1rem, 1.5vw, 1.2rem); line-height: 1.35; text-shadow: none;
+    font-size: clamp(0.92rem, 1.25vw, 1.05rem); line-height: 1.3; text-shadow: none;
   }
-  .updates-detail { margin: 0.35rem 0 0; color: var(--text-muted); font-size: 0.84rem; }
+  .updates-detail { margin: 0.2rem 0 0; color: var(--text-muted); font-size: 0.76rem; }
   .updates-meta {
     display: flex; width: 100%; justify-content: space-between; gap: 1rem;
-    margin-top: auto; padding-top: 0.85rem; color: var(--text-secondary);
-    font-family: var(--font-mono); font-size: 0.72rem;
+    margin-top: auto; padding-top: 0.45rem; color: var(--text-secondary);
+    font-family: var(--font-mono); font-size: 0.66rem;
   }
   .updates-slide:hover .updates-meta span,
   .updates-slide:focus-visible .updates-meta span {
     text-decoration: underline; text-underline-offset: 0.2em;
   }
   .updates-controls {
-    display: flex; align-items: center; justify-content: flex-end; gap: 0.65rem;
-    margin-top: 0.7rem; padding-top: 0.55rem; border-top: 1px solid var(--border-rest);
+    display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem;
+    margin-top: 0.45rem; padding-top: 0.4rem; border-top: 1px solid var(--border-rest);
   }
   .updates-arrow, .updates-dot {
     display: inline-flex; align-items: center; justify-content: center;
     border: 1px solid var(--border-rest); border-radius: 0;
     color: var(--text-secondary); background: transparent; cursor: pointer;
   }
-  .updates-arrow { width: 1.8rem; height: 1.8rem; font-size: 0.9rem; }
+  .updates-arrow { width: 1.5rem; height: 1.5rem; font-size: 0.8rem; }
   .updates-dot {
     width: 0.48rem; height: 0.48rem; padding: 0; border-radius: 50%; opacity: 0.5;
   }
   .updates-dot.is-active { opacity: 1; background: var(--accent); border-color: var(--accent); }
   .updates-arrow:hover, .updates-dot:hover { border-color: var(--border-hover); color: var(--text-primary); }
-  .updates-pagination { display: flex; align-items: center; gap: 0.45rem; }
-  .updates-counter { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+  .updates-pagination { display: flex; align-items: center; gap: 0.35rem; }
+  .updates-counter { color: var(--text-muted); font-family: var(--font-mono); font-size: 0.64rem; font-variant-numeric: tabular-nums; }
   .updates-arrow:focus-visible, .updates-dot:focus-visible, .updates-slide:focus-visible {
     outline: 2px solid var(--border-focus); outline-offset: 3px;
   }
