@@ -76,31 +76,24 @@ type UpdateRecord = {
   sha: string;
   date: Date;
   path: string;
-  additions: number;
-  deletions: number;
 };
 let historyRecords: UpdateRecord[] = [];
 const addedFiles = new Set<string>();
 try {
+  // --name-only evita depender do formato variável do --numstat.
+  // O marcador explícito mantém cada commit separado durante a leitura.
   const log = execFileSync('git', [
-    'log', '-n', '120', '--format=%x1e%H%x09%cI', '--numstat', '--', 'content/projects',
+    'log', '-n', '200', '--format=COMMIT:%H%x09%cI', '--name-only', '--', 'content/projects',
   ], { cwd: repositoryRoot, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   let current: { sha: string; date: Date } | null = null;
   for (const line of log.split('\n')) {
-    if (line.startsWith('\x1e')) {
-      const [sha, date] = line.slice(1).split('\t');
+    if (line.startsWith('COMMIT:')) {
+      const [sha, date] = line.slice('COMMIT:'.length).split('\t');
       current = { sha, date: new Date(date) };
       continue;
     }
-    if (!current || !line.includes('\t')) continue;
-    const [additions, deletions, path] = line.split('\t');
-    if (!path || additions === '-' || deletions === '-') continue;
-    historyRecords.push({
-      ...current,
-      path,
-      additions: Number(additions),
-      deletions: Number(deletions),
-    });
+    if (!current || !line.startsWith('content/projects/')) continue;
+    historyRecords.push({ ...current, path: line.trim() });
   }
 
   const addedLog = execFileSync('git', [
@@ -109,7 +102,7 @@ try {
   let addedCommit = '';
   for (const line of addedLog.split('\n')) {
     if (/^[a-f0-9]{40}$/.test(line)) addedCommit = line;
-    else if (line.startsWith('content/projects/')) addedFiles.add(addedCommit + ':' + line);
+    else if (line.startsWith('content/projects/')) addedFiles.add(addedCommit + ':' + line.trim());
   }
 } catch {
   // Em desenvolvimento sem histórico Git completo, o componente simplesmente não lista novidades.
@@ -119,8 +112,7 @@ const latestByContent = new Map<string, UpdateRecord>();
 for (const record of historyRecords) {
   if (!contentByPath.has(record.path)) continue;
   const isNewContent = addedFiles.has(record.sha + ':' + record.path);
-  const changedLines = record.additions + record.deletions;
-  if (!isNewContent && changedLines < 12) continue;
+  // Toda alteração publicada em um capítulo/documento é relevante para o histórico.
   const previous = latestByContent.get(record.path);
   if (!previous || record.date > previous.date) latestByContent.set(record.path, record);
 }
