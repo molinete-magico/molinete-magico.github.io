@@ -92,6 +92,8 @@ export interface ProjectDocumentMeta {
   title: string;
   published: boolean;
   order: number;
+  /** URL de um vídeo do YouTube sugerido como trilha sonora da leitura. */
+  youtubeMusic?: string;
   [key: string]: unknown;
 }
 
