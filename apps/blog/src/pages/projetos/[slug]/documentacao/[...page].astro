@@ -151,21 +151,6 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
             <div class="reading-music-player" data-player-host></div>
           </details>
         )}
-        {musicVideoId && (
-          <aside class="reading-music" aria-label="Sugestão de música para acompanhar a leitura">
-            <p class="reading-music-label">Trilha sonora sugerida</p>
-            <div class="reading-music-player">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${musicVideoId}`}
-                title="Música sugerida para acompanhar a leitura"
-                loading="lazy"
-                referrerpolicy="strict-origin-when-cross-origin"
-                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-              ></iframe>
-            </div>
-          </aside>
-        )}
         <div class="prose">
           <Content />
         </div>
