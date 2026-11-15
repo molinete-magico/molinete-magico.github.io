@@ -9,13 +9,13 @@ const projects = (await getCollection('projects', ({ data }) => data.published))
 const groups = [
   {
     key: 'rpg',
-    label: 'Sistemas e jogos',
+    label: 'Sistemas',
     description: 'Sistemas',
     items: projects.filter((project) => project.data.type === 'rpg'),
   },
   {
     key: 'story',
-    label: 'Narrativas e outros mundos',
+    label: 'Escrita',
     description: 'Escrita',
     items: projects.filter((project) => project.data.type === 'story'),
   },
