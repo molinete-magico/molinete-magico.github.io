@@ -130,9 +130,6 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
       </nav>
 
       <div class="document-content post-body">
-        <div class="prose">
-          <Content />
-        </div>
         {musicVideoId && (
           <aside class="reading-music" aria-label="Sugestão de música para acompanhar a leitura">
             <p class="reading-music-label">Trilha sonora sugerida</p>
@@ -148,6 +145,9 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
             </div>
           </aside>
         )}
+        <div class="prose">
+          <Content />
+        </div>
         <nav class="document-footer" aria-label="Navegação entre páginas">
           {previousPage ? <a href={pageUrl(previousPage.id)}>← {previousPage.data.title}</a> : <span />}
           {nextPage ? <a href={pageUrl(nextPage.id)}>{nextPage.data.title} →</a> : <a href={withBase(`/projetos/${project.id}/`)}>Página do projeto →</a>}
