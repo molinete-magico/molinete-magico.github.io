@@ -26,12 +26,12 @@ const groups = [
   canonicalPath="/projetos"
 >
   <section class="container projects-page">
-    <header class="container post-header projects-header">
+    <section class="container post-header">
       <h1>Projetos</h1>
-      <p class="projects-intro">
+      <p class="post-meta">
         Sistemas, histórias e mundos em construção.
       </p>
-    </header>
+    </section>
 
     {projects.length > 0 ? (
       <>
@@ -121,7 +121,7 @@ const groups = [
 
 <style>
   .projects-page {
-    padding-top: var(--space-6);
+    padding-top: 0;
     padding-bottom: var(--space-8);
   }
 
@@ -398,14 +398,6 @@ const groups = [
   }
 
   @media (max-width: 650px) {
-    .projects-page {
-      padding-top: var(--space-4);
-    }
-
-    .projects-header {
-      padding: var(--space-4) 0 var(--space-5);
-    }
-
     .project-tools {
       grid-template-columns: 1fr;
     }
