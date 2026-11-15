@@ -119,7 +119,7 @@ const groups = [
   const empty = document.querySelector<HTMLElement>('#project-search-empty');
 
   const normalize = (value: string) =>
-    value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('pt-BR');
+    value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('pt-BR');
 
   searchInput?.addEventListener('input', () => {
     const query = normalize(searchInput.value.trim());
