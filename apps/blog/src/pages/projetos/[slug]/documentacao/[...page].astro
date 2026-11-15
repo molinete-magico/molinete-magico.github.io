@@ -220,21 +220,24 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
     control.dataset.connected = 'true';
 
     let player: YouTubePlayer | null = null;
+    let initializing = false;
     control.addEventListener('input', async () => {
       const volume = Number(control.value);
       if (output) output.value = volume + '%';
 
       const api = await loadYouTubeApi();
-      if (!player) {
+      if (!player && !initializing) {
+        initializing = true;
         player = new api.Player(playerId, {
           events: {
             onReady: (event) => {
               player = event.target;
-              player.setVolume(volume);
+              initializing = false;
+              player.setVolume(Number(control.value));
             },
           },
         });
-      } else {
+      } else if (player) {
         player.setVolume(volume);
       }
     });
