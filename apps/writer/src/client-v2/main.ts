@@ -770,6 +770,10 @@ function currentPostMeta(): PostMeta {
 async function saveCurrent(): Promise<boolean> {
   if (state.saving) { status('Salvamento em andamento…', 'warn'); return false; }
   if (!state.kind) return false;
+  if ((state.kind === 'chapter' || state.kind === 'supplement') && ($('#document-youtube-music') as HTMLInputElement).value.trim() && !youtubeVideoId(($('#document-youtube-music') as HTMLInputElement).value)) {
+    status('Informe um link válido de vídeo do YouTube ou deixe o campo vazio.', 'error');
+    return false;
+  }
   const saveRevision = state.editRevision;
   state.saving = true; status('Salvando…', 'warn');
   try {
