@@ -72,6 +72,7 @@ const projectChapters = defineCollection({
     title: z.string(),
     order: z.number().default(0),
     published: z.boolean().default(true),
+    youtubeMusic: z.string().url().optional(),
   }),
 });
 
@@ -86,6 +87,7 @@ const projectSupplements = defineCollection({
     title: z.string(),
     order: z.number().default(0),
     published: z.boolean().default(true),
+    youtubeMusic: z.string().url().optional(),
   }),
 });
 
