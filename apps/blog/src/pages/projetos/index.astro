@@ -26,7 +26,7 @@ const groups = [
   canonicalPath="/projetos"
 >
   <section class="container projects-page">
-    <header class="projects-header">
+    <header class="container post-header projects-header">
       <h1>Projetos</h1>
       <p class="projects-intro">
         Sistemas, histórias e mundos em construção.
@@ -125,21 +125,7 @@ const groups = [
     padding-bottom: var(--space-8);
   }
 
-  .projects-header {
-    position: relative;
-    padding: var(--space-5) 0 var(--space-6);
-    border-bottom: 1px solid var(--border-strong);
-  }
 
-  .projects-header::after {
-    display: block;
-    width: 3.25rem;
-    height: 2px;
-    margin-top: var(--space-5);
-    content: "";
-    background: var(--accent);
-    opacity: 0.75;
-  }
 
   .projects-kicker,
   .stat-label,
@@ -185,13 +171,6 @@ const groups = [
     color: var(--accent);
   }
 
-  .projects-intro {
-    max-width: 38rem;
-    margin-top: var(--space-3);
-    color: var(--text-secondary);
-    font-size: 0.92rem;
-    line-height: 1.65;
-  }
 
   .project-tools {
     display: grid;
