@@ -134,12 +134,18 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
             <p class="reading-music-label">Trilha sonora sugerida</p>
             <div class="reading-music-player">
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${musicVideoId}`}
+                id="reading-music-desktop-player"
+                src={`https://www.youtube-nocookie.com/embed/${musicVideoId}?enablejsapi=1`}
                 title={`Trilha sonora sugerida para ${entry.data.title}`}
                 loading="lazy"
                 allow="encrypted-media; picture-in-picture"
               ></iframe>
             </div>
+            <label class="reading-music-volume">
+              <span>Volume</span>
+              <input type="range" min="0" max="100" step="1" value="50" aria-label="Volume da trilha sonora" data-volume-control />
+              <output>50%</output>
+            </label>
           </aside>
         )}
       </aside>
@@ -149,6 +155,11 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
           <details class="reading-music-mobile" data-video-id={musicVideoId}>
             <summary>▶ Trilha sonora sugerida</summary>
             <div class="reading-music-player" data-player-host></div>
+            <label class="reading-music-volume">
+              <span>Volume</span>
+              <input type="range" min="0" max="100" step="1" value="50" aria-label="Volume da trilha sonora" data-volume-control />
+              <output>50%</output>
+            </label>
           </details>
         )}
         <div class="prose">
@@ -164,6 +175,76 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
 </BaseLayout>
 
 <script>
+  type YouTubePlayer = {
+    setVolume: (volume: number) => void;
+    getVolume: () => number;
+  };
+
+  type YouTubeApi = {
+    Player: new (element: string, options: {
+      events: { onReady: (event: { target: YouTubePlayer }) => void };
+    }) => YouTubePlayer;
+  };
+
+  declare global {
+    interface Window {
+      YT?: YouTubeApi;
+      onYouTubeIframeAPIReady?: () => void;
+    }
+  }
+
+  let youtubeApiPromise: Promise<YouTubeApi> | null = null;
+
+  const loadYouTubeApi = () => {
+    if (window.YT?.Player) return Promise.resolve(window.YT);
+    if (youtubeApiPromise) return youtubeApiPromise;
+
+    youtubeApiPromise = new Promise<YouTubeApi>((resolve) => {
+      const previousCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        previousCallback?.();
+        if (window.YT) resolve(window.YT);
+      };
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      document.head.append(script);
+    });
+    return youtubeApiPromise;
+  };
+
+  const connectVolumeControl = (container: ParentNode, playerId: string) => {
+    const control = container.querySelector<HTMLInputElement>('[data-volume-control]');
+    const output = container.querySelector<HTMLOutputElement>('output');
+    if (!control || control.dataset.connected === 'true') return;
+    control.dataset.connected = 'true';
+
+    let player: YouTubePlayer | null = null;
+    control.addEventListener('input', async () => {
+      const volume = Number(control.value);
+      if (output) output.value = volume + '%';
+
+      const api = await loadYouTubeApi();
+      if (!player) {
+        player = new api.Player(playerId, {
+          events: {
+            onReady: (event) => {
+              player = event.target;
+              player.setVolume(volume);
+            },
+          },
+        });
+      } else {
+        player.setVolume(volume);
+      }
+    });
+  };
+
+  const desktopFrame = document.getElementById('reading-music-desktop-player');
+  if (desktopFrame) {
+    connectVolumeControl(desktopFrame.closest('.reading-music')!, 'reading-music-desktop-player');
+  }
+
   document.querySelectorAll<HTMLDetailsElement>('.reading-music-mobile[data-video-id]').forEach((details) => {
     details.addEventListener('toggle', () => {
       if (!details.open) return;
@@ -172,11 +253,13 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
       const videoId = details.dataset.videoId;
       if (!videoId) return;
       const frame = document.createElement('iframe');
-      frame.src = 'https://www.youtube-nocookie.com/embed/' + videoId;
+      frame.id = 'reading-music-mobile-player';
+      frame.src = 'https://www.youtube-nocookie.com/embed/' + videoId + '?enablejsapi=1';
       frame.title = 'Trilha sonora sugerida para acompanhar a leitura';
       frame.loading = 'lazy';
       frame.allow = 'encrypted-media; picture-in-picture';
       host.append(frame);
+      connectVolumeControl(details, frame.id);
     });
   });
 </script>
@@ -261,6 +344,26 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
     width: 100%;
     height: 100%;
     border: 0;
+  }
+  .reading-music-volume {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+  }
+  .reading-music-volume input {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .reading-music-volume output {
+    min-width: 2.5em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
   }
   .reading-music-mobile { display: none; }
   .reading-music-mobile summary {
