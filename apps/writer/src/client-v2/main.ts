@@ -224,6 +224,7 @@ function persistRecovery() {
       'project-banner-position': ($('#project-banner-position') as HTMLInputElement | null)?.value,
       'document-order': ($('#document-order') as HTMLInputElement | null)?.value,
       'document-published': ($('#document-published') as HTMLInputElement | null)?.checked,
+      'document-youtube-music': ($('#document-youtube-music') as HTMLInputElement | null)?.value,
     },
     timestamp: Date.now(),
   };
@@ -253,7 +254,7 @@ async function restoreRecoveryIfMatches() {
     const when = recovery.timestamp ? new Date(recovery.timestamp).toLocaleString('pt-BR') : 'recentemente';
     if (window.confirm('Encontramos uma recuperação local de ' + when + '. Restaurar o texto que ainda não havia sido salvo?')) {
       ($('#doc-title') as HTMLInputElement).value = recovery.title ?? activeTitle();
-      const recoverableFields = ['meta-description','meta-date','meta-draft','meta-tags','banner-position','banner-fit','project-description','project-type','project-order','project-published','project-homepage','project-cover','project-banner-position','document-order','document-published'];
+      const recoverableFields = ['meta-description','meta-date','meta-draft','meta-tags','banner-position','banner-fit','project-description','project-type','project-order','project-published','project-homepage','project-cover','project-banner-position','document-order','document-published','document-youtube-music'];
       for (const id of recoverableFields) {
         const field = $('#' + id) as HTMLInputElement | HTMLSelectElement | null;
         const value = recovery.meta?.[id];
@@ -411,7 +412,7 @@ function renderWorkspace() {
   $('#focus-toggle')!.removeAttribute('disabled');
   $('#palette-toggle')!.removeAttribute('disabled');
   const main = $('#v2-main')!;
-  main.innerHTML = '<section class="workspace"><div class="workspace-bar"><button class="text-button" id="back-library">← Biblioteca</button><div class="crumbs"><span id="crumb-parent">POST</span><span>/</span><span id="crumb-title">Sem título</span></div><div class="workspace-actions"><button class="button" id="outline-toggle" aria-pressed="false">Estrutura</button><button class="button" id="details-toggle" aria-pressed="false">Detalhes</button><button class="button" id="preview-toggle" aria-pressed="false">Prévia</button><button class="button" id="save-document">Salvar</button><button class="button button-primary" id="publish-document">Publicar</button></div></div><div class="workspace-layout"><aside class="document-sidebar" id="document-sidebar"><div class="sidebar-label">NAVEGAÇÃO</div><div id="document-tree"></div><div class="sidebar-actions" id="document-actions"></div><div class="heading-outline-section"><div class="sidebar-label">TÍTULOS DO DOCUMENTO</div><nav id="heading-outline" aria-label="Títulos do documento"><p class="tree-note">Adicione títulos para criar um sumário.</p></nav></div></aside><section class="writing-stage"><div class="document-meta"><label class="title-field"><span class="eyebrow">TÍTULO DO DOCUMENTO</span><input id="doc-title" placeholder="Dê um nome a esta ideia" autocomplete="off"></label><div id="post-fields" class="metadata-grid"><label>Descrição<input id="meta-description" placeholder="Uma frase sobre o post"></label><label>Data de publicação<input id="meta-date" type="date"></label><label class="checkbox-field"><input id="meta-draft" type="checkbox"><span>Manter como rascunho</span></label><label>Tags <input id="meta-tags" placeholder="separe tags por vírgula"></label><div class="banner-tools"><label class="file-label">Trocar / enviar banner <input id="post-banner-file" type="file" accept="image/*"></label><label>Enquadramento <input id="banner-position" type="range" min="0" max="100" value="50"></label><label>Exibição <select id="banner-fit"><option value="cover">Recortar</option><option value="fill">Imagem inteira</option></select></label><img id="post-banner-preview" class="banner-preview" alt="Prévia do banner do post" hidden><button type="button" class="button banner-remove" id="remove-post-banner" hidden>Remover banner</button></div></div><div id="project-fields" class="metadata-grid" hidden><label>Descrição<input id="project-description" placeholder="Sobre este projeto"></label><label>Tipo<select id="project-type"><option value="story">História</option><option value="rpg">Sistema de RPG</option></select></label><label>Ordem<input id="project-order" type="number" step="1"></label><label class="checkbox-field"><input id="project-published" type="checkbox"><span>Visível no site</span></label><label class="checkbox-field"><input id="project-homepage" type="checkbox"><span>Mostrar página inicial</span></label><label>Imagem de capa <input id="project-cover" placeholder="Caminho/URL da imagem"></label><label class="file-label">Trocar banner do projeto <input id="project-cover-file" type="file" accept="image/*"></label><label>Posição do banner <input id="project-banner-position" type="range" min="0" max="100" value="50"></label><img id="project-banner-preview" class="banner-preview" alt="Prévia do banner do projeto" hidden><button type="button" class="button banner-remove" id="remove-project-banner" hidden>Remover banner</button></div><div id="document-fields" class="metadata-grid" hidden><label>Ordem<input id="document-order" type="number" step="1"></label><label class="checkbox-field"><input id="document-published" type="checkbox"><span>Capítulo publicado</span></label></div></div><div class="editor-label-row"><span class="eyebrow">EDITOR EM BLOCOS</span><span class="editor-hint">Digite / para inserir um bloco · Ctrl/⌘ + S para salvar</span></div><div id="block-host" class="block-host"></div><div id="writing-stats" class="writing-stats" aria-live="polite"><span id="word-count">0 palavras</span><span id="character-count">0 caracteres</span><span id="reading-time">1 min de leitura</span><label>Meta <input id="word-goal" type="number" min="0" step="50" placeholder="palavras" aria-label="Meta de palavras"></label><span id="goal-progress"></span></div><div id="slash-menu" class="slash-menu" role="listbox" aria-label="Inserir bloco" hidden><button role="option" data-insert-block="h1">Título 1</button><button role="option" data-insert-block="h2">Título 2</button><button role="option" data-insert-block="h3">Título 3</button><button role="option" data-insert-block="blockquote">Citação</button><button role="option" data-insert-block="pre">Código</button><button role="option" data-insert-block="ul">Lista</button><button role="option" data-insert-block="ol">Lista numerada</button><button role="option" data-insert-block="table">Tabela 3×2</button><button role="option" data-insert-block="image">Imagem por URL</button><button role="option" data-insert-block="hr">Divisor</button></div><section id="preview-pane" class="preview-pane" hidden><div class="sidebar-label">PRÉVIA PUBLICADA</div><article id="preview-content" class="prose"></article></section></section></div></section>';
+  main.innerHTML = '<section class="workspace"><div class="workspace-bar"><button class="text-button" id="back-library">← Biblioteca</button><div class="crumbs"><span id="crumb-parent">POST</span><span>/</span><span id="crumb-title">Sem título</span></div><div class="workspace-actions"><button class="button" id="outline-toggle" aria-pressed="false">Estrutura</button><button class="button" id="details-toggle" aria-pressed="false">Detalhes</button><button class="button" id="preview-toggle" aria-pressed="false">Prévia</button><button class="button" id="save-document">Salvar</button><button class="button button-primary" id="publish-document">Publicar</button></div></div><div class="workspace-layout"><aside class="document-sidebar" id="document-sidebar"><div class="sidebar-label">NAVEGAÇÃO</div><div id="document-tree"></div><div class="sidebar-actions" id="document-actions"></div><div class="heading-outline-section"><div class="sidebar-label">TÍTULOS DO DOCUMENTO</div><nav id="heading-outline" aria-label="Títulos do documento"><p class="tree-note">Adicione títulos para criar um sumário.</p></nav></div></aside><section class="writing-stage"><div class="document-meta"><label class="title-field"><span class="eyebrow">TÍTULO DO DOCUMENTO</span><input id="doc-title" placeholder="Dê um nome a esta ideia" autocomplete="off"></label><div id="post-fields" class="metadata-grid"><label>Descrição<input id="meta-description" placeholder="Uma frase sobre o post"></label><label>Data de publicação<input id="meta-date" type="date"></label><label class="checkbox-field"><input id="meta-draft" type="checkbox"><span>Manter como rascunho</span></label><label>Tags <input id="meta-tags" placeholder="separe tags por vírgula"></label><div class="banner-tools"><label class="file-label">Trocar / enviar banner <input id="post-banner-file" type="file" accept="image/*"></label><label>Enquadramento <input id="banner-position" type="range" min="0" max="100" value="50"></label><label>Exibição <select id="banner-fit"><option value="cover">Recortar</option><option value="fill">Imagem inteira</option></select></label><img id="post-banner-preview" class="banner-preview" alt="Prévia do banner do post" hidden><button type="button" class="button banner-remove" id="remove-post-banner" hidden>Remover banner</button></div></div><div id="project-fields" class="metadata-grid" hidden><label>Descrição<input id="project-description" placeholder="Sobre este projeto"></label><label>Tipo<select id="project-type"><option value="story">História</option><option value="rpg">Sistema de RPG</option></select></label><label>Ordem<input id="project-order" type="number" step="1"></label><label class="checkbox-field"><input id="project-published" type="checkbox"><span>Visível no site</span></label><label class="checkbox-field"><input id="project-homepage" type="checkbox"><span>Mostrar página inicial</span></label><label>Imagem de capa <input id="project-cover" placeholder="Caminho/URL da imagem"></label><label class="file-label">Trocar banner do projeto <input id="project-cover-file" type="file" accept="image/*"></label><label>Posição do banner <input id="project-banner-position" type="range" min="0" max="100" value="50"></label><img id="project-banner-preview" class="banner-preview" alt="Prévia do banner do projeto" hidden><button type="button" class="button banner-remove" id="remove-project-banner" hidden>Remover banner</button></div><div id="document-fields" class="metadata-grid" hidden><label>Ordem<input id="document-order" type="number" step="1"></label><label class="checkbox-field"><input id="document-published" type="checkbox"><span>Capítulo publicado</span></label><label id="document-music-field" class="document-music-field">Música do YouTube (opcional)<input id="document-youtube-music" type="url" placeholder="https://www.youtube.com/watch?v=…" autocomplete="url"><span class="field-hint">Aparece discretamente no leitor. Deixe vazio para ocultar.</span></label></div></div><div class="editor-label-row"><span class="eyebrow">EDITOR EM BLOCOS</span><span class="editor-hint">Digite / para inserir um bloco · Ctrl/⌘ + S para salvar</span></div><div id="block-host" class="block-host"></div><div id="writing-stats" class="writing-stats" aria-live="polite"><span id="word-count">0 palavras</span><span id="character-count">0 caracteres</span><span id="reading-time">1 min de leitura</span><label>Meta <input id="word-goal" type="number" min="0" step="50" placeholder="palavras" aria-label="Meta de palavras"></label><span id="goal-progress"></span></div><div id="slash-menu" class="slash-menu" role="listbox" aria-label="Inserir bloco" hidden><button role="option" data-insert-block="h1">Título 1</button><button role="option" data-insert-block="h2">Título 2</button><button role="option" data-insert-block="h3">Título 3</button><button role="option" data-insert-block="blockquote">Citação</button><button role="option" data-insert-block="pre">Código</button><button role="option" data-insert-block="ul">Lista</button><button role="option" data-insert-block="ol">Lista numerada</button><button role="option" data-insert-block="table">Tabela 3×2</button><button role="option" data-insert-block="image">Imagem por URL</button><button role="option" data-insert-block="hr">Divisor</button></div><section id="preview-pane" class="preview-pane" hidden><div class="sidebar-label">PRÉVIA PUBLICADA</div><article id="preview-content" class="prose"></article></section></section></div></section>';
   $('#back-library')!.addEventListener('click', () => { if (confirmLeave()) showLibrary(); });
   $('#save-document')!.addEventListener('click', () => void saveCurrent());
   $('#publish-document')!.addEventListener('click', () => void publishCurrent());
@@ -437,7 +438,7 @@ function renderWorkspace() {
     if (state.preview) renderPreview();
   });
   $('#doc-title')!.addEventListener('input', markDirty);
-  ['meta-description','meta-date','meta-draft','meta-tags','banner-position','banner-fit','project-description','project-type','project-order','project-published','project-homepage','project-cover','document-order','document-published','project-banner-position'].forEach((id) => {
+  ['meta-description','meta-date','meta-draft','meta-tags','banner-position','banner-fit','project-description','project-type','project-order','project-published','project-homepage','project-cover','document-order','document-published','document-youtube-music','project-banner-position'].forEach((id) => {
     const el = $('#' + id);
     el?.addEventListener('change', markDirty);
     el?.addEventListener('input', markDirty);
@@ -524,6 +525,8 @@ function fillMetadata() {
     title.value = state.currentDoc.file.title; state.editor?.setMarkdown(state.currentDoc.body);
     ($('#document-order') as HTMLInputElement).value = String(state.currentDoc.file.order ?? 0);
     ($('#document-published') as HTMLInputElement).checked = Boolean(state.currentDoc.file.published);
+    ($('#document-youtube-music') as HTMLInputElement).value = state.currentDoc.file.youtubeMusic ?? '';
+    ($('#document-music-field') as HTMLElement).hidden = state.kind === 'document';
   }
   state.dirty = false;
   status('Todas as alterações salvas');
@@ -720,11 +723,36 @@ function insertBlock(kind: string) {
   const menu = $('#slash-menu');
   if (menu) menu.hidden = true;
 }
+function youtubeVideoId(value: string): string | null {
+  if (!value.trim()) return null;
+  try {
+    const url = new URL(value.trim());
+    const host = url.hostname.toLowerCase();
+    if (!['youtube.com', 'www.youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtu.be'].includes(host)) return null;
+    const candidate = host.endsWith('youtu.be')
+      ? url.pathname.split('/').filter(Boolean)[0]
+      : url.searchParams.get('v') || url.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/)?.[1];
+    return candidate && /^[a-zA-Z0-9_-]{11}$/.test(candidate) ? candidate : null;
+  } catch {
+    return null;
+  }
+}
 function renderPreview() {
   const pane = $('#preview-content');
   if (!pane) return;
   const raw = marked.parse(bodyNow(), { async: false });
   pane.innerHTML = DOMPurify.sanitize(typeof raw === 'string' ? raw : String(raw));
+  if (state.currentDoc && (state.kind === 'chapter' || state.kind === 'supplement')) {
+    const videoId = youtubeVideoId(($('#document-youtube-music') as HTMLInputElement | null)?.value ?? '');
+    if (videoId) {
+      const music = document.createElement('aside');
+      music.className = 'reading-music';
+      music.innerHTML = '<p class="reading-music-label">Trilha sonora sugerida</p><div class="reading-music-player"><iframe title="Música sugerida para acompanhar a leitura" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>';
+      const frame = music.querySelector('iframe');
+      if (frame) frame.src = 'https://www.youtube-nocookie.com/embed/' + videoId;
+      pane.append(music);
+    }
+  }
 }
 function currentPostMeta(): PostMeta {
   const original = state.currentPost?.file;
@@ -755,7 +783,7 @@ async function saveCurrent(): Promise<boolean> {
       const file: ProjectMeta = { ...old, title, description: ($('#project-description') as HTMLInputElement).value.trim(), type: ($('#project-type') as HTMLSelectElement).value === 'rpg' ? 'rpg' : 'story', order: Number(($('#project-order') as HTMLInputElement).value) || 0, published: ($('#project-published') as HTMLInputElement).checked, showHomepage: ($('#project-homepage') as HTMLInputElement).checked, cover: ($('#project-cover') as HTMLInputElement).value.trim() || undefined, ...((($('#project-cover') as HTMLInputElement).value.trim()) ? { bannerPosition: String(($('#project-banner-position') as HTMLInputElement).value) + '%' } : {}) };
       state.currentProject = await api<Project>('POST', '/api/project/save', { id: state.currentProject.id, file, body });
     } else if (state.currentDoc && state.currentProject) {
-      const file: ProjectDocumentMeta = { ...state.currentDoc.file, title, order: Number(($('#document-order') as HTMLInputElement).value) || 0, published: ($('#document-published') as HTMLInputElement).checked };
+      const file: ProjectDocumentMeta = { ...state.currentDoc.file, title, order: Number(($('#document-order') as HTMLInputElement).value) || 0, published: ($('#document-published') as HTMLInputElement).checked, youtubeMusic: ($('#document-youtube-music') as HTMLInputElement).value.trim() || undefined };
       state.currentDoc = await api<ProjectDocument>('POST', '/api/project-document/save', { projectId: state.currentDoc.projectId, kind: state.currentDoc.kind, id: state.currentDoc.id, file, body });
     } else {
       throw new Error('Não foi possível identificar o documento atual para salvar.');
