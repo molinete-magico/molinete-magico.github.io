@@ -25,7 +25,7 @@ const groups = [
   description="Um arquivo de sistemas, histórias e mundos em construção."
   canonicalPath="/projetos"
 >
-  <section class="container projects-page">
+  <section class="projects-page">
     <section class="container post-header">
       <h1>Projetos</h1>
       <p class="post-meta">
@@ -33,6 +33,7 @@ const groups = [
       </p>
     </section>
 
+    <div class="container">
     {projects.length > 0 ? (
       <>
         <div class="project-tools">
@@ -86,7 +87,7 @@ const groups = [
         </div>
       </div>
     )}
-
+    </div>
   </section>
 </BaseLayout>
 
