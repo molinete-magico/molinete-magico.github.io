@@ -86,7 +86,8 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
     </header>
 
     <div class="project-doc-layout">
-      <nav class="document-toc" aria-label="Sumário do projeto">
+      <aside class="document-sidebar">
+        <nav class="document-toc" aria-label="Sumário do projeto">
         <p class="toc-title">Sumário</p>
         {mainDocument && (
           <a class="toc-main-link" href={withBase(`/projetos/${project.id}/documentacao/`)}>{mainDocument.data.title}</a>
@@ -127,9 +128,29 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
             </ol>
           </section>
         )}
-      </nav>
+        </nav>
+        {musicVideoId && (
+          <aside class="reading-music reading-music-desktop" aria-label="Trilha sonora sugerida">
+            <p class="reading-music-label">Trilha sonora sugerida</p>
+            <div class="reading-music-player">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${musicVideoId}`}
+                title={`Trilha sonora sugerida para ${entry.data.title}`}
+                loading="lazy"
+                allow="encrypted-media; picture-in-picture"
+              ></iframe>
+            </div>
+          </aside>
+        )}
+      </aside>
 
       <div class="document-content post-body">
+        {musicVideoId && (
+          <details class="reading-music-mobile" data-video-id={musicVideoId}>
+            <summary>▶ Trilha sonora sugerida</summary>
+            <div class="reading-music-player" data-player-host></div>
+          </details>
+        )}
         {musicVideoId && (
           <aside class="reading-music" aria-label="Sugestão de música para acompanhar a leitura">
             <p class="reading-music-label">Trilha sonora sugerida</p>
@@ -157,8 +178,26 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   </article>
 </BaseLayout>
 
+<script>
+  document.querySelectorAll<HTMLDetailsElement>('.reading-music-mobile[data-video-id]').forEach((details) => {
+    details.addEventListener('toggle', () => {
+      if (!details.open) return;
+      const host = details.querySelector<HTMLElement>('[data-player-host]');
+      if (!host || host.querySelector('iframe')) return;
+      const videoId = details.dataset.videoId;
+      if (!videoId) return;
+      const frame = document.createElement('iframe');
+      frame.src = 'https://www.youtube-nocookie.com/embed/' + videoId;
+      frame.title = 'Trilha sonora sugerida para acompanhar a leitura';
+      frame.loading = 'lazy';
+      frame.allow = 'encrypted-media; picture-in-picture';
+      host.append(frame);
+    });
+  });
+</script>
+
 <style>
-  .project-document-page { padding-bottom: var(--space-8); }
+  .project-document-page { min-width: 0; padding-bottom: var(--space-8); }
   .document-breadcrumb {
     display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2);
     margin: var(--space-4) 0 var(--space-6); color: var(--text-muted);
@@ -176,14 +215,22 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   .document-header h1 { margin: 0; }
   .document-project-title { margin: var(--space-2) 0 0; color: var(--text-muted); }
   .project-doc-layout {
-    display: grid; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
+    display: grid; min-width: 0; grid-template-columns: minmax(12rem, 15rem) minmax(0, 1fr);
     align-items: start; gap: clamp(calc(var(--space-5) + 20px), 4vw, calc(var(--space-8) + 20px));
   }
-  .document-toc {
-    position: sticky; top: var(--space-4); max-height: calc(100vh - 2rem);
-    overflow-y: auto; padding-right: var(--space-4);
+  .document-sidebar {
+    position: sticky;
+    top: var(--space-4);
+    align-self: start;
+    min-width: 0;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: var(--space-4);
     border-right: 1px solid var(--border-rest);
+    overscroll-behavior: contain;
   }
+  .document-toc { min-width: 0; }
   .document-toc ol { margin: 0; padding: 0; list-style: none; }
   .document-toc li { margin: 0; }
   .document-toc a {
@@ -198,30 +245,31 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   .toc-sections { padding-left: var(--space-2) !important; }
   .document-toc .toc-subheading { padding-left: var(--space-3); }
   .document-toc .toc-subheading a { font-size: 0.82rem; }
-  .document-content { min-width: 0; }
-  .document-content .prose { max-width: none; padding-left: clamp(12px, 2vw, 24px); }
+  .document-content { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+  .document-content .prose { min-width: 0; max-width: none; padding-left: clamp(12px, 2vw, 24px); }
+  .document-content .prose :global(img), .document-content .prose :global(video), .document-content .prose :global(iframe) { max-width: 100%; }
   .reading-music {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    margin: var(--space-5) 0 0 clamp(12px, 2vw, 24px);
-    padding-top: var(--space-3);
-    border-top: 1px solid var(--border-rest);
+    min-width: 0;
+    margin-top: var(--space-5);
+    padding: var(--space-3);
+    border: 1px solid var(--border-rest);
+    background: var(--bg-elevated);
   }
   .reading-music-label {
-    flex: 0 0 auto;
-    margin: 0;
+    margin: 0 0 var(--space-2);
     color: var(--text-muted);
     font-family: var(--font-mono);
     font-size: 0.68rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
     text-transform: uppercase;
   }
   .reading-music-player {
-    width: min(100%, 240px);
+    width: 100%;
+    max-width: 100%;
     aspect-ratio: 16 / 9;
     overflow: hidden;
-    background: var(--bg-elevated);
+    background: var(--bg);
   }
   .reading-music-player iframe {
     display: block;
@@ -229,10 +277,17 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
     height: 100%;
     border: 0;
   }
-  @media (max-width: 760px) {
-    .document-content .prose { padding-left: 8px; }
-    .reading-music { align-items: flex-start; flex-direction: column; margin-left: 8px; }
+  .reading-music-mobile { display: none; }
+  .reading-music-mobile summary {
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    list-style: none;
   }
+  .reading-music-mobile summary::-webkit-details-marker { display: none; }
+  .reading-music-mobile[open] .reading-music-player { margin-top: var(--space-3); }
   .document-content :global(h2), .document-content :global(h3) { scroll-margin-top: var(--space-6); }
   .document-footer {
     display: flex; justify-content: space-between; gap: var(--space-3);
@@ -243,9 +298,21 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   .document-footer a { max-width: 48%; }
   @media (max-width: 760px) {
     .project-doc-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
-    .document-toc {
-      position: static; max-height: none; padding: 0 0 var(--space-4);
-      border-right: 0; border-bottom: 1px solid var(--border-rest);
+    .document-sidebar {
+      position: static;
+      max-height: none;
+      overflow: visible;
+      padding: 0 0 var(--space-4);
+      border-right: 0;
+      border-bottom: 1px solid var(--border-rest);
+    }
+    .reading-music-desktop { display: none; }
+    .reading-music-mobile {
+      display: block;
+      margin: 0 0 var(--space-4);
+      padding: var(--space-3);
+      border: 1px solid var(--border-rest);
+      background: var(--bg-elevated);
     }
   }
 </style>
