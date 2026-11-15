@@ -2,6 +2,7 @@
 title: A Clareira
 published: true
 order: 0
+youtubeMusic: https://youtu.be/SRTpXWMOEtM?si=xzgJ_Zk1utO1PPOl
 ---
 
 Kelton soltou seus cabelos cinzas do rabo de cavalo, deixando\-os cair em seus ombros enquanto se encostava em uma pedra ao lado da cachoeira cercada por árvores, com uma abertura que permitia a passagem do sol em uma pequena área\. Seira se deitava lentamente ao leito do rio, molhando seu pé e aliviando o inchaço de sua ferida, que, junto com a erosão, a incapacitava ainda mais\.
