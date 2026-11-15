@@ -30,6 +30,21 @@ export async function getStaticPaths() {
 
 const { entry, project, group } = Astro.props;
 const { Content, headings } = await render(entry);
+const youtubeVideoId = (value?: string) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    if (!['youtube.com', 'www.youtube.com', 'music.youtube.com', 'm.youtube.com', 'youtu.be', 'www.youtu.be'].includes(host)) return null;
+    const candidate = host.endsWith('youtu.be')
+      ? url.pathname.split('/').filter(Boolean)[0]
+      : url.searchParams.get('v') || url.pathname.match(/^\/(?:embed|shorts)\/([^/?]+)/)?.[1];
+    return candidate && /^[a-zA-Z0-9_-]{11}$/.test(candidate) ? candidate : null;
+  } catch {
+    return null;
+  }
+};
+const musicVideoId = youtubeVideoId(entry.data.youtubeMusic);
 const toc = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3);
 const [documentEntries, allChapters, allSupplements] = await Promise.all([
   getCollection('projectDocs', ({ data }) => data.published),
@@ -118,6 +133,21 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
         <div class="prose">
           <Content />
         </div>
+        {musicVideoId && (
+          <aside class="reading-music" aria-label="Sugestão de música para acompanhar a leitura">
+            <p class="reading-music-label">Trilha sonora sugerida</p>
+            <div class="reading-music-player">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${musicVideoId}`}
+                title="Música sugerida para acompanhar a leitura"
+                loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </aside>
+        )}
         <nav class="document-footer" aria-label="Navegação entre páginas">
           {previousPage ? <a href={pageUrl(previousPage.id)}>← {previousPage.data.title}</a> : <span />}
           {nextPage ? <a href={pageUrl(nextPage.id)}>{nextPage.data.title} →</a> : <a href={withBase(`/projetos/${project.id}/`)}>Página do projeto →</a>}
@@ -170,8 +200,38 @@ const nextPage = currentIndex >= 0 && currentIndex < currentList.length - 1 ? cu
   .document-toc .toc-subheading a { font-size: 0.82rem; }
   .document-content { min-width: 0; }
   .document-content .prose { max-width: none; padding-left: clamp(12px, 2vw, 24px); }
+  .reading-music {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: var(--space-5) 0 0 clamp(12px, 2vw, 24px);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border-rest);
+  }
+  .reading-music-label {
+    flex: 0 0 auto;
+    margin: 0;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .reading-music-player {
+    width: min(100%, 240px);
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: var(--bg-elevated);
+  }
+  .reading-music-player iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
   @media (max-width: 760px) {
     .document-content .prose { padding-left: 8px; }
+    .reading-music { align-items: flex-start; flex-direction: column; margin-left: 8px; }
   }
   .document-content :global(h2), .document-content :global(h3) { scroll-margin-top: var(--space-6); }
   .document-footer {
