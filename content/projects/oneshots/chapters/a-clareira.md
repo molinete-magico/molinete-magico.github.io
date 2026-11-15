@@ -9,7 +9,7 @@ Kelton soltou seus cabelos prateados do rabo de cavalo, deixando\-os cair em seu
 
 — Você ainda consegue andar? — Disse o jovem enquanto olhava para o cabelo loiro volumoso e bagunçado de Seira\. — Acho que pra chegarmos no norte ainda tem alguns bons quilômetros\.
 
-A garota jogava água com a palma da mão no local dolorido e passava a mão nas marcas escuras de sua pele\. Não havia tempo a perder, mas já não aguentava mais viajar\.
+A garota jogava água com a palma da mão no local dolorido e olhava as marcas escuras de sua pele\. Não havia tempo a perder, mas já não aguentava mais viajar\.
 
 — Acho que podemos esperar até o próximo amanhecer\. — Respondeu ela com uma voz cansada\. — Se eu de cavalo fiquei assim, quem dirá você que estava andando\.
 
