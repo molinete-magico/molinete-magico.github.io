@@ -5,9 +5,9 @@ order: 0
 youtubeMusic: https://youtu.be/SRTpXWMOEtM?si=xzgJ_Zk1utO1PPOl
 ---
 
-Kelton soltou seus cabelos prateados do rabo de cavalo, deixando\-os cair em seus ombros enquanto se encostava em uma pedra ao lado da pequena cachoeira cercada por árvores\. Uma abertura que permitia a passagem do sol em uma pequena área do corpo d'água fazia a luz refletir no rosto dos viajantes\. Seira se deitava lentamente à beira da água, molhando seu pé e aliviando o inchaço de sua ferida, que, junto com a erosão, a incapacitava ainda mais\.
+Kelton soltou seus cabelos prateados do rabo de cavalo, deixando\-os cair em seus ombros enquanto se encostava em uma pedra ao lado da pequena cachoeira cercada por árvores\. Uma abertura que permitia a passagem do sol em uma pequena área do corpo d'água fazia a luz refletir no rosto dos viajantes\. Seira se deitava lentamente à beira da água, molhando seu pé e aliviando o inchaço de sua torção, que, junto com a erosão, a incapacitava ainda mais\.
 
-— Você ainda consegue andar? — Disse o jovem enquanto olhava para os olhos verdes de Seira juntamente ao seu cabelo loiro volumoso e bagunçado\. — Acho que pra chegarmos no norte ainda tem alguns bons quilômetros\.
+— Você ainda consegue andar? — Disse o jovem enquanto olhava para o cabelo loiro volumoso e bagunçado de Seira\. — Acho que pra chegarmos no norte ainda tem alguns bons quilômetros\.
 
 A garota jogava água com a palma da mão em seu pé torcido e passava a mão nas marcas escuras de sua pele\. Não havia tempo a perder, mas já não aguentava mais viajar\.
 
