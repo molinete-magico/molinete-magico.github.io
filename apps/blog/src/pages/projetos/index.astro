@@ -10,13 +10,11 @@ const groups = [
   {
     key: 'rpg',
     label: 'Sistemas',
-    description: 'Sistemas',
     items: projects.filter((project) => project.data.type === 'rpg'),
   },
   {
     key: 'story',
     label: 'Escrita',
-    description: 'Escrita',
     items: projects.filter((project) => project.data.type === 'story'),
   },
 ];
@@ -48,7 +46,7 @@ const groups = [
         </div>
 
         <div class="project-collections" id="project-collections">
-          {groups.map((group, groupIndex) => group.items.length > 0 && (
+          {groups.map((group) => group.items.length > 0 && (
             <section class="project-collection widget" data-collection={group.key} aria-labelledby={`collection-${group.key}`}>
               <header class="widget-title collection-title">
                 <span>{group.label}</span>
