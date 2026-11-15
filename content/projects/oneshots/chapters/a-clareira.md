@@ -5,15 +5,15 @@ order: 0
 youtubeMusic: https://youtu.be/SRTpXWMOEtM?si=xzgJ_Zk1utO1PPOl
 ---
 
-Kelton soltou seus cabelos prateados do rabo de cavalo, deixando\-os cair em seus ombros enquanto se encostava em uma pedra ao lado da pequena cachoeira cercada por árvores\. Uma abertura que permitia a passagem do sol em uma pequena área do corpo d'água fazia a luz refletir no rosto dos viajantes\. Seira se deitava lentamente à beira da água, molhando seu pé e aliviando o inchaço de sua torção, que, junto com a erosão, a incapacitava ainda mais\.
+Kelton soltou seus cabelos prateados do rabo de cavalo, deixando\-os cair em seus ombros enquanto se encostava em uma pedra ao lado da pequena cachoeira cercada por árvores\. Uma abertura que permitia a passagem do sol em uma pequena área do corpo d'água fazia a luz refletir no rosto dos viajantes\. Seira se deitava lentamente à beira da água, molhando seu tornozelo, que, junto com a erosão, a incapacitava ainda mais\.
 
 — Você ainda consegue andar? — Disse o jovem enquanto olhava para o cabelo loiro volumoso e bagunçado de Seira\. — Acho que pra chegarmos no norte ainda tem alguns bons quilômetros\.
 
-A garota jogava água com a palma da mão em seu pé torcido e passava a mão nas marcas escuras de sua pele\. Não havia tempo a perder, mas já não aguentava mais viajar\.
+A garota jogava água com a palma da mão no local dolorido e passava a mão nas marcas escuras de sua pele\. Não havia tempo a perder, mas já não aguentava mais viajar\.
 
 — Acho que podemos esperar até o próximo amanhecer\. — Respondeu ela com uma voz cansada\. — Se eu de cavalo fiquei assim, quem dirá você que estava andando\.
 
-Kelton se levantou e começou a se aproximar dela enquanto vasculhava sua bolsa à procura do medicamento de ervas que usava na ferida de sua companheira\. Seira olhou para a cena e se apoiou no chão de terra\. Sua cota de malha tilintou com o movimento, acompanhando a sugestão, nem tão amigável assim, que veio logo em seguida:
+Kelton se levantou e começou a se aproximar dela enquanto vasculhava sua bolsa à procura do medicamento de ervas que usava no tornozelo de sua companheira\. Seira olhou para a cena e se apoiou no chão de terra\. Sua cota de malha tilintou com o movimento, acompanhando a sugestão, nem tão amigável assim, que veio logo em seguida:
 
 — Você tem que parar de guardar tanta flor e mato na mochila, sabia? Além de pesar na viagem, você nem tem todos os ingredientes necessários pra fazer qualquer tipo de poção ou bebida\.
 
