@@ -93,6 +93,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .title-field{display:block;margin-bottom:1.2rem}.title-field input{display:block;width:100%;margin-top:.4rem;padding:.35rem 0;border:0;border-bottom:1px solid transparent;outline:0;background:transparent;color:var(--text-primary);font-size:var(--fs-h1);font-weight:700;line-height:1.2}
 .title-field input:focus{border-color:var(--border-strong)}.metadata-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem 1rem;margin-top:1.2rem}
 .metadata-grid label{display:flex;flex-direction:column;gap:.3rem;color:var(--text-muted);font-size:.75rem}
+.metadata-grid .field-hint{color:var(--text-muted);font-size:.68rem;line-height:1.4}
 .metadata-grid input:not([type=checkbox]):not([type=file]),.metadata-grid select{width:100%;padding:.55rem .6rem;border:1px solid var(--border-rest);border-radius:0;background:var(--bg-elevated);color:var(--text-primary);font-size:.85rem}
 .metadata-grid input[type=checkbox]{accent-color:var(--green-500)}.metadata-grid .checkbox-field{flex-direction:row;align-items:center;gap:.5rem}.metadata-grid .checkbox-field input{width:auto}
 .banner-tools{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.8rem;padding-top:.6rem;border-top:1px dotted var(--border-rest)}
